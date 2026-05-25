@@ -1,0 +1,70 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Alumno extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'codigo', 'numero_cedula', 'nombres', 'apellidos', 'fecha_nacimiento', 'genero',
+        'tipo_sangre', 'etnia', 'nacionalidad',
+        'telefono_convencional', 'celular', 'email_activo',
+        'numero_hermanos', 'lugar_que_ocupa_entre_hermanos', 'con_quien_vive', 'parentesco_convivencia',
+        'institucion_procedencia', 'observaciones_generales',
+        'padece_enfermedad', 'nombre_enfermedad', 'tiene_tratamiento_medico', 'toma_medicina', 'nombre_medicina',
+        'necesidades_educativas_especificas_nee', 'nombre_nee',
+        'tiene_discapacidad', 'tipo_discapacidad', 'tiene_carnet', 'numero_carnet', 'tiene_informe_psicopedagogico_actualizado',
+        'direccion_domiciliaria', 'sector', 'referencia_domicilio', 'provincia', 'canton', 'parroquia', 'numero_casa',
+        'casa_propia', 'tiene_agua', 'tiene_sshh_letrina', 'tiene_luz_electrica',
+        'padre_nombres_apellidos', 'padre_cedula', 'padre_telefono', 'padre_profesion', 'padre_direccion', 'padre_email', 'padre_es_facturador',
+        'madre_nombres_apellidos', 'madre_cedula', 'madre_telefono', 'madre_profesion', 'madre_direccion', 'madre_email', 'madre_es_facturador',
+        'representante_alterno_nombre', 'representante_alterno_parentesco', 'representante_alterno_cedula',
+        'representante_alterno_telefono', 'representante_alterno_email', 'representante_alterno_direccion',
+        'facturador_nombre', 'facturador_cedula', 'facturador_telefono', 'facturador_direccion', 'facturador_email',
+        'representante_user_id',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'fecha_nacimiento' => 'date',
+            'padece_enfermedad' => 'boolean',
+            'tiene_tratamiento_medico' => 'boolean',
+            'toma_medicina' => 'boolean',
+            'necesidades_educativas_especificas_nee' => 'boolean',
+            'tiene_discapacidad' => 'boolean',
+            'tiene_carnet' => 'boolean',
+            'tiene_informe_psicopedagogico_actualizado' => 'boolean',
+            'casa_propia' => 'boolean',
+            'tiene_agua' => 'boolean',
+            'tiene_sshh_letrina' => 'boolean',
+            'tiene_luz_electrica' => 'boolean',
+            'padre_es_facturador' => 'boolean',
+            'madre_es_facturador' => 'boolean',
+        ];
+    }
+
+    public function representante()
+    {
+        return $this->belongsTo(User::class, 'representante_user_id');
+    }
+
+    public function matriculas()
+    {
+        return $this->hasMany(Matricula::class);
+    }
+
+    public function observaciones()
+    {
+        return $this->hasMany(Observacion::class);
+    }
+
+    public function mensajesContexto()
+    {
+        return $this->hasMany(Mensaje::class, 'contexto_estudiante_id');
+    }
+}

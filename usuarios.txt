@@ -1,0 +1,5 @@
+Email	                Contraseña	Rol
+secretaria@fake.edu.ec	admin123	ADMIN
+rector@fake.edu.ec	admin123	ADMIN
+crodrigue@fake.edu.ec	password	DOCENTE
+cmendoza@email.com	password	REPRESENTANTE
