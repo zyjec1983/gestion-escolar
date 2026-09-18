@@ -46,9 +46,17 @@
         @endif
         @if($esDocente || $esRep)
         <li class="nav-item">
-            <a href="{{ $esDocente ? route('docente.observaciones.index') : route('dashboard') . '#observaciones' }}"
-               class="nav-link text-white {{ request()->is('docente/observaciones*') ? 'active' : '' }}">
+            <a href="{{ $esDocente ? route('docente.observaciones.index') : route('representante.observaciones') }}"
+               class="nav-link text-white {{ request()->is('docente/observaciones*') || request()->is('observaciones') ? 'active' : '' }}">
                 <i class="bi bi-exclamation-triangle me-2"></i> Observaciones
+            </a>
+        </li>
+        @endif
+        @if($esRep)
+        <li class="nav-item">
+            <a href="{{ route('representante.agendas') }}"
+               class="nav-link text-white {{ request()->is('agendas') ? 'active' : '' }}">
+                <i class="bi bi-journal-text me-2"></i> Agendas de mis hijos
             </a>
         </li>
         @endif
@@ -62,8 +70,8 @@
                     ->count();
         @endphp
         <li class="nav-item">
-            <a href="{{ $esDocente ? route('docente.citas.index') : route('dashboard') . '#citas' }}"
-               class="nav-link text-white d-flex justify-content-between align-items-center {{ request()->is('docente/citas*') ? 'active' : '' }}">
+            <a href="{{ $esDocente ? route('docente.citas.index') : route('representante.citas') }}"
+               class="nav-link text-white d-flex justify-content-between align-items-center {{ request()->is('docente/citas*') || request()->is('citas') ? 'active' : '' }}">
                 <span><i class="bi bi-calendar-event me-2"></i> Citas</span>
                 @if($citasPendientes > 0)
                     <span class="badge rounded-pill bg-warning text-dark">{{ $citasPendientes }}</span>

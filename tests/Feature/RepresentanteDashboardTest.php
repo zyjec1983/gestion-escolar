@@ -68,11 +68,61 @@ class RepresentanteDashboardTest extends TestCase
         $ctx = $this->crearContexto();
 
         $this->actingAs($ctx['representante'])
-            ->get('/dashboard')
+            ->get('/observaciones')
             ->assertOk()
             ->assertSee('Llegó tarde a la clase de hoy.')
             ->assertSee('OBSERVACIÓN DE CONDUCTA')
             ->assertSee($ctx['alumno']->apellidos);
+    }
+
+    public function test_representante_ve_tarjetas_de_materias_con_agendas_en_dashboard(): void
+    {
+        $ctx = $this->crearContexto();
+
+        $agenda = \App\Models\Agenda::create([
+            'clase_docente_id' => $ctx['clase']->id,
+            'tipo_actividad_id' => \App\Models\TipoActividad::create(['codigo' => 'TAREA', 'nombre' => 'Tarea'])->id,
+            'titulo_agenda' => 'Resolver ejercicios del capítulo 3',
+            'fecha_inicio' => now()->subDay(),
+            'fecha_entrega_limite' => now()->addDays(5),
+            'enviar_a_todos' => true,
+        ]);
+
+        $this->actingAs($ctx['representante'])
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee('Matematica')
+            ->assertSee('1', false)
+            ->assertSee('hay-actividad', false);
+    }
+
+    public function test_representante_ve_agendas_con_adjuntos_en_su_pagina(): void
+    {
+        $ctx = $this->crearContexto();
+
+        $tipo = \App\Models\TipoActividad::create(['codigo' => 'TAREA', 'nombre' => 'Tarea']);
+        $agenda = \App\Models\Agenda::create([
+            'clase_docente_id' => $ctx['clase']->id,
+            'tipo_actividad_id' => $tipo->id,
+            'titulo_agenda' => 'Taller de matemática',
+            'fecha_inicio' => now()->subDay(),
+            'fecha_entrega_limite' => now()->addDays(5),
+            'enviar_a_todos' => true,
+        ]);
+        \App\Models\ArchivoAdjunto::create([
+            'attachable_type' => \App\Models\Agenda::class,
+            'attachable_id' => $agenda->id,
+            'nombre' => 'taller.pdf',
+            'url' => '/storage/archivos/taller.pdf',
+        ]);
+
+        $this->actingAs($ctx['representante'])
+            ->get(route('representante.agendas'))
+            ->assertOk()
+            ->assertSee('Taller de matemática')
+            ->assertSee('Matematica')
+            ->assertSee('taller.pdf')
+            ->assertDontSee('Enviar respuesta');
     }
 
     public function test_representante_no_ve_opciones_de_docente_en_el_sidebar(): void
@@ -103,7 +153,7 @@ class RepresentanteDashboardTest extends TestCase
         $fecha = now()->addDays(2)->format('Y-m-d');
 
         $this->actingAs($ctx['representante'])
-            ->post(route('dashboard.citas.store'), [
+            ->post(route('representante.citas.store'), [
                 'alumno_id' => $ctx['alumno']->id,
                 'docente_id' => $ctx['docente']->id,
                 'motivo' => 'Rendimiento académico',
@@ -130,7 +180,7 @@ class RepresentanteDashboardTest extends TestCase
         $fecha = now()->addDays(3)->format('Y-m-d');
 
         $this->actingAs($ctx['representante'])
-            ->post(route('dashboard.citas.store'), [
+            ->post(route('representante.citas.store'), [
                 'alumno_id' => $ctx['alumno']->id,
                 'docente_id' => $ctx['docente']->id,
                 'motivo' => 'Otro',
@@ -153,7 +203,7 @@ class RepresentanteDashboardTest extends TestCase
         $fecha = now()->addDays(2)->format('Y-m-d');
 
         $this->actingAs($otro)
-            ->post(route('dashboard.citas.store'), [
+            ->post(route('representante.citas.store'), [
                 'alumno_id' => $ctx['alumno']->id,
                 'docente_id' => $ctx['docente']->id,
                 'motivo' => 'Consulta',
@@ -173,7 +223,7 @@ class RepresentanteDashboardTest extends TestCase
         $fecha = now()->addDays(2)->format('Y-m-d');
 
         $this->actingAs($ctx['representante'])
-            ->post(route('dashboard.citas.store'), [
+            ->post(route('representante.citas.store'), [
                 'alumno_id' => $ctx['alumno']->id,
                 'docente_id' => $docenteOtro->id,
                 'motivo' => 'Consulta',

@@ -2,304 +2,160 @@
 
 @section('titulo', 'Mi Espacio Familiar')
 
-@section('contenido')
 @push('styles')
 <style>
-    .cita-dia { background: rgba(220, 53, 69, 0.08) !important; }
+    .stat-card, .materia-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        animation: fadeInUp 0.5s ease backwards;
+        will-change: transform;
+    }
+    .stat-card:hover, .materia-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+    }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(18px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .materia-card.hay-actividad {
+        outline: 2px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 0 18px rgba(255, 193, 7, 0.65), 0 10px 20px rgba(0, 0, 0, 0.25);
+    }
+    .estrella-actividad {
+        animation: pulsoEstrella 1.1s ease-in-out infinite;
+        color: #ffc107;
+        display: inline-block;
+    }
+    @keyframes pulsoEstrella {
+        0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255, 193, 7, 0.6)); }
+        50%      { transform: scale(1.3); filter: drop-shadow(0 0 10px rgba(255, 193, 7, 1)); }
+    }
 </style>
 @endpush
 
-@if(session('success'))
-    <div id="swal-success" data-message="{{ session('success') }}" hidden></div>
-@endif
-
-<div class="row mb-4 align-items-center">
-    <div class="col">
-        <h4 class="mb-0"><i class="bi bi-house-heart me-2"></i>Mi Espacio Familiar</h4>
-        <small class="text-muted">
-            {{ auth()->user()->name }} {{ auth()->user()->apellidos }}
-            @if($alumno) · Representado: <strong>{{ $alumno->apellidos }} {{ $alumno->nombres }}</strong> @endif
-        </small>
-    </div>
-    @if(count($representados) > 1)
-    <div class="col-auto">
-        <form method="GET" action="{{ route('dashboard') }}">
-            <select name="alumno_id" class="form-select" onchange="this.form.submit()">
-                @foreach($representados as $r)
-                    <option value="{{ $r->id }}" {{ $alumno && $alumno->id == $r->id ? 'selected' : '' }}>
-                        {{ $r->apellidos }} {{ $r->nombres }}
-                    </option>
-                @endforeach
-            </select>
-            <input type="hidden" name="anio" value="{{ $year }}">
-            <input type="hidden" name="mes" value="{{ $month }}">
-        </form>
-    </div>
-    @endif
-</div>
-
-<div class="row g-4">
-    <div class="col-12 col-lg-7">
-        <div class="card shadow-sm" id="observaciones">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Observaciones del representado</h6>
-                <span class="badge bg-secondary">Solo lectura</span>
-            </div>
-            <div class="card-body">
-                @if($observaciones->isEmpty())
-                    <div class="alert alert-info mb-0">
-                        <i class="bi bi-info-circle me-1"></i>
-                        No hay observaciones registradas para {{ $alumno?->nombres }} {{ $alumno?->apellidos }}.
-                    </div>
-                @else
-                    @foreach($observaciones as $obs)
-                        <div class="border-start border-3 border-secondary ps-3 mb-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-{{ in_array(strtolower($obs->tipoObservacion?->nombre ?? ''), ['observación de conducta', 'observacion de conducta']) ? 'danger' : 'info' }}">
-                                        {{ $obs->tipoObservacion?->nombre }}
-                                    </span>
-                                    @if($obs->notificar_representante)
-                                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Notificada</span>
-                                    @endif
-                                </div>
-                                <small class="text-muted">{{ $obs->created_at->format('d/m/Y H:i') }}</small>
-                            </div>
-                            <p class="mb-1 mt-2">{{ $obs->descripcion_texto }}</p>
-                            <small class="text-muted">
-                                <i class="bi bi-person-badge me-1"></i>{{ $obs->profesor?->name }} {{ $obs->profesor?->apellidos }}
-                            </small>
-                        </div>
+@section('contenido')
+<div class="container-fluid">
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h4 class="mb-0"><i class="bi bi-house-heart me-2"></i>Mi Espacio Familiar</h4>
+            <small class="text-muted">
+                {{ auth()->user()->name }} {{ auth()->user()->apellidos }}
+                @if($alumno) · Representado: <strong>{{ $alumno->apellidos }} {{ $alumno->nombres }}</strong> @endif
+            </small>
+        </div>
+        @if(count($representados) > 1)
+        <div class="col-auto">
+            <form method="GET" action="{{ route('dashboard') }}">
+                <select name="alumno_id" class="form-select" onchange="this.form.submit()">
+                    @foreach($representados as $r)
+                        <option value="{{ $r->id }}" {{ $alumno && $alumno->id == $r->id ? 'selected' : '' }}>
+                            {{ $r->apellidos }} {{ $r->nombres }}
+                        </option>
                     @endforeach
-                @endif
-            </div>
+                </select>
+            </form>
         </div>
+        @endif
+    </div>
 
-        <div class="card shadow-sm mt-4" id="citas">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Calendario de mis citas</h6>
-            </div>
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <a href="{{ route('dashboard', ['alumno_id' => $alumno?->id, 'anio' => $prevYear, 'mes' => $prevMonth]) }}"
-                       class="btn btn-outline-secondary btn-sm">&larr; Anterior</a>
-                    <h6 class="mb-0">{{ \Carbon\Carbon::createFromDate($year, $month, 1)->translatedFormat('F Y') }}</h6>
-                    <a href="{{ route('dashboard', ['alumno_id' => $alumno?->id, 'anio' => $nextYear, 'mes' => $nextMonth]) }}"
-                       class="btn btn-outline-secondary btn-sm">Siguiente &rarr;</a>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-bordered text-center mb-0">
-                        <thead class="table-light">
-                            <tr><th>Dom</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th></tr>
-                        </thead>
-                        <tbody>
-                            @foreach($calendar as $week)
-                                <tr>
-                                    @foreach($week as $day)
-                                        @php
-                                            $tieneCita = $day && in_array($day, $diasConCitas);
-                                            $isToday = $day && \Carbon\Carbon::createFromDate($year, $month, $day)->isToday();
-                                        @endphp
-                                        <td class="{{ $day ? ($tieneCita ? 'cita-dia' : '') : 'bg-light' }}">
-                                            @if($day)
-                                                <a href="{{ route('dashboard', ['alumno_id' => $alumno?->id, 'anio' => $year, 'mes' => $month, 'dia' => $day]) }}"
-                                                   class="d-block p-2 text-decoration-none {{ $isToday ? 'btn btn-primary btn-sm' : 'text-dark' }}">
-                                                    {{ $day }}
-                                                </a>
-                                            @endif
-                                        </td>
-                                    @endforeach
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                @if($diaSeleccionado)
-                    <div class="mt-3">
-                        <h6 class="fw-bold">Citas del {{ \Carbon\Carbon::createFromDate($year, $month, $diaSeleccionado)->format('d/m/Y') }}</h6>
-                        @if($citasDelDia->isEmpty())
-                            <div class="alert alert-light border">No hay citas este día.</div>
-                        @else
-                            <ul class="list-group">
-                                @foreach($citasDelDia as $cita)
-                                    <li class="list-group-item">
-                                        <strong>{{ $cita->fecha_inicio->format('H:i') }}</strong>
-                                        @if($cita->docente)
-                                            <span class="text-muted">con {{ $cita->docente->name }} {{ $cita->docente->apellidos }}</span>
-                                        @endif
-                                        <span class="badge bg-{{ $cita->estado == 'confirmada' ? 'success' : ($cita->estado == 'cancelada' ? 'danger' : 'warning') }}">
-                                            {{ ucfirst($cita->estado) }}
-                                        </span>
-                                        <p class="mb-0 mt-1 small">{{ $cita->motivo }}</p>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        @endif
+    <div class="row g-3 mb-4 row-cols-1 row-cols-sm-3">
+        <div class="col">
+            <a href="{{ route('mensajes.index') }}" class="text-decoration-none">
+                <div class="card stat-card shadow-sm h-100 border-0"
+                     style="background: linear-gradient(135deg, #1a1a2e, #4361ee); color: #fff; animation-delay: 0.05s;">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <i class="bi bi-envelope fs-2"></i>
+                        <div>
+                            <div class="fs-4 fw-bold">{{ $stats['mensajes'] ?? 0 }}</div>
+                            <div class="small text-white-50">Mensajes sin leer</div>
+                        </div>
                     </div>
-                @endif
-            </div>
+                </div>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ route('representante.citas', ['alumno_id' => $alumno?->id]) }}" class="text-decoration-none">
+                <div class="card stat-card shadow-sm h-100 border-0"
+                     style="background: linear-gradient(135deg, #b08a00, #ffb703); color: #fff; animation-delay: 0.1s;">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <i class="bi bi-calendar-event fs-2"></i>
+                        <div>
+                            <div class="fs-4 fw-bold">{{ $stats['citas_pendientes'] ?? 0 }}</div>
+                            <div class="small text-white-50">Citas pendientes</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ route('representante.observaciones', ['alumno_id' => $alumno?->id]) }}" class="text-decoration-none">
+                <div class="card stat-card shadow-sm h-100 border-0"
+                     style="background: linear-gradient(135deg, #7a0c0c, #e63946); color: #fff; animation-delay: 0.15s;">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <i class="bi bi-exclamation-triangle fs-2"></i>
+                        <div>
+                            <div class="fs-4 fw-bold">{{ $stats['observaciones'] ?? 0 }}</div>
+                            <div class="small text-white-50">Observaciones</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
         </div>
     </div>
 
-    <div class="col-12 col-lg-5">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-calendar-plus me-2"></i>Solicitar Cita</h6>
-            </div>
-            <div class="card-body">
-                @if(!$alumno)
-                    <div class="alert alert-warning mb-0">No tiene estudiantes a su cargo.</div>
-                @else
-                    <form method="POST" action="{{ route('dashboard.citas.store') }}">
-                        @csrf
-                        <input type="hidden" name="alumno_id" value="{{ $alumno->id }}">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Agendas por materia</h5>
+        <span class="badge bg-secondary">Solo lectura</span>
+    </div>
+    <p class="text-muted small mb-3">
+        Aquí ves las tareas y actividades que los docentes han enviado. La estrella
+        <i class="bi bi-star-fill estrella-actividad" style="animation: none;"></i> indica que hay actividad reciente en esa materia.
+    </p>
 
-                        <div class="mb-2">
-                            <label class="form-label">Representado: <strong>{{ $alumno->apellidos }} {{ $alumno->nombres }}</strong></label>
-                        </div>
-
-                        <div class="row g-2 mb-3">
-                            <div class="col-6">
-                                <label class="form-label">Materia</label>
-                                <select name="materia_id" id="materiaSelect" class="form-select" required>
-                                    <option value="">Seleccionar...</option>
-                                    @foreach($materias as $mat)
-                                        <option value="{{ $mat['id'] }}">{{ $mat['nombre'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label">Docente</label>
-                                <select name="docente_id" id="docenteSelect" class="form-select" required disabled>
-                                    <option value="">Seleccione materia primero...</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Motivo de la cita</label>
-                            <select name="motivo" id="motivoSelect" class="form-select" required>
-                                <option value="">Seleccionar...</option>
-                                @foreach($motivos as $motivo)
-                                    <option value="{{ $motivo }}">{{ $motivo }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="mb-3" id="otroMotivoWrap" style="display:none;">
-                            <label class="form-label">Especifique el motivo</label>
-                            <input type="text" name="motivo_otro" id="motivoOtro" class="form-control"
-                                   placeholder="Describa brevemente el motivo de su consulta" maxlength="500">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Fecha</label>
-                            <input type="date" name="fecha" class="form-control"
-                                   min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Hora preferida</label>
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <select name="hora" class="form-select" required>
-                                        <option value="">HH</option>
-                                        @for($h = 8; $h <= 15; $h++)
-                                            <option value="{{ $h }}" {{ $h == 9 ? 'selected' : '' }}>{{ sprintf('%02d', $h) }}</option>
-                                        @endfor
-                                    </select>
-                                </div>
-                                <div class="col-6">
-                                    <select name="minuto" class="form-select" required>
-                                        <option value="">MM</option>
-                                        @foreach([0, 15, 30, 45] as $mm)
-                                            <option value="{{ $mm }}">{{ sprintf('%02d', $mm) }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-send me-1"></i>Enviar solicitud al docente
-                        </button>
-                    </form>
-                @endif
-            </div>
-        </div>
-
-        <div class="card shadow-sm mt-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Próximas citas</h6>
-            </div>
-            <div class="card-body">
-                @if($proximas->isEmpty())
-                    <p class="text-muted mb-0 text-center">Sin citas próximas.</p>
-                @else
-                    <ul class="list-group">
-                        @foreach($proximas as $cita)
-                            <li class="list-group-item">
-                                <strong>{{ $cita->fecha_inicio->format('d/m/Y H:i') }}</strong>
-                                @if($cita->docente)
-                                    <span class="text-muted"> · {{ $cita->docente->name }} {{ $cita->docente->apellidos }}</span>
-                                @endif
-                                <br>
-                                <span class="badge bg-{{ $cita->estado == 'confirmada' ? 'success' : ($cita->estado == 'cancelada' ? 'danger' : 'warning') }}">
-                                    {{ ucfirst($cita->estado) }}
+    <div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-md-3">
+        @forelse($materias ?? [] as $materia)
+        <div class="col">
+            <a href="{{ route('representante.agendas', ['alumno_id' => $alumno?->id, 'materia_id' => $materia['id']]) }}"
+               class="text-decoration-none">
+                <div class="card materia-card text-white shadow-sm h-100 {{ $materia['hay_actividad'] ? 'hay-actividad' : '' }}"
+                     style="background-color: {{ $materia['color'] }}; animation-delay: {{ $loop->index * 0.07 }}s;">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <i class="bi bi-mortarboard-fill fs-4"></i>
+                            @if($materia['hay_actividad'])
+                                <span class="d-flex align-items-center gap-1">
+                                    <i class="bi bi-star-fill estrella-actividad"></i>
+                                    <span class="badge rounded-pill bg-white text-dark">{{ $materia['agendas_activas'] }}</span>
                                 </span>
-                                <small class="text-muted d-block">{{ $cita->motivo }}</small>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
+                            @endif
+                        </div>
+                        <h6 class="card-title fw-bold mb-1">{{ $materia['nombre'] }}</h6>
+                        <p class="card-text small mb-0 text-white-50">
+                            @if($materia['docente']) Docente: {{ $materia['docente'] }} @else Sin docente asignado @endif
+                        </p>
+                        <div class="mt-auto pt-3">
+                            <small>
+                                {{ $materia['total_agendas'] }} tarea{{ $materia['total_agendas'] != 1 ? 's' : '' }}
+                                @if($materia['hay_actividad'])
+                                    · <strong>{{ $materia['agendas_activas'] }} pendiente{{ $materia['agendas_activas'] != 1 ? 's' : '' }}</strong>
+                                @endif
+                            </small>
+                            <i class="bi bi-arrow-right-circle ms-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        @empty
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body text-center text-muted py-5">
+                    <i class="bi bi-journal-x fs-1 d-block mb-3"></i>
+                    No hay agendas registradas para tu representado.
+                </div>
             </div>
         </div>
+        @endforelse
     </div>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    var materiasData = @json($materias);
-    var materiaSelect = document.getElementById('materiaSelect');
-    var docenteSelect = document.getElementById('docenteSelect');
-    var motivoSelect = document.getElementById('motivoSelect');
-    var motivoOtroWrap = document.getElementById('otroMotivoWrap');
-    var motivoOtro = document.getElementById('motivoOtro');
-
-    function llenarDocentes() {
-        var materiaId = materiaSelect.value;
-        docenteSelect.innerHTML = '<option value="">Seleccionar...</option>';
-        docenteSelect.disabled = true;
-        if (!materiaId) return;
-        var materia = materiasData.find(function (m) { return String(m.id) === materiaId; });
-        if (!materia) return;
-        (materia.docentes || []).forEach(function (d) {
-            var opt = document.createElement('option');
-            opt.value = d.id;
-            opt.textContent = d.nombre;
-            docenteSelect.appendChild(opt);
-        });
-        if (materia.docentes && materia.docentes.length === 1) {
-            docenteSelect.value = materia.docentes[0].id;
-        }
-        if (materia.docentes && materia.docentes.length > 0) {
-            docenteSelect.disabled = false;
-        }
-    }
-
-    materiaSelect.addEventListener('change', llenarDocentes);
-
-    function sincronizarOtro() {
-        var mostrar = motivoSelect.value === 'Otro';
-        motivoOtroWrap.style.display = mostrar ? 'block' : 'none';
-        motivoOtro.required = mostrar;
-    }
-
-    motivoSelect.addEventListener('change', sincronizarOtro);
-});
-</script>
-@endpush

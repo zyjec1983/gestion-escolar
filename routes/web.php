@@ -15,6 +15,7 @@ use App\Http\Controllers\Docente\CitaController;
 use App\Http\Controllers\Docente\NotaController;
 use App\Http\Controllers\Docente\ObservacionController;
 use App\Http\Controllers\PreRegistroController;
+use App\Http\Controllers\RepresentanteController;
 use App\Models\HeroSlide;
 use App\Models\Institucion;
 use Illuminate\Support\Facades\Route;
@@ -34,7 +35,6 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::post('/dashboard/citas', [DashboardController::class, 'storeCita'])->name('dashboard.citas.store');
 
     Route::get('/clases', [AulaVirtualController::class, 'index'])->name('clases.index');
     Route::get('/clases/{id}', [AulaVirtualController::class, 'show'])->name('clases.show');
@@ -42,6 +42,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/mensajes', [MensajeController::class, 'index'])->name('mensajes.index');
     Route::post('/mensajes', [MensajeController::class, 'store'])->name('mensajes.store');
     Route::get('/mensajes/{id}', [MensajeController::class, 'show'])->name('mensajes.show');
+});
+
+Route::middleware(['auth', 'role:REPRESENTANTE'])->group(function () {
+    Route::get('/observaciones', [RepresentanteController::class, 'observaciones'])->name('representante.observaciones');
+    Route::get('/citas', [RepresentanteController::class, 'citas'])->name('representante.citas');
+    Route::post('/citas', [RepresentanteController::class, 'storeCita'])->name('representante.citas.store');
+    Route::get('/agendas', [RepresentanteController::class, 'agendas'])->name('representante.agendas');
 });
 
 Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->group(function () {

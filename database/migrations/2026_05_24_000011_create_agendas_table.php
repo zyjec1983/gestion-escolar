@@ -10,9 +10,9 @@ return new class extends Migration
     {
         Schema::create('agendas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('clase_docente_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('clase_docente_id')->constrained('clases_docentes')->cascadeOnDelete();
             $table->foreignId('tipo_actividad_id')->constrained('tipo_actividades')->cascadeOnDelete();
-            $table->foreignId('insumo_evaluacion_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('insumo_evaluacion_id')->nullable()->constrained('insumos_evaluacion')->nullOnDelete();
             $table->string('titulo_agenda');
             $table->text('descripcion_instrucciones_html')->nullable();
             $table->dateTime('fecha_inicio');
