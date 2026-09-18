@@ -28,8 +28,10 @@ class ProfileTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('perfil.update'), [
-                'name' => 'Carlos',
-                'apellidos' => 'Mendoza',
+                'primer_nombre' => 'Carlos',
+                'segundo_nombre' => 'Andrés',
+                'apellido_paterno' => 'Mendoza',
+                'apellido_materno' => 'Andrade',
                 'email' => 'nuevo@correo.com',
                 'telefono' => '0987654321',
             ])
@@ -38,8 +40,32 @@ class ProfileTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
+            'name' => 'Carlos Andrés',
+            'apellidos' => 'Mendoza Andrade',
             'email' => 'nuevo@correo.com',
             'telefono' => '0987654321',
+        ]);
+    }
+
+    public function test_segundo_nombre_y_apellido_materno_son_opcionales(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('perfil.update'), [
+                'primer_nombre' => 'María',
+                'segundo_nombre' => '',
+                'apellido_paterno' => 'Torres',
+                'apellido_materno' => '',
+                'email' => 'solo@correo.com',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'name' => 'María',
+            'apellidos' => 'Torres',
         ]);
     }
 
@@ -50,8 +76,8 @@ class ProfileTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('perfil.update'), [
-                'name' => 'Carlos',
-                'apellidos' => 'Mendoza',
+                'primer_nombre' => 'Carlos',
+                'apellido_paterno' => 'Mendoza',
                 'email' => 'ocupado@correo.com',
             ])
             ->assertSessionHasErrors('email');

@@ -16,13 +16,20 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'apellidos' => 'nullable|string|max:255',
+            'primer_nombre' => 'required|string|max:255',
+            'segundo_nombre' => 'nullable|string|max:255',
+            'apellido_paterno' => 'required|string|max:255',
+            'apellido_materno' => 'nullable|string|max:255',
             'email' => ['required', 'email', 'max:255', "unique:users,email,{$user->id}"],
             'telefono' => 'nullable|string|max:20',
         ]);
 
-        $user->update($validated);
+        $user->update([
+            'name' => trim($validated['primer_nombre'] . ' ' . ($validated['segundo_nombre'] ?? '')),
+            'apellidos' => trim($validated['apellido_paterno'] . ' ' . ($validated['apellido_materno'] ?? '')),
+            'email' => $validated['email'],
+            'telefono' => $validated['telefono'] ?? null,
+        ]);
 
         return back()->with('success', 'Tus datos se actualizaron correctamente.');
     }

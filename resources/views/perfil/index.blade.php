@@ -33,19 +33,41 @@
                     <hr>
                     <form method="POST" action="{{ route('perfil.update') }}">
                         @csrf
-                        <div class="mb-3">
-                            <label class="form-label">Nombres</label>
-                            <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"
-                                   value="{{ old('name', auth()->user()->name) }}" required>
-                            @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        @php
+                            $nombresArr = collect(explode(' ', trim(auth()->user()->name ?? '')))->filter()->values();
+                            $apellidosArr = collect(explode(' ', trim(auth()->user()->apellidos ?? '')))->filter()->values();
+                        @endphp
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Primer nombre</label>
+                                <input type="text" name="primer_nombre"
+                                       class="form-control @error('primer_nombre') is-invalid @enderror"
+                                       value="{{ old('primer_nombre', $nombresArr->first() ?? '') }}" required>
+                                @error('primer_nombre')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Segundo nombre <span class="text-muted">(opcional)</span></label>
+                                <input type="text" name="segundo_nombre"
+                                       class="form-control @error('segundo_nombre') is-invalid @enderror"
+                                       value="{{ old('segundo_nombre', $nombresArr->count() > 1 ? $nombresArr->slice(1)->implode(' ') : '') }}">
+                                @error('segundo_nombre')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Apellido paterno</label>
+                                <input type="text" name="apellido_paterno"
+                                       class="form-control @error('apellido_paterno') is-invalid @enderror"
+                                       value="{{ old('apellido_paterno', $apellidosArr->first() ?? '') }}" required>
+                                @error('apellido_paterno')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Apellido materno <span class="text-muted">(opcional)</span></label>
+                                <input type="text" name="apellido_materno"
+                                       class="form-control @error('apellido_materno') is-invalid @enderror"
+                                       value="{{ old('apellido_materno', $apellidosArr->count() > 1 ? $apellidosArr->slice(1)->implode(' ') : '') }}">
+                                @error('apellido_materno')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Apellidos</label>
-                            <input type="text" name="apellidos" class="form-control @error('apellidos') is-invalid @enderror"
-                                   value="{{ old('apellidos', auth()->user()->apellidos) }}">
-                            @error('apellidos')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="mb-3">
+                        <div class="mb-3 mt-3">
                             <label class="form-label">Correo electrónico</label>
                             <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
                                    value="{{ old('email', auth()->user()->email) }}" required>
