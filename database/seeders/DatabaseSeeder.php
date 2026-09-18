@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             TipoActividadSeeder::class,
             MensajeSeeder::class,
             UnidadSeeder::class,
+            PlanificacionSeeder::class,
             AdminSeeder::class,
         ]);
     }

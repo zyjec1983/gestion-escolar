@@ -35,6 +35,11 @@ class ClaseDocente extends Model
         return $this->hasMany(Agenda::class);
     }
 
+    public function unidades()
+    {
+        return $this->hasMany(Unidad::class);
+    }
+
     public function insumosEvaluacion()
     {
         return $this->hasMany(InsumoEvaluacion::class);

@@ -7,9 +7,30 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class InicioClaseResource extends JsonResource
 {
+    public static function unidadActual(\App\Models\ClaseDocente $clase): ?\App\Models\Unidad
+    {
+        $unidades = $clase->materia->unidades()
+            ->where(fn ($q) => $q->whereNull('clase_docente_id')->orWhere('clase_docente_id', $clase->id))
+            ->orderBy('fecha_inicio')
+            ->get();
+
+        $hoy = \Illuminate\Support\Carbon::today();
+
+        $activa = $unidades->first(fn ($u) => $u->fecha_inicio && $u->fecha_fin
+            && $u->fecha_inicio->lte($hoy) && $u->fecha_fin->gte($hoy));
+
+        if ($activa) {
+            return $activa;
+        }
+
+        $proxima = $unidades->first(fn ($u) => $u->fecha_inicio && $u->fecha_inicio->gt($hoy));
+
+        return $proxima ?? $unidades->last();
+    }
+
     public function toArray(Request $request): array
     {
-        $unidad = $this->materia->unidades()->first();
+        $unidad = self::unidadActual($this->resource);
 
         return [
             'clase_actual' => [

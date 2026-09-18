@@ -116,6 +116,13 @@
             </div>
         </li>
         @endif
+        @if(in_array($rol, ['DOCENTE', 'ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA']))
+        <li class="nav-item mt-2">
+            <a href="{{ route('planificaciones.index') }}" class="nav-link text-white {{ request()->is('planificaciones*') ? 'active' : '' }}">
+                <i class="bi bi-journal-bookmark me-2"></i> Planificación
+            </a>
+        </li>
+        @endif
     </ul>
     <hr>
     <div class="dropdown">
