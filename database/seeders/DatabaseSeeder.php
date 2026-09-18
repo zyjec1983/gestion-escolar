@@ -17,9 +17,10 @@ class DatabaseSeeder extends Seeder
             ParaleloSeeder::class,
             MateriaSeeder::class,
             UserSeeder::class,
-            AlumnoSeeder::class,
+            // AlumnoSeeder::class,      // reemplazado por TestDataSeeder
             ClaseDocenteSeeder::class,
-            MatriculaSeeder::class,
+            TestDataSeeder::class,
+            // MatriculaSeeder::class,   // reemplazado por TestDataSeeder
             CircularSeeder::class,
             TipoObservacionSeeder::class,
             ObservacionSeeder::class,

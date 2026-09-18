@@ -1,11 +1,17 @@
 <?php
 
+use App\Http\Controllers\Admin\ConfiguracionController;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\MatriculaController;
 use App\Http\Controllers\Admin\PreRegistroController as AdminPreRegistroController;
 use App\Http\Controllers\Api\ClaseController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Docente\ActaController;
+use App\Http\Controllers\Docente\AsistenciaController;
+use App\Http\Controllers\Docente\CitaController;
+use App\Http\Controllers\Docente\NotaController;
+use App\Http\Controllers\Docente\ObservacionController;
 use App\Http\Controllers\PreRegistroController;
 use App\Models\HeroSlide;
 use App\Models\Institucion;
@@ -67,6 +73,27 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
         Route::delete('/{id}', [HeroSlideController::class, 'destroy'])->name('destroy');
         Route::post('/velocidad', [HeroSlideController::class, 'updateVelocidad'])->name('velocidad');
     });
+
+    Route::post('/configuracion/sistema-evaluacion', [ConfiguracionController::class, 'updateSistemaEvaluacion'])->name('configuracion.sistema-evaluacion');
+});
+
+Route::middleware(['auth', 'role:DOCENTE'])->prefix('docente')->name('docente.')->group(function () {
+    Route::get('/asistencia', [AsistenciaController::class, 'index'])->name('asistencia.index');
+    Route::post('/asistencia', [AsistenciaController::class, 'store'])->name('asistencia.store');
+
+    Route::get('/observaciones', [ObservacionController::class, 'index'])->name('observaciones.index');
+    Route::post('/observaciones', [ObservacionController::class, 'store'])->name('observaciones.store');
+    Route::get('/observaciones/{alumno}/print', [ObservacionController::class, 'print'])->name('observaciones.print');
+
+    Route::get('/citas', [CitaController::class, 'index'])->name('citas.index');
+    Route::post('/citas', [CitaController::class, 'store'])->name('citas.store');
+
+    Route::get('/notas', [NotaController::class, 'index'])->name('notas.index');
+    Route::post('/notas', [NotaController::class, 'store'])->name('notas.store');
+
+    Route::get('/actas', [ActaController::class, 'index'])->name('actas.index');
+    Route::get('/actas/pdf', [ActaController::class, 'exportarPdf'])->name('actas.pdf');
+    Route::get('/actas/excel', [ActaController::class, 'exportarExcel'])->name('actas.excel');
 });
 
 Route::get('/debug-data', function () {

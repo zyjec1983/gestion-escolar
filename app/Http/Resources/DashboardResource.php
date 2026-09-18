@@ -21,6 +21,7 @@ class DashboardResource extends JsonResource
             'usuario' => [
                 'id' => $user->id,
                 'nombre' => strtoupper($user->name),
+                'nombre_corto' => $this->formatNombre(strtoupper($user->name)),
                 'rol' => $user->rol,
                 'email' => $user->email,
                 'periodo_lectivo' => $periodoActivo?->nombre ?? '2026 - 2027',
@@ -55,5 +56,10 @@ class DashboardResource extends JsonResource
                 \App\Models\Circular::latest('fecha_publicacion')->take(10)->get()
             ),
         ];
+    }
+
+    private function formatNombre(string $nombre): string
+    {
+        return nombreCorto($nombre);
     }
 }

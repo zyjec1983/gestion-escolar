@@ -12,7 +12,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-0"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h4>
-            <small class="text-muted">{{ $usuario['nombre'] ?? '' }} · {{ $usuario['periodo_lectivo'] ?? '' }}</small>
+            <small class="text-muted">{{ $usuario['nombre_corto'] ?? $usuario['nombre'] ?? '' }} · {{ $usuario['periodo_lectivo'] ?? '' }}</small>
         </div>
         
     </div>
@@ -125,7 +125,7 @@
                     <h6 class="mb-0"><i class="bi bi-person-badge me-2"></i>Perfil</h6>
                 </div>
                 <div class="card-body">
-                    <p class="mb-1"><strong>{{ $usuario['nombre'] ?? '' }}</strong></p>
+                    <p class="mb-1"><strong>{{ $usuario['nombre_corto'] ?? $usuario['nombre'] ?? '' }}</strong></p>
                     <p class="text-muted small mb-0">{{ $usuario['rol'] ?? '' }}</p>
                     <p class="text-muted small">{{ $usuario['email'] ?? '' }}</p>
                 </div>

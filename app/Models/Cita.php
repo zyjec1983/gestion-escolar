@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Cita extends Model
 {
     protected $fillable = [
-        'solicitante_type', 'solicitante_id', 'docente_id',
+        'solicitante_type', 'solicitante_id', 'docente_id', 'alumno_id',
         'fecha_inicio', 'fecha_fin', 'estado', 'motivo',
     ];
 
@@ -27,5 +27,10 @@ class Cita extends Model
     public function docente()
     {
         return $this->belongsTo(User::class, 'docente_id');
+    }
+
+    public function alumno()
+    {
+        return $this->belongsTo(Alumno::class);
     }
 }

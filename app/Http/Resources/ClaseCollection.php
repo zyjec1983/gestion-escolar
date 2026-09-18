@@ -31,7 +31,7 @@ class ClaseCollection extends ResourceCollection
                     'valor_actual' => '',
                 ],
             ],
-            'clases_asignadas' => $this->collection,
+            'clases_asignadas' => ClaseResource::collection($this->collection)->resolve(),
         ];
     }
 }

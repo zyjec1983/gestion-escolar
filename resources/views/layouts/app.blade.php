@@ -46,7 +46,7 @@
                     </button>
                     <span class="navbar-text ms-auto">
                         @auth
-                            <i class="bi bi-person-circle"></i> {{ auth()->user()->name }}
+                            <i class="bi bi-person-circle"></i> {{ nombreCorto(auth()->user()->name ?? '') }}
                             <span class="badge bg-secondary ms-2">{{ auth()->user()->rol }}</span>
                         @endauth
                     </span>
@@ -64,6 +64,23 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @stack('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const el = document.getElementById('swal-success');
+            if (el) {
+                Swal.fire({
+                    icon: 'success',
+                    title: el.dataset.message,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                });
+            }
+        });
+    </script>
 </body>
 </html>

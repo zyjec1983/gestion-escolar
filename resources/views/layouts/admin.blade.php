@@ -42,11 +42,21 @@
             </div>
         </form>
     </div>
+    <div class="mb-3">
+        <label class="d-block text-white small mb-1">Sistema de Evaluación</label>
+        <form method="POST" action="{{ route('admin.configuracion.sistema-evaluacion') }}">
+            @csrf
+            <select name="sistema_evaluacion" class="form-select form-select-sm bg-dark text-white border-secondary" onchange="this.form.submit()">
+                <option value="quimestre" {{ $inst?->sistema_evaluacion === 'trimestre' ? '' : 'selected' }}>Quimestre (2 por año)</option>
+                <option value="trimestre" {{ $inst?->sistema_evaluacion === 'trimestre' ? 'selected' : '' }}>Trimestre (3 por año)</option>
+            </select>
+        </form>
+    </div>
     <hr>
     <div class="dropdown mt-auto">
         <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
             <i class="bi bi-person-circle me-2"></i>
-            <strong>{{ auth()->user()->name ?? 'Admin' }}</strong>
+            <strong>{{ nombreCorto(auth()->user()->name ?? '') }}</strong>
         </a>
         <ul class="dropdown-menu dropdown-menu-dark">
             <li><a class="dropdown-item" href="/dashboard">Ir al Dashboard</a></li>

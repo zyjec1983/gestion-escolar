@@ -10,7 +10,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $docente = User::create([
-            'name' => 'CHRISTIAN WILFRIDO RODRIGUEZ',
+            'name' => 'CHRISTIAN WILFRIDO RODRIGUEZ RIVADENEIRA',
             'email' => 'crodrigue@fake.edu.ec',
             'password' => bcrypt('password'),
             'rol' => 'DOCENTE',

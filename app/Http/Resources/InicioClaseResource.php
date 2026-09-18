@@ -23,7 +23,7 @@ class InicioClaseResource extends JsonResource
                 ] : null,
             ],
             'menu_aula_virtual' => [
-                'Inicio', 'Control del Aula', 'Asistencia', 'Agenda',
+                'Inicio', 'Control del Aula', 'Agenda',
                 'Foros', 'Grupos de Clase', 'Materiales', 'Evaluaciones', 'Calificación',
             ],
             'estudiantes_inscritos' => $this->curso->matriculas()

@@ -49,15 +49,6 @@
                 </div>
             </div>
         </div>
-        <div class="col">
-            <div class="card shadow-sm h-100">
-                <div class="card-body text-center py-5">
-                    <i class="bi bi-clipboard-check fs-1 text-warning mb-3 d-block"></i>
-                    <h5>Asistencia</h5>
-                    <p class="text-muted small">Registre la asistencia diaria de los estudiantes.</p>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 @endsection

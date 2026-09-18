@@ -21,7 +21,7 @@
 
                         @if(isset($adminMode) && $adminMode)
                             <div class="alert alert-info mt-3 mb-0 py-2">
-                                <i class="bi bi-shield-lock me-1"></i> Registro manual por: <strong>{{ auth()->user()->name }}</strong>
+                                <i class="bi bi-shield-lock me-1"></i> Registro manual por: <strong>{{ nombreCorto(auth()->user()->name ?? '') }}</strong>
                             </div>
                         @endif
                     </div>
