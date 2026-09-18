@@ -52,7 +52,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/planificaciones', [PlanificacionController::class, 'index'])->name('planificaciones.index');
 });
 
-Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA,VICERRECTORA'])->group(function () {
+Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA,VICERRECTORA,DOCENTE'])->group(function () {
     Route::get('/planificaciones/crear', [PlanificacionController::class, 'create'])->name('planificaciones.create');
     Route::post('/planificaciones', [PlanificacionController::class, 'store'])->name('planificaciones.store');
 });

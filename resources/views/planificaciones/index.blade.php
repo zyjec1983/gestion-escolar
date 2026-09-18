@@ -3,7 +3,7 @@
 @section('titulo', 'Planificaciones de Unidad')
 
 @section('contenido')
-@php $puedeCrear = in_array(auth()->user()->rol, ['ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA']); @endphp
+@php $puedeCrear = in_array(auth()->user()->rol, ['ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA', 'DOCENTE']); @endphp
 <div class="container-fluid">
     <div class="row mb-4 align-items-center">
         <div class="col">

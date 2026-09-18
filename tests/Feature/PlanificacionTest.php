@@ -45,11 +45,12 @@ class PlanificacionTest extends TestCase
         }
     }
 
-    public function test_docente_no_puede_acceder_a_crear_planificaciones(): void
+    public function test_docente_puede_acceder_a_crear_planificaciones(): void
     {
         $response = $this->actingAs($this->docente)->get('/planificaciones/crear');
 
-        $response->assertForbidden();
+        $response->assertOk()
+            ->assertSee('Crear Planificación de Unidad');
     }
 
     public function test_secretaria_puede_ver_formulario(): void
@@ -164,6 +165,13 @@ class PlanificacionTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Planificaciones de Unidad')
-            ->assertDontSee('Nueva Planificación');
+            ->assertSee('Nueva Planificación');
+    }
+
+    public function test_representante_no_accede_a_crear_planificaciones(): void
+    {
+        $representante = User::factory()->create(['rol' => 'REPRESENTANTE', 'institucion_id' => 1]);
+
+        $this->actingAs($representante)->get('/planificaciones/crear')->assertForbidden();
     }
 }
