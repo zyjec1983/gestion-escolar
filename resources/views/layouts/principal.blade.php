@@ -46,16 +46,16 @@
         @endif
         @if($esDocente || $esRep)
         <li class="nav-item">
-            <a href="{{ $esDocente ? route('docente.observaciones.index') : route('dashboard') }}"
-               class="nav-link text-white {{ request()->is('docente/observaciones*') || ($esRep && request()->is('dashboard')) ? 'active' : '' }}">
+            <a href="{{ $esDocente ? route('docente.observaciones.index') : route('dashboard') . '#observaciones' }}"
+               class="nav-link text-white {{ request()->is('docente/observaciones*') ? 'active' : '' }}">
                 <i class="bi bi-exclamation-triangle me-2"></i> Observaciones
             </a>
         </li>
         @endif
         @if($esDocente || $esRep)
         <li class="nav-item">
-            <a href="{{ $esDocente ? route('docente.citas.index') : route('dashboard') }}"
-               class="nav-link text-white {{ request()->is('docente/citas*') || ($esRep && request()->is('dashboard')) ? 'active' : '' }}">
+            <a href="{{ $esDocente ? route('docente.citas.index') : route('dashboard') . '#citas' }}"
+               class="nav-link text-white {{ request()->is('docente/citas*') ? 'active' : '' }}">
                 <i class="bi bi-calendar-event me-2"></i> Citas
             </a>
         </li>

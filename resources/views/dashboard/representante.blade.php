@@ -40,7 +40,7 @@
 
 <div class="row g-4">
     <div class="col-12 col-lg-7">
-        <div class="card shadow-sm">
+        <div class="card shadow-sm" id="observaciones">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Observaciones del representado</h6>
                 <span class="badge bg-secondary">Solo lectura</span>
@@ -75,7 +75,7 @@
             </div>
         </div>
 
-        <div class="card shadow-sm mt-4">
+        <div class="card shadow-sm mt-4" id="citas">
             <div class="card-header bg-white">
                 <h6 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Calendario de mis citas</h6>
             </div>
