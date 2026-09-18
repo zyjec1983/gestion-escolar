@@ -113,4 +113,38 @@ class ProfileTest extends TestCase
 
         $this->assertTrue(Hash::check('clave12345', $user->fresh()->password));
     }
+
+    public function test_perfil_muestra_alerta_no_se_guardo_al_hayar_errores(): void
+    {
+        $user = User::factory()->create(['password' => Hash::make('clave12345')]);
+
+        $this->actingAs($user)
+            ->post(route('perfil.password'), [
+                'current_password' => 'incorrecta',
+                'password' => 'nuevaClave99',
+                'password_confirmation' => 'nuevaClave99',
+            ]);
+
+        $this->get(route('perfil.index'))
+            ->assertOk()
+            ->assertSee('No se guardó')
+            ->assertSee('Entendido');
+    }
+
+    public function test_perfil_muestra_alerta_de_confirmacion_al_guardar(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('perfil.update'), [
+                'primer_nombre' => 'Carlos',
+                'apellido_paterno' => 'Mendoza',
+                'email' => 'nuevo@correo.com',
+            ]);
+
+        $this->get(route('perfil.index'))
+            ->assertOk()
+            ->assertSee('Guardado')
+            ->assertSee('Aceptar');
+    }
 }

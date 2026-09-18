@@ -6,13 +6,6 @@
 <div class="container-fluid">
     <h4 class="mb-4"><i class="bi bi-person-circle me-2"></i>Mi Perfil</h4>
 
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle me-1"></i>{{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     <div class="row g-4">
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
@@ -123,3 +116,35 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    @if(session('success'))
+    Swal.fire({
+        icon: 'success',
+        title: 'Guardado',
+        text: @json(session('success')),
+        confirmButtonText: 'Aceptar',
+    });
+    @endif
+
+    @if($errors->any())
+    @php
+        $msgError = 'No se guardó: revisa los campos marcados en rojo.';
+        if ($errors->hasAny(['current_password', 'password', 'password_confirmation'])) {
+            $msgError = 'La contraseña no se guardó. Verifica que la contraseña actual sea la correcta y que la nueva tenga al menos 8 caracteres.';
+        } elseif ($errors->has('email')) {
+            $msgError = 'El correo no se guardó: revisa los campos marcados en rojo.';
+        }
+    @endphp
+    Swal.fire({
+        icon: 'error',
+        title: 'No se guardó',
+        text: @json($msgError),
+        confirmButtonText: 'Entendido',
+    });
+    @endif
+});
+</script>
+@endpush
