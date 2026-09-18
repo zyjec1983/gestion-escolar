@@ -104,5 +104,17 @@
             }
         });
     </script>
+    @if(request()->is('mensajes*'))
+    <script>
+        setInterval(function () {
+            if (document.hidden) return;
+            var el = document.activeElement;
+            var escribiendo = el && ['INPUT', 'TEXTAREA', 'SELECT'].indexOf(el.tagName) !== -1;
+            if (!escribiendo) {
+                location.reload();
+            }
+        }, 15000);
+    </script>
+    @endif
 </body>
 </html>

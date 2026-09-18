@@ -18,32 +18,48 @@
         <span class="fs-5 fw-bold">Unidad Educativa</span>
     </a>
     <hr>
+    @php
+        $rol = auth()->user()->rol;
+        $esDocente = $rol === 'DOCENTE';
+        $esRep = $rol === 'REPRESENTANTE';
+        $esEstudiante = $rol === 'ESTUDIANTE';
+    @endphp
     <ul class="nav nav-pills flex-column mb-auto">
         <li class="nav-item">
             <a href="/dashboard" class="nav-link text-white {{ request()->is('dashboard') ? 'active' : '' }}">
                 <i class="bi bi-speedometer2 me-2"></i> Dashboard
             </a>
         </li>
+        @if($esDocente || $esEstudiante)
         <li class="nav-item">
             <a href="/clases" class="nav-link text-white {{ request()->is('clases*') ? 'active' : '' }}">
                 <i class="bi bi-book me-2"></i> Mis Clases
             </a>
         </li>
+        @endif
+        @if($esDocente)
         <li class="nav-item mt-2">
             <a href="{{ route('docente.asistencia.index') }}" class="nav-link text-white {{ request()->is('docente/asistencia*') ? 'active' : '' }}">
                 <i class="bi bi-calendar-check me-2"></i> Asistencia
             </a>
         </li>
+        @endif
+        @if($esDocente || $esRep)
         <li class="nav-item">
-            <a href="{{ route('docente.observaciones.index') }}" class="nav-link text-white {{ request()->is('docente/observaciones*') ? 'active' : '' }}">
+            <a href="{{ $esDocente ? route('docente.observaciones.index') : route('dashboard') }}"
+               class="nav-link text-white {{ request()->is('docente/observaciones*') || ($esRep && request()->is('dashboard')) ? 'active' : '' }}">
                 <i class="bi bi-exclamation-triangle me-2"></i> Observaciones
             </a>
         </li>
+        @endif
+        @if($esDocente || $esRep)
         <li class="nav-item">
-            <a href="{{ route('docente.citas.index') }}" class="nav-link text-white {{ request()->is('docente/citas*') ? 'active' : '' }}">
+            <a href="{{ $esDocente ? route('docente.citas.index') : route('dashboard') }}"
+               class="nav-link text-white {{ request()->is('docente/citas*') || ($esRep && request()->is('dashboard')) ? 'active' : '' }}">
                 <i class="bi bi-calendar-event me-2"></i> Citas
             </a>
         </li>
+        @endif
         @php
             $noLeidosMensajes = \App\Models\Mensaje::where('destinatario_id', auth()->id())->where('leido', false)->count();
         @endphp
@@ -55,6 +71,7 @@
                 @endif
             </a>
         </li>
+        @if($esDocente)
         @php
             $notasActivo = request()->is('docente/notas*') || request()->is('docente/actas*');
         @endphp
@@ -79,6 +96,7 @@
                 </ul>
             </div>
         </li>
+        @endif
     </ul>
     <hr>
     <div class="dropdown">

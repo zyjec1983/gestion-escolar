@@ -14,6 +14,8 @@ class AulaVirtualController extends Controller
 {
     public function index(Request $request)
     {
+        abort_if($request->user()->rol === 'REPRESENTANTE', 403, 'No tienes acceso a esta sección.');
+
         $clases = $this->clasesParaUsuario($request->user());
 
         return view('clases.index', (new ClaseCollection($clases))->resolve($request));
@@ -21,6 +23,8 @@ class AulaVirtualController extends Controller
 
     public function show($id, Request $request)
     {
+        abort_if($request->user()->rol === 'REPRESENTANTE', 403, 'No tienes acceso a esta sección.');
+
         $clase = ClaseDocente::with(['curso', 'paralelo', 'materia.unidades'])->findOrFail($id);
 
         $this->verificarAcceso($clase, $request->user());

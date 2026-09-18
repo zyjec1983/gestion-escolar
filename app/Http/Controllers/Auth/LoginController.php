@@ -44,7 +44,7 @@ class LoginController extends Controller
         return match ($rol) {
             'ADMIN' => '/admin/pre-registros',
             'DOCENTE' => '/dashboard',
-            'REPRESENTANTE' => '/mensajes',
+            'REPRESENTANTE' => '/dashboard',
             'ESTUDIANTE' => '/mensajes',
             default => '/dashboard',
         };

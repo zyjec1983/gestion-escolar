@@ -113,11 +113,10 @@ class AulaVirtualTest extends TestCase
 
         $this->actingAs($ctx['representante'])
             ->get('/clases')
-            ->assertOk()
-            ->assertSee($ctx['clase']->materia->nombre);
+            ->assertForbidden();
 
         $this->actingAs($ctx['representante'])
             ->get('/clases/' . $ctx['clase']->id)
-            ->assertOk();
+            ->assertForbidden();
     }
 }

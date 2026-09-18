@@ -6,7 +6,8 @@ use App\Http\Controllers\Admin\MatriculaController;
 use App\Http\Controllers\Admin\PreRegistroController as AdminPreRegistroController;
 use App\Http\Controllers\AulaVirtualController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DashboardController as ApiDashboardController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Docente\ActaController;
 use App\Http\Controllers\MensajeController;
 use App\Http\Controllers\Docente\AsistenciaController;
@@ -32,11 +33,8 @@ Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', function () {
-        $dashboard = app(DashboardController::class)->index(request());
-        $data = $dashboard->toArray(request());
-        return view('dashboard.index', $data);
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/dashboard/citas', [DashboardController::class, 'storeCita'])->name('dashboard.citas.store');
 
     Route::get('/clases', [AulaVirtualController::class, 'index'])->name('clases.index');
     Route::get('/clases/{id}', [AulaVirtualController::class, 'show'])->name('clases.show');
@@ -92,6 +90,6 @@ Route::middleware(['auth', 'role:DOCENTE'])->prefix('docente')->name('docente.')
 });
 
 Route::get('/debug-data', function () {
-    $dashboard = app(DashboardController::class)->index(request());
+    $dashboard = app(ApiDashboardController::class)->index(request());
     return $dashboard->toArray(request());
 });

@@ -51,7 +51,7 @@ class LoginTest extends TestCase
     }
 
     /** @test */
-    public function representante_redirects_to_mensajes()
+    public function representante_redirects_to_dashboard()
     {
         $rep = User::factory()->representante()->create([
             'email' => 'rep@test.com',
@@ -63,7 +63,7 @@ class LoginTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect('/mensajes');
+        $response->assertRedirect('/dashboard');
         $this->assertAuthenticated();
     }
 
