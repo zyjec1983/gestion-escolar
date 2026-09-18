@@ -53,10 +53,21 @@
         </li>
         @endif
         @if($esDocente || $esRep)
+        @php
+            $citasPendientes = $esDocente
+                ? \App\Models\Cita::where('docente_id', auth()->id())->where('estado', 'pendiente')->count()
+                : \App\Models\Cita::where('solicitante_type', \App\Models\User::class)
+                    ->where('solicitante_id', auth()->id())
+                    ->where('estado', 'pendiente')
+                    ->count();
+        @endphp
         <li class="nav-item">
             <a href="{{ $esDocente ? route('docente.citas.index') : route('dashboard') . '#citas' }}"
-               class="nav-link text-white {{ request()->is('docente/citas*') ? 'active' : '' }}">
-                <i class="bi bi-calendar-event me-2"></i> Citas
+               class="nav-link text-white d-flex justify-content-between align-items-center {{ request()->is('docente/citas*') ? 'active' : '' }}">
+                <span><i class="bi bi-calendar-event me-2"></i> Citas</span>
+                @if($citasPendientes > 0)
+                    <span class="badge rounded-pill bg-warning text-dark">{{ $citasPendientes }}</span>
+                @endif
             </a>
         </li>
         @endif
