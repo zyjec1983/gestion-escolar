@@ -11,7 +11,7 @@
     @endif
 
     <div class="row g-4">
-        <div class="col-12 col-lg-7">
+        <div class="col-12 col-lg-8">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -53,15 +53,16 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-12 col-lg-5">
             @if($diaSeleccionado)
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-white">
+                <div class="card shadow-sm mt-4">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">
                             Citas del {{ \Carbon\Carbon::createFromDate($year, $month, $diaSeleccionado)->format('d/m/Y') }}
                         </h6>
+                        @if($citasDelDia->count() > 0)
+                            <span class="badge bg-warning text-dark">{{ $citasDelDia->count() }}</span>
+                        @endif
                     </div>
                     <div class="card-body">
                         @if($citasDelDia->isEmpty())
@@ -71,7 +72,6 @@
                                 @foreach($citasDelDia as $cita)
                                     <li class="list-group-item">
                                         <strong>{{ $cita->fecha_inicio->format('H:i') }} - {{ $cita->fecha_fin->format('H:i') }}</strong>
-                                        <br>
                                         <span class="badge bg-{{ $cita->estado == 'confirmada' ? 'success' : ($cita->estado == 'cancelada' ? 'danger' : 'warning') }}">
                                             {{ ucfirst($cita->estado) }}
                                         </span>
@@ -90,6 +90,52 @@
                 </div>
             @endif
 
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-bell me-2"></i>Solicitudes de cita pendientes</h6>
+                    <span class="badge bg-warning text-dark">{{ $citasPendientes->count() }}</span>
+                </div>
+                <div class="card-body">
+                    @if($citasPendientes->isEmpty())
+                        <div class="alert alert-success mb-0">
+                            <i class="bi bi-check-circle me-1"></i>
+                            No tienes solicitudes de cita pendientes.
+                        </div>
+                    @else
+                        <ul class="list-group">
+                            @foreach($citasPendientes as $cita)
+                                <li class="list-group-item">
+                                    <div class="row g-3 align-items-center">
+                                        <div class="col-12 col-md-3">
+                                            <strong>{{ $cita->fecha_inicio->format('d/m/Y') }}</strong>
+                                            <span class="text-muted d-block">{{ $cita->fecha_inicio->format('H:i') }} - {{ $cita->fecha_fin->format('H:i') }}</span>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            @if($cita->alumno)
+                                                <strong>{{ $cita->alumno->apellidos }} {{ $cita->alumno->nombres }}</strong>
+                                                @if($cita->alumno->representante)
+                                                    <small class="text-muted d-block">
+                                                        <i class="bi bi-person me-1"></i>{{ $cita->alumno->representante->name }}
+                                                    </small>
+                                                @endif
+                                            @endif
+                                        </div>
+                                        <div class="col-12 col-md-3">
+                                            <small class="text-muted">{{ $cita->motivo }}</small>
+                                        </div>
+                                        <div class="col-12 col-md-2 text-md-end">
+                                            <span class="badge bg-warning">Pendiente</span>
+                                        </div>
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">Agendar Nueva Cita</h6>
