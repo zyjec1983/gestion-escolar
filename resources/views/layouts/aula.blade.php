@@ -27,10 +27,16 @@
     <ul class="nav nav-pills flex-column mb-auto">
         @foreach($menu_aula_virtual ?? [] as $item)
         <li class="nav-item">
-            <a href="#" class="nav-link text-white {{ $loop->first ? 'active' : '' }}">
-                <i class="bi bi-{{ $loop->index === 0 ? 'house-door' : ($loop->index === 1 ? 'people' : ($loop->index === 2 ? 'clipboard-check' : ($loop->index === 3 ? 'calendar' : ($loop->index === 4 ? 'chat-dots' : ($loop->index === 5 ? 'people-fill' : ($loop->index === 6 ? 'folder' : ($loop->index === 7 ? 'pencil-square' : 'star'))))))) }} me-2"></i>
-                {{ $item }}
-            </a>
+            @if(($item['url'] ?? null) && (!isset($es_docente) || $item['url'] !== '#docente'))
+                <a href="{{ $item['url'] }}" class="nav-link text-white {{ ($item['url'] ?? '') === '/clases/' . ($clase_actual['id'] ?? '') ? 'active' : '' }}">
+                    <i class="bi bi-{{ $item['icon'] ?? 'star' }} me-2"></i> {{ $item['label'] }}
+                </a>
+            @else
+                <span class="nav-link text-secondary d-flex align-items-center" style="cursor: not-allowed;">
+                    <i class="bi bi-{{ $item['icon'] ?? 'star' }} me-2"></i> {{ $item['label'] }}
+                    <small class="ms-auto text-secondary" title="Próximamente">Próximamente</small>
+                </span>
+            @endif
         </li>
         @endforeach
     </ul>
@@ -64,6 +70,11 @@
                         <li class="list-group-item d-flex align-items-center py-2">
                             <i class="bi bi-person-circle me-2 text-secondary"></i>
                             <small>{{ $est['apellidos_nombres'] }}</small>
+                            @if($est['discapacidad'] ?? false)
+                                <span class="badge bg-primary ms-auto" title="Discapacidad">D</span>
+                            @elseif($est['nee'] ?? false)
+                                <span class="badge bg-warning text-dark ms-auto" title="Necesidades educativas especiales">NEE</span>
+                            @endif
                         </li>
                         @endforeach
                     </ul>

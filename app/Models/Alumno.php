@@ -25,7 +25,7 @@ class Alumno extends Model
         'representante_alterno_nombre', 'representante_alterno_parentesco', 'representante_alterno_cedula',
         'representante_alterno_telefono', 'representante_alterno_email', 'representante_alterno_direccion',
         'facturador_nombre', 'facturador_cedula', 'facturador_telefono', 'facturador_direccion', 'facturador_email',
-        'representante_user_id',
+        'representante_user_id', 'user_id',
     ];
 
     protected function casts(): array
@@ -51,6 +51,11 @@ class Alumno extends Model
     public function representante()
     {
         return $this->belongsTo(User::class, 'representante_user_id');
+    }
+
+    public function usuarioEstudiante()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function matriculas()

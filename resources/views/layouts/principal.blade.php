@@ -45,6 +45,17 @@
             </a>
         </li>
         @php
+            $noLeidosMensajes = \App\Models\Mensaje::where('destinatario_id', auth()->id())->where('leido', false)->count();
+        @endphp
+        <li class="nav-item">
+            <a href="{{ route('mensajes.index') }}" class="nav-link text-white d-flex justify-content-between align-items-center {{ request()->is('mensajes*') ? 'active' : '' }}">
+                <span><i class="bi bi-envelope me-2"></i> Mensajes</span>
+                @if($noLeidosMensajes > 0)
+                    <span class="badge rounded-pill bg-danger">{{ $noLeidosMensajes }}</span>
+                @endif
+            </a>
+        </li>
+        @php
             $notasActivo = request()->is('docente/notas*') || request()->is('docente/actas*');
         @endphp
         <li class="nav-item mt-2">

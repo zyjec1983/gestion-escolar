@@ -56,4 +56,11 @@ class UserFactory extends Factory
             'rol' => 'REPRESENTANTE',
         ]);
     }
+
+    public function estudiante(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rol' => 'ESTUDIANTE',
+        ]);
+    }
 }

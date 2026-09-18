@@ -50,6 +50,11 @@ class User extends Authenticatable
         return $this->hasMany(Alumno::class, 'representante_user_id');
     }
 
+    public function estudiantes()
+    {
+        return $this->hasMany(Alumno::class, 'user_id');
+    }
+
     public function mensajesEnviados()
     {
         return $this->morphMany(Mensaje::class, 'emisor');

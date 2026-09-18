@@ -43,9 +43,9 @@
         <div class="col">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center py-5">
-                    <i class="bi bi-people-fill fs-1 text-success mb-3 d-block"></i>
-                    <h5>Control del Aula</h5>
-                    <p class="text-muted small">Gestione la participación y el comportamiento de los estudiantes.</p>
+                    <i class="bi bi-chat-dots-fill fs-1 text-success mb-3 d-block"></i>
+                    <h5>Mensajes</h5>
+                    <p class="text-muted small">Comunícate de forma privada con docentes, estudiantes y representantes.</p>
                 </div>
             </div>
         </div>

@@ -4,10 +4,11 @@ use App\Http\Controllers\Admin\ConfiguracionController;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\MatriculaController;
 use App\Http\Controllers\Admin\PreRegistroController as AdminPreRegistroController;
-use App\Http\Controllers\Api\ClaseController;
-use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\AulaVirtualController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Docente\ActaController;
+use App\Http\Controllers\MensajeController;
 use App\Http\Controllers\Docente\AsistenciaController;
 use App\Http\Controllers\Docente\CitaController;
 use App\Http\Controllers\Docente\NotaController;
@@ -37,18 +38,12 @@ Route::middleware(['auth'])->group(function () {
         return view('dashboard.index', $data);
     })->name('dashboard');
 
-    Route::get('/clases', function () {
-        $clases = app(ClaseController::class)->index(request());
-        $data = $clases->toArray(request());
-        return view('clases.index', $data);
-    })->name('clases.index');
+    Route::get('/clases', [AulaVirtualController::class, 'index'])->name('clases.index');
+    Route::get('/clases/{id}', [AulaVirtualController::class, 'show'])->name('clases.show');
 
-    Route::get('/clases/{id}', function ($id) {
-        $clase = app(ClaseController::class)->show($id);
-        $data = $clase->toArray(request());
-        $data['layout'] = 'aula';
-        return view('aula.virtual', $data);
-    })->name('clases.show');
+    Route::get('/mensajes', [MensajeController::class, 'index'])->name('mensajes.index');
+    Route::post('/mensajes', [MensajeController::class, 'store'])->name('mensajes.store');
+    Route::get('/mensajes/{id}', [MensajeController::class, 'show'])->name('mensajes.show');
 });
 
 Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->group(function () {

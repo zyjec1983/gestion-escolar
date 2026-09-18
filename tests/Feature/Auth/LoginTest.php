@@ -68,6 +68,23 @@ class LoginTest extends TestCase
     }
 
     /** @test */
+    public function estudiante_redirects_to_mensajes()
+    {
+        $est = User::factory()->estudiante()->create([
+            'email' => 'est@test.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => 'est@test.com',
+            'password' => 'password',
+        ]);
+
+        $response->assertRedirect('/mensajes');
+        $this->assertAuthenticated();
+    }
+
+    /** @test */
     public function login_fails_with_invalid_credentials()
     {
         $response = $this->post('/login', [

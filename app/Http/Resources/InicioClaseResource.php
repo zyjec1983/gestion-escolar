@@ -23,8 +23,13 @@ class InicioClaseResource extends JsonResource
                 ] : null,
             ],
             'menu_aula_virtual' => [
-                'Inicio', 'Control del Aula', 'Agenda',
-                'Foros', 'Grupos de Clase', 'Materiales', 'Evaluaciones', 'Calificación',
+                ['label' => 'Inicio', 'icon' => 'house-door', 'url' => "/clases/{$this->id}"],
+                ['label' => 'Agenda', 'icon' => 'clipboard-check', 'url' => null],
+                ['label' => 'Foros', 'icon' => 'chat-dots', 'url' => null],
+                ['label' => 'Grupos de Clase', 'icon' => 'people-fill', 'url' => null],
+                ['label' => 'Materiales', 'icon' => 'folder', 'url' => null],
+                ['label' => 'Mensajes', 'icon' => 'envelope', 'url' => '/mensajes'],
+                ['label' => 'Citas', 'icon' => 'calendar-event', 'url' => null],
             ],
             'estudiantes_inscritos' => $this->curso->matriculas()
                 ->where('paralelo_id', $this->paralelo_id)
@@ -33,7 +38,11 @@ class InicioClaseResource extends JsonResource
                 ->map(function ($matricula) {
                     return [
                         'matricula_id' => $matricula->codigo_matricula ?? "MAT-{$matricula->id}",
+                        'matricula_row_id' => $matricula->id,
+                        'alumno_id' => $matricula->alumno->id,
                         'apellidos_nombres' => "{$matricula->alumno->apellidos} {$matricula->alumno->nombres}",
+                        'nee' => (bool) $matricula->alumno->necesidades_educativas_especificas_nee,
+                        'discapacidad' => (bool) $matricula->alumno->tiene_discapacidad,
                     ];
                 }),
         ];

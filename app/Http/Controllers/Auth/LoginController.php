@@ -45,6 +45,7 @@ class LoginController extends Controller
             'ADMIN' => '/admin/pre-registros',
             'DOCENTE' => '/dashboard',
             'REPRESENTANTE' => '/mensajes',
+            'ESTUDIANTE' => '/mensajes',
             default => '/dashboard',
         };
     }
