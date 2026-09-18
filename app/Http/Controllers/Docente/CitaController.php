@@ -82,13 +82,19 @@ class CitaController extends Controller
                 ->get();
         }
 
+        $citasPendientes = Cita::with(['alumno.representante'])
+            ->where('docente_id', $user->id)
+            ->where('estado', 'pendiente')
+            ->orderBy('fecha_inicio')
+            ->get();
+
         $motivos = ['Bajo rendimiento académico', 'Problemas de conducta', 'Inasistencias',
             'Reunión de padres', 'Seguimiento académico', 'Otro'];
 
         return view('docente.citas.index', compact(
             'clases', 'clase', 'alumnos', 'calendar', 'month', 'year', 'date',
             'prevMonth', 'prevYear', 'nextMonth', 'nextYear', 'diasConCitas',
-            'diaSeleccionado', 'citasDelDia', 'motivos'
+            'diaSeleccionado', 'citasDelDia', 'citasPendientes', 'motivos'
         ));
     }
 
