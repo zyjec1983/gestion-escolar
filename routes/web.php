@@ -55,6 +55,9 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA,VICERRECTORA,DOCENTE'])->group(function () {
     Route::get('/planificaciones/crear', [PlanificacionController::class, 'create'])->name('planificaciones.create');
     Route::post('/planificaciones', [PlanificacionController::class, 'store'])->name('planificaciones.store');
+    Route::get('/planificaciones/{unidad}/editar', [PlanificacionController::class, 'edit'])->name('planificaciones.edit');
+    Route::put('/planificaciones/{unidad}', [PlanificacionController::class, 'update'])->name('planificaciones.update');
+    Route::delete('/planificaciones/{unidad}', [PlanificacionController::class, 'destroy'])->name('planificaciones.destroy');
 });
 
 Route::middleware(['auth', 'role:REPRESENTANTE'])->group(function () {

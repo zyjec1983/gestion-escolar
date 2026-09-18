@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 
 class PlanificacionController extends Controller
 {
+    public const PERMISOS = ['ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA', 'DOCENTE'];
+
     public function index(Request $request)
     {
         $materiaId = $request->query('materia_id');
@@ -120,5 +122,67 @@ class PlanificacionController extends Controller
 
         return redirect()->route('planificaciones.index')
             ->with('success', "Planificación guardada y aplicada a {$creadas} paralelo(s).");
+    }
+
+    public function edit(Unidad $unidad)
+    {
+        abort_unless(in_array(request()->user()->rol, self::PERMISOS), 403);
+
+        $grupo = $unidad->grupo_id
+            ? Unidad::where('grupo_id', $unidad->grupo_id)
+                ->with(['claseDocente.curso', 'claseDocente.paralelo'])
+                ->get()
+            : collect([$unidad])->load(['claseDocente.curso', 'claseDocente.paralelo']);
+
+        $quimestres = ['Q1' => 'Primer Quimestre', 'Q2' => 'Segundo Quimestre'];
+        $parciales = ['P1' => 'Parcial 1', 'P2' => 'Parcial 2', 'P3' => 'Parcial 3'];
+
+        return view('planificaciones.edit', compact('unidad', 'grupo', 'quimestres', 'parciales'));
+    }
+
+    public function update(Request $request, Unidad $unidad)
+    {
+        abort_unless(in_array($request->user()->rol, self::PERMISOS), 403);
+
+        $validated = $request->validate([
+            'titulo' => 'required|string|max:255',
+            'descripcion' => 'required|string',
+            'fecha_inicio' => 'required|date',
+            'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
+            'quimestre' => 'required|in:Q1,Q2',
+            'parcial' => 'required|in:P1,P2,P3',
+        ]);
+
+        $grupo = $unidad->grupo_id
+            ? Unidad::where('grupo_id', $unidad->grupo_id)->get()
+            : collect([$unidad]);
+
+        $grupo->each(function ($u) use ($validated) {
+            $u->update($validated);
+        });
+
+        $total = $grupo->count();
+
+        return redirect()->route('planificaciones.index')
+            ->with('success', $total > 1
+                ? "Planificación actualizada y aplicada a {$total} paralelo(s)."
+                : 'Planificación actualizada correctamente.');
+    }
+
+    public function destroy(Request $request, Unidad $unidad)
+    {
+        abort_unless(in_array($request->user()->rol, self::PERMISOS), 403);
+
+        $grupo = $unidad->grupo_id
+            ? Unidad::where('grupo_id', $unidad->grupo_id)->get()
+            : collect([$unidad]);
+
+        $total = $grupo->count();
+        $grupo->each->delete();
+
+        return redirect()->route('planificaciones.index')
+            ->with('success', $total > 1
+                ? "Planificación eliminada en {$total} paralelo(s)."
+                : 'Planificación eliminada.');
     }
 }

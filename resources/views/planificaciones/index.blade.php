@@ -56,6 +56,9 @@
                             <th>Fechas</th>
                             <th>Días</th>
                             <th>Creada por</th>
+                            @if($puedeCrear)
+                            <th class="text-end">Acciones</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -91,6 +94,20 @@
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
+                                @if($puedeCrear)
+                                <td class="text-end text-nowrap">
+                                    <a href="{{ route('planificaciones.edit', $unidad) }}" class="btn btn-sm btn-outline-primary" title="Editar unidad">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form action="{{ route('planificaciones.destroy', $unidad) }}" method="POST" class="d-inline form-delete-unidad">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar unidad">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                @endif
                             </tr>
                         @endforeach
                     </tbody>
@@ -123,6 +140,24 @@ document.addEventListener('DOMContentLoaded', function () {
             confirmButtonText: 'Aceptar',
         });
     }
+
+    document.querySelectorAll('.form-delete-unidad').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'warning',
+                title: '¿Eliminar esta planificación?',
+                text: 'Se eliminará la unidad y sus réplicas en otros paralelos.',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
 });
 </script>
 @endpush
