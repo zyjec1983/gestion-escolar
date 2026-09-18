@@ -63,10 +63,10 @@
         @if($esDocente || $esRep)
         @php
             $citasPendientes = $esDocente
-                ? \App\Models\Cita::where('docente_id', auth()->id())->where('estado', 'pendiente')->count()
+                ? \App\Models\Cita::where('docente_id', auth()->id())->pendientes()->count()
                 : \App\Models\Cita::where('solicitante_type', \App\Models\User::class)
                     ->where('solicitante_id', auth()->id())
-                    ->where('estado', 'pendiente')
+                    ->pendientes()
                     ->count();
         @endphp
         <li class="nav-item">
@@ -114,6 +114,13 @@
                     </li>
                 </ul>
             </div>
+        </li>
+        @endif
+        @if(in_array($rol, ['ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA', 'INSPECCION', 'DECE']))
+        <li class="nav-item mt-2">
+            <a href="{{ route('directivo.citas.historial') }}" class="nav-link text-white {{ request()->is('directivo/citas*') ? 'active' : '' }}">
+                <i class="bi bi-clipboard2-data me-2"></i> Historial de citas
+            </a>
         </li>
         @endif
         @if(in_array($rol, ['DOCENTE', 'ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA']))

@@ -8,6 +8,7 @@ use App\Http\Controllers\AulaVirtualController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Api\DashboardController as ApiDashboardController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Directivo\HistorialCitaController;
 use App\Http\Controllers\Docente\ActaController;
 use App\Http\Controllers\MensajeController;
 use App\Http\Controllers\Docente\AsistenciaController;
@@ -103,6 +104,7 @@ Route::middleware(['auth', 'role:DOCENTE'])->prefix('docente')->name('docente.')
 
     Route::get('/citas', [CitaController::class, 'index'])->name('citas.index');
     Route::post('/citas', [CitaController::class, 'store'])->name('citas.store');
+    Route::post('/citas/{id}/registrar', [CitaController::class, 'registrar'])->name('citas.registrar');
 
     Route::get('/notas', [NotaController::class, 'index'])->name('notas.index');
     Route::post('/notas', [NotaController::class, 'store'])->name('notas.store');
@@ -110,6 +112,10 @@ Route::middleware(['auth', 'role:DOCENTE'])->prefix('docente')->name('docente.')
     Route::get('/actas', [ActaController::class, 'index'])->name('actas.index');
     Route::get('/actas/pdf', [ActaController::class, 'exportarPdf'])->name('actas.pdf');
     Route::get('/actas/excel', [ActaController::class, 'exportarExcel'])->name('actas.excel');
+});
+
+Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA,VICERRECTORA,INSPECCION,DECE'])->prefix('directivo')->name('directivo.')->group(function () {
+    Route::get('/citas', [HistorialCitaController::class, 'index'])->name('citas.historial');
 });
 
 Route::get('/debug-data', function () {

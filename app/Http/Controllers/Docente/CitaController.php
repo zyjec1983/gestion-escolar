@@ -84,7 +84,13 @@ class CitaController extends Controller
 
         $citasPendientes = Cita::with(['alumno.representante'])
             ->where('docente_id', $user->id)
-            ->where('estado', 'pendiente')
+            ->pendientes()
+            ->orderBy('fecha_inicio')
+            ->get();
+
+        $citasPorRegistrar = Cita::with(['alumno.representante'])
+            ->where('docente_id', $user->id)
+            ->porRegistrar()
             ->orderBy('fecha_inicio')
             ->get();
 
@@ -94,8 +100,35 @@ class CitaController extends Controller
         return view('docente.citas.index', compact(
             'clases', 'clase', 'alumnos', 'calendar', 'month', 'year', 'date',
             'prevMonth', 'prevYear', 'nextMonth', 'nextYear', 'diasConCitas',
-            'diaSeleccionado', 'citasDelDia', 'citasPendientes', 'motivos'
+            'diaSeleccionado', 'citasDelDia', 'citasPendientes', 'citasPorRegistrar', 'motivos'
         ));
+    }
+
+    public function registrar(Request $request, int $id)
+    {
+        $cita = Cita::where('docente_id', $request->user()->id)->findOrFail($id);
+
+        abort_if($cita->registrada(), 409, 'Esta cita ya tiene un registro de resultado.');
+        abort_if($cita->fecha_inicio->gt(now()), 422, 'Aún no ha pasado la hora de la cita.');
+
+        $validated = $request->validate([
+            'resultado' => 'required|in:asistio,no_asistio',
+            'dudas_aclaradas' => 'nullable|boolean|required_if:resultado,asistio',
+            'evidencia' => 'required|string|min:10|max:3000',
+        ]);
+
+        $cita->update([
+            'resultado' => $validated['resultado'],
+            'dudas_aclaradas' => $validated['resultado'] === 'asistio'
+                ? (bool) $request->boolean('dudas_aclaradas')
+                : null,
+            'evidencia' => trim($validated['evidencia']),
+            'registrada_por' => $request->user()->id,
+            'registrada_en' => now(),
+            'estado' => 'realizada',
+        ]);
+
+        return redirect()->back()->with('success', 'Resultado de la cita registrado y evidencia guardada.');
     }
 
     public function store(Request $request)

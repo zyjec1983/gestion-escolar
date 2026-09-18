@@ -56,7 +56,7 @@ class RepresentanteController extends Controller
             'mensajes' => $user->mensajesRecibidos()->where('leido', false)->count(),
             'citas_pendientes' => Cita::where('solicitante_type', User::class)
                 ->where('solicitante_id', $user->id)
-                ->where('estado', 'pendiente')
+                ->pendientes()
                 ->count(),
             'observaciones' => $alumno ? Observacion::where('alumno_id', $alumno->id)->count() : 0,
         ];
