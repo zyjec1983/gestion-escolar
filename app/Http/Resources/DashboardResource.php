@@ -16,7 +16,7 @@ class DashboardResource extends JsonResource
             'institucion' => [
                 'nombre' => $user->institucion?->nombre ?? 'Unidad Educativa',
                 'subtitulo' => $user->institucion?->subtitulo ?? 'Institución Educativa',
-                'plataforma_proveedor' => $user->institucion?->plataforma_proveedor ?? 'Educalinks',
+                'plataforma_proveedor' => $user->institucion?->plataforma_proveedor ?? 'Comunidad',
             ],
             'usuario' => [
                 'id' => $user->id,

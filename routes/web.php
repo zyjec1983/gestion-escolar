@@ -46,7 +46,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/clases/{id}', function ($id) {
         $clase = app(ClaseController::class)->show($id);
         $data = $clase->toArray(request());
-        $data['layout'] = 'ingenium';
+        $data['layout'] = 'aula';
         return view('aula.virtual', $data);
     })->name('clases.show');
 });

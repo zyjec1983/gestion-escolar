@@ -3,9 +3,27 @@
   Renderiza tarjetas de clases asignadas con filtro por categorías
   y campo de búsqueda.
 --}}
-@extends('layouts.educalinks')
+@extends('layouts.principal')
 
 @section('titulo', 'Mis Clases')
+
+@push('styles')
+<style>
+    .clase-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        animation: fadeInUp 0.5s ease backwards;
+        will-change: transform;
+    }
+    .clase-card:hover {
+        transform: scale(1.04);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+    }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(18px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+</style>
+@endpush
 
 @section('contenido')
 <div class="container-fluid">
@@ -29,14 +47,14 @@
         @forelse($clases_asignadas ?? [] as $clase)
         <div class="col">
             <a href="/clases/{{ $clase['id'] }}" class="text-decoration-none">
-                <div class="card text-white shadow-sm h-100" 
-                     style="background-color: {{ $clase['configuracion_visual']['color_tarjeta'] ?? '#E63946' }};">
+                <div class="card clase-card text-white shadow-sm h-100"
+                     style="background-color: {{ $clase['configuracion_visual']['color_tarjeta'] ?? '#E63946' }}; animation-delay: {{ $loop->index * 0.06 }}s;">
                     <div class="card-body d-flex flex-column">
                         <h6 class="card-title fw-bold">{{ $clase['materia'] }}</h6>
                         <p class="card-text small mb-1">{{ $clase['curso'] }}</p>
                         <p class="card-text small mb-0">{{ $clase['paralelo'] }}</p>
                         <div class="mt-auto pt-3">
-                            <i class="bi bi-arrow-right-circle"></i> Ingresar
+                            <i class="bi bi-arrow-right-circle ingresar-icon"></i> Ingresar
                         </div>
                     </div>
                 </div>

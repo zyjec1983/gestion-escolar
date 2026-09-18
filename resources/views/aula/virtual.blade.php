@@ -1,11 +1,11 @@
 {{-- 
-  Vista Aula Virtual (Ingenium Classroom).
+  Vista Aula Virtual.
   El layout se inyecta dinámicamente desde InicioClaseController.
   Renderiza el entorno LMA con sidebar pedagógico y right-panel de estudiantes.
   
   Cambio de layout:
-  @extends("layouts.{$layout}") → se resuelve a 'layouts.ingenium'
-  porque el controlador pasa ['layout' => 'ingenium'].
+  @extends("layouts.{$layout}") → se resuelve a 'layouts.aula'
+  porque el controlador pasa ['layout' => 'aula'].
 --}}
 @extends("layouts.{$layout}")
 

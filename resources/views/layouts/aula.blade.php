@@ -1,14 +1,14 @@
 {{-- 
-  Layout Ingenium: Entorno de Aula Virtual (LMA).
-  Extiende el layout educalinks, manteniendo la navegación principal,
+  Layout Aula: Entorno de Aula Virtual (LMA).
+  Extiende el layout principal, manteniendo la navegación principal,
   pero reemplazando el sidebar con herramientas pedagógicas (menú del aula)
   y agregando un right-panel fijo con el listado de estudiantes inscritos.
   
   El cambio de layout ocurre en InicioClaseController:
-  - return view('aula.virtual', ['layout' => 'ingenium'])
+  - return view('aula.virtual', ['layout' => 'aula'])
     ->with(['menu' => $menuItems, 'estudiantes' => $estudiantesInscritos]);
     
-  En Blade: @extends("layouts.{$layout}") se resuelve a layouts.ingenium
+  En Blade: @extends("layouts.{$layout}") se resuelve a layouts.aula
 --}}
 @extends('layouts.app')
 

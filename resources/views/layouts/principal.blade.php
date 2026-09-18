@@ -13,7 +13,7 @@
         <span class="fs-5 fw-bold">Unidad Educativa</span>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
     </div>
-    <a href="/" class="d-flex align-items-center mb-3 text-white text-decoration-none d-none d-lg-flex">
+    <a href="/dashboard" class="d-flex align-items-center mb-3 text-white text-decoration-none d-none d-lg-flex">
         <i class="bi bi-mortarboard-fill fs-4 me-2"></i>
         <span class="fs-5 fw-bold">Unidad Educativa</span>
     </a>

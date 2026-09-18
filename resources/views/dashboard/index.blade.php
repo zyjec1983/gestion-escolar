@@ -1,9 +1,9 @@
 {{-- 
-  Vista Dashboard Principal (Educalinks).
+  Vista Dashboard Principal.
   Renderiza tarjetas resumen, circulares y notificaciones 
   usando la estructura JSON definida en DashboardResource.
 --}}
-@extends('layouts.educalinks')
+@extends('layouts.principal')
 
 @section('titulo', 'Dashboard')
 

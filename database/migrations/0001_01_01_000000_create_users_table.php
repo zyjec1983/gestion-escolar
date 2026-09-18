@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nombre');
             $table->string('subtitulo')->nullable();
-            $table->string('plataforma_proveedor')->default('Educalinks');
+            $table->string('plataforma_proveedor')->default('Comunidad');
             $table->timestamps();
         });
 

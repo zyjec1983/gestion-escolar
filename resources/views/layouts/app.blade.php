@@ -29,6 +29,28 @@
                 min-width: auto;
             }
         }
+        #sidebarOffcanvas .nav-link {
+            border-radius: 0.5rem;
+            transition: background-color 0.2s ease, color 0.2s ease,
+                        transform 0.2s ease, padding-left 0.2s ease;
+        }
+        #sidebarOffcanvas .nav-link:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            transform: translateX(4px);
+            padding-left: 1.4rem;
+        }
+        #sidebarOffcanvas .nav-link.active:hover {
+            background: var(--bs-primary);
+        }
+        #sidebarOffcanvas .dropdown .dropdown-toggle {
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            border-radius: 0.5rem;
+            padding: 0.35rem 0.5rem;
+        }
+        #sidebarOffcanvas .dropdown .dropdown-toggle:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
     </style>
     @stack('styles')
 </head>

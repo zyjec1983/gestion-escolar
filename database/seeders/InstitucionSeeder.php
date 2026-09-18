@@ -12,7 +12,7 @@ class InstitucionSeeder extends Seeder
         Institucion::create([
             'nombre' => 'Unidad Educativa',
             'subtitulo' => 'Institución Educativa',
-            'plataforma_proveedor' => 'Educalinks',
+            'plataforma_proveedor' => 'Comunidad',
             'pre_registro_activo' => true,
             'carousel_interval' => 2000,
         ]);

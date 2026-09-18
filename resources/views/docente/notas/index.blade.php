@@ -1,4 +1,4 @@
-@extends('layouts.educalinks')
+@extends('layouts.principal')
 
 @section('titulo', 'Notas')
 
