@@ -15,6 +15,7 @@ use App\Http\Controllers\Docente\CitaController;
 use App\Http\Controllers\Docente\NotaController;
 use App\Http\Controllers\Docente\ObservacionController;
 use App\Http\Controllers\PreRegistroController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RepresentanteController;
 use App\Models\HeroSlide;
 use App\Models\Institucion;
@@ -42,6 +43,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/mensajes', [MensajeController::class, 'index'])->name('mensajes.index');
     Route::post('/mensajes', [MensajeController::class, 'store'])->name('mensajes.store');
     Route::get('/mensajes/{id}', [MensajeController::class, 'show'])->name('mensajes.show');
+
+    Route::get('/perfil', [ProfileController::class, 'index'])->name('perfil.index');
+    Route::post('/perfil', [ProfileController::class, 'update'])->name('perfil.update');
+    Route::post('/perfil/contraseña', [ProfileController::class, 'updatePassword'])->name('perfil.password');
 });
 
 Route::middleware(['auth', 'role:REPRESENTANTE'])->group(function () {

@@ -124,7 +124,7 @@
             <strong>{{ nombreCorto(auth()->user()->name ?? '') }}</strong>
         </a>
         <ul class="dropdown-menu dropdown-menu-dark">
-            <li><a class="dropdown-item" href="#">Perfil</a></li>
+            <li><a class="dropdown-item" href="{{ route('perfil.index') }}">Perfil</a></li>
             <li><hr class="dropdown-divider"></li>
             <li>
                 <form method="POST" action="{{ route('logout') }}">
