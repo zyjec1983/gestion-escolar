@@ -1,7 +1,7 @@
 {{-- 
   Layout Aula: Entorno de Aula Virtual (LMA).
-  Extiende el layout principal, manteniendo la navegación principal,
-  pero reemplazando el sidebar con herramientas pedagógicas (menú del aula)
+  Extiende el layout principal, manteniendo la navegaci├│n principal,
+  pero reemplazando el sidebar con herramientas pedag├│gicas (men├║ del aula)
   y agregando un right-panel fijo con el listado de estudiantes inscritos.
   
   El cambio de layout ocurre en InicioClaseController:
@@ -34,7 +34,7 @@
             @else
                 <span class="nav-link text-secondary d-flex align-items-center" style="cursor: not-allowed;">
                     <i class="bi bi-{{ $item['icon'] ?? 'star' }} me-2"></i> {{ $item['label'] }}
-                    <small class="ms-auto text-secondary" title="Próximamente">Próximamente</small>
+                    <small class="ms-auto text-secondary" title="Pr├│ximamente">Pr├│ximamente</small>
                 </span>
             @endif
         </li>
@@ -49,9 +49,10 @@
 
 @section('contenido')
 <div class="row">
-    <div class="col-md-9">
+    <div class="{{ in_array(auth()->user()->rol, ['ESTUDIANTE', 'REPRESENTANTE']) ? 'col-12' : 'col-md-9' }}">
         @yield('contenido-aula')
     </div>
+    @if(!in_array(auth()->user()->rol, ['ESTUDIANTE', 'REPRESENTANTE']))
     <div class="col-md-3">
         <div class="card shadow-sm">
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
@@ -91,6 +92,7 @@
                     </ul>
                 </div>
             </div>
+    @endif
         </div>
     </div>
 </div>
