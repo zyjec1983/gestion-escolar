@@ -42,6 +42,19 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/clases', [AulaVirtualController::class, 'index'])->name('clases.index');
     Route::get('/clases/{id}', [AulaVirtualController::class, 'show'])->name('clases.show');
 
+    Route::get('/clases/{clase}/agenda', [AulaVirtualController::class, 'agenda'])->name('clases.agenda');
+    Route::post('/clases/{clase}/agenda', [AulaVirtualController::class, 'storeAgenda'])->name('clases.agenda.store');
+    Route::get('/clases/{clase}/agenda/{agenda}/editar', [AulaVirtualController::class, 'editAgenda'])->name('clases.agenda.edit');
+    Route::delete('/clases/{clase}/agenda/{agenda}', [AulaVirtualController::class, 'destroyAgenda'])->name('clases.agenda.destroy');
+
+    Route::get('/clases/{clase}/materiales', [AulaVirtualController::class, 'materiales'])->name('clases.materiales');
+    Route::post('/clases/{clase}/materiales', [AulaVirtualController::class, 'storeMaterial'])->name('clases.materiales.store');
+    Route::delete('/clases/{clase}/materiales/{material}', [AulaVirtualController::class, 'destroyMaterial'])->name('clases.materiales.destroy');
+
+    Route::get('/clases/{clase}/grupos', [AulaVirtualController::class, 'grupos'])->name('clases.grupos');
+    Route::post('/clases/{clase}/grupos', [AulaVirtualController::class, 'storeGrupos'])->name('clases.grupos.store');
+    Route::delete('/clases/{clase}/grupos', [AulaVirtualController::class, 'destroyGrupos'])->name('clases.grupos.destroy');
+
     Route::get('/mensajes', [MensajeController::class, 'index'])->name('mensajes.index');
     Route::post('/mensajes', [MensajeController::class, 'store'])->name('mensajes.store');
     Route::delete('/mensajes', [MensajeController::class, 'destroy'])->name('mensajes.destroy');

@@ -75,6 +75,58 @@ class RepresentanteDashboardTest extends TestCase
             ->assertSee($ctx['alumno']->apellidos);
     }
 
+    public function test_representante_ve_alerta_y_materiales_por_materia(): void
+    {
+        $ctx = $this->crearContexto();
+
+        \App\Models\Material::create([
+            'clase_docente_id' => $ctx['clase']->id,
+            'titulo' => 'Material nuevo para el parcial',
+            'nombre_archivo' => 'diapositivas.pdf',
+            'url' => '/storage/materiales/1/diapositivas.pdf',
+            'subido_por' => $ctx['docente']->id,
+        ]);
+
+        \App\Models\Material::create([
+            'clase_docente_id' => $ctx['clase']->id,
+            'titulo' => 'Material anterior',
+            'nombre_archivo' => 'viejo.pdf',
+            'url' => '/storage/materiales/1/viejo.pdf',
+            'subido_por' => $ctx['docente']->id,
+            'created_at' => now()->subDays(9),
+        ]);
+
+        $this->actingAs($ctx['representante'])
+            ->get(route('representante.agendas'))
+            ->assertOk()
+            ->assertSee('Nuevos materiales subidos')
+            ->assertSee('Material nuevo para el parcial')
+            ->assertDontSee('tall;', false)
+            ->assertSee('Matematica')
+            ->assertSee('Materiales por materia')
+            ->assertSee('Material anterior')
+            ->assertSee('Descargar');
+    }
+
+    public function test_representante_ve_tarjeta_de_materiales_en_dashboard(): void
+    {
+        $ctx = $this->crearContexto();
+
+        \App\Models\Material::create([
+            'clase_docente_id' => $ctx['clase']->id,
+            'titulo' => 'Guía completa',
+            'nombre_archivo' => 'guia.pdf',
+            'url' => '/storage/materiales/1/guia.pdf',
+            'subido_por' => $ctx['docente']->id,
+        ]);
+
+        $this->actingAs($ctx['representante'])
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee('Materiales disponibles')
+            ->assertSee('1', false);
+    }
+
     public function test_representante_ve_tarjetas_de_materias_con_agendas_en_dashboard(): void
     {
         $ctx = $this->crearContexto();

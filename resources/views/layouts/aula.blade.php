@@ -28,7 +28,7 @@
         @foreach($menu_aula_virtual ?? [] as $item)
         <li class="nav-item">
             @if(($item['url'] ?? null) && (!isset($es_docente) || $item['url'] !== '#docente'))
-                <a href="{{ $item['url'] }}" class="nav-link text-white {{ ($item['url'] ?? '') === '/clases/' . ($clase_actual['id'] ?? '') ? 'active' : '' }}">
+                <a href="{{ $item['url'] }}" class="nav-link text-white {{ ($item['active'] ?? false) ? 'active' : '' }}">
                     <i class="bi bi-{{ $item['icon'] ?? 'star' }} me-2"></i> {{ $item['label'] }}
                 </a>
             @else
@@ -41,7 +41,7 @@
         @endforeach
     </ul>
     <hr>
-    <a href="/clases" class="btn btn-outline-light btn-sm">
+    <a href="{{ $url_volver ?? '/clases' }}" class="btn btn-outline-light btn-sm">
         <i class="bi bi-arrow-left me-1"></i> Volver a Clases
     </a>
 </div>
@@ -56,7 +56,13 @@
         <div class="card shadow-sm">
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-people-fill me-1"></i> Estudiantes Inscritos</span>
-                <div>
+                <div class="d-flex align-items-center gap-2">
+                    @if($checkbox_estudiantes ?? false)
+                        <span class="form-check form-switch m-0">
+                            <input type="checkbox" class="form-check-input" id="selTodosEstudiantes" form="frmAgenda" checked>
+                            <label class="form-check-label small text-nowrap" for="selTodosEstudiantes">Todos</label>
+                        </span>
+                    @endif
                     <span class="badge bg-light text-dark">{{ count($estudiantes_inscritos ?? []) }}</span>
                     <button class="btn btn-sm btn-outline-light d-md-none ms-1 p-1" type="button" data-bs-toggle="collapse" data-bs-target="#estudiantesPanel" aria-expanded="true">
                         <i class="bi bi-chevron-down"></i>
@@ -68,8 +74,13 @@
                     <ul class="list-group list-group-flush">
                         @foreach($estudiantes_inscritos ?? [] as $est)
                         <li class="list-group-item d-flex align-items-center py-2">
-                            <i class="bi bi-person-circle me-2 text-secondary"></i>
-                            <small>{{ $est['apellidos_nombres'] }}</small>
+                            @if($checkbox_estudiantes ?? false)
+                                <input type="checkbox" class="form-check-input me-2 se-alumno" name="alumnos[]" form="frmAgenda" value="{{ $est['alumno_id'] }}" data-nombre="{{ $est['apellidos_nombres'] }}" checked>
+                                <small class="flex-grow-1">{{ $est['apellidos_nombres'] }}</small>
+                            @else
+                                <i class="bi bi-person-circle me-2 text-secondary"></i>
+                                <small>{{ $est['apellidos_nombres'] }}</small>
+                            @endif
                             @if($est['discapacidad'] ?? false)
                                 <span class="badge bg-primary ms-auto" title="Discapacidad">D</span>
                             @elseif($est['nee'] ?? false)

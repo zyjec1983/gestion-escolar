@@ -59,9 +59,34 @@ class RepresentanteController extends Controller
                 ->pendientes()
                 ->count(),
             'observaciones' => $alumno ? Observacion::where('alumno_id', $alumno->id)->count() : 0,
+            'materiales' => $alumno ? $this->materialesDeAlumno($alumno)->count() : 0,
         ];
 
         return view('dashboard.representante', compact('representados', 'alumno', 'materias', 'stats'));
+    }
+
+    private function materialesDeAlumno(Alumno $alumno): Collection
+    {
+        return $this->clasesDeAlumno($alumno)
+            ->flatMap(function (ClaseDocente $clase) {
+                return $clase->materiales()
+                    ->with('subidor')
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->map(fn ($m) => [
+                        'id' => $m->id,
+                        'titulo' => $m->titulo,
+                        'descripcion' => $m->descripcion,
+                        'nombre_archivo' => $m->nombre_archivo,
+                        'url' => $m->url,
+                        'created_at' => $m->created_at,
+                        'materia' => $clase->materia?->nombre ?? 'Sin materia',
+                        'clase_id' => $clase->id,
+                        'subidor' => $m->subidor ? trim($m->subidor->name . ' ' . $m->subidor->apellidos) : 'Docente',
+                    ]);
+            })
+            ->sortByDesc('created_at')
+            ->values();
     }
 
     private function materiasConAgendas(Alumno $alumno): Collection
@@ -282,6 +307,16 @@ class RepresentanteController extends Controller
             $materias = $this->materiasConAgendas($alumno);
         }
 
-        return view('representante.agendas', compact('representados', 'alumno', 'clases', 'agendas', 'materias', 'materiaSeleccionada'));
+        $materiales_recientes = collect();
+        $materiales_por_materia = collect();
+        if ($alumno) {
+            $materiales = $this->materialesDeAlumno($alumno);
+            $materiales_recientes = $materiales->filter(
+                fn ($m) => $m['created_at']->gte(now()->subDays(7))
+            )->values();
+            $materiales_por_materia = $materiales->groupBy('materia');
+        }
+
+        return view('representante.agendas', compact('representados', 'alumno', 'clases', 'agendas', 'materias', 'materiaSeleccionada', 'materiales_recientes', 'materiales_por_materia'));
     }
 }

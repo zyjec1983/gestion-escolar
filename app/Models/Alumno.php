@@ -72,4 +72,9 @@ class Alumno extends Model
     {
         return $this->hasMany(Mensaje::class, 'contexto_estudiante_id');
     }
+
+    public function agendas()
+    {
+        return $this->belongsToMany(Agenda::class, 'agenda_alumnos');
+    }
 }

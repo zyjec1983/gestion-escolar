@@ -7,12 +7,17 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class InicioClaseResource extends JsonResource
 {
-    public static function unidadActual(\App\Models\ClaseDocente $clase): ?\App\Models\Unidad
+    public static function unidadesDeClase(\App\Models\ClaseDocente $clase): \Illuminate\Support\Collection
     {
-        $unidades = $clase->materia->unidades()
+        return $clase->materia->unidades()
             ->where(fn ($q) => $q->whereNull('clase_docente_id')->orWhere('clase_docente_id', $clase->id))
             ->orderBy('fecha_inicio')
             ->get();
+    }
+
+    public static function unidadActual(\App\Models\ClaseDocente $clase): ?\App\Models\Unidad
+    {
+        $unidades = self::unidadesDeClase($clase);
 
         $hoy = \Illuminate\Support\Carbon::today();
 
@@ -26,6 +31,15 @@ class InicioClaseResource extends JsonResource
         $proxima = $unidades->first(fn ($u) => $u->fecha_inicio && $u->fecha_inicio->gt($hoy));
 
         return $proxima ?? $unidades->last();
+    }
+
+    private function urlCitas(Request $request): ?string
+    {
+        return match ($request->user()?->rol) {
+            'DOCENTE' => route('docente.citas.index'),
+            'REPRESENTANTE' => route('representante.citas'),
+            default => null,
+        };
     }
 
     public function toArray(Request $request): array
@@ -44,18 +58,20 @@ class InicioClaseResource extends JsonResource
                 ] : null,
             ],
             'menu_aula_virtual' => [
-                ['label' => 'Inicio', 'icon' => 'house-door', 'url' => "/clases/{$this->id}"],
-                ['label' => 'Agenda', 'icon' => 'clipboard-check', 'url' => null],
-                ['label' => 'Foros', 'icon' => 'chat-dots', 'url' => null],
-                ['label' => 'Grupos de Clase', 'icon' => 'people-fill', 'url' => null],
-                ['label' => 'Materiales', 'icon' => 'folder', 'url' => null],
-                ['label' => 'Mensajes', 'icon' => 'envelope', 'url' => '/mensajes'],
-                ['label' => 'Citas', 'icon' => 'calendar-event', 'url' => null],
+                ['label' => 'Inicio', 'icon' => 'house-door', 'url' => "/clases/{$this->id}", 'key' => 'inicio'],
+                ['label' => 'Agenda', 'icon' => 'clipboard-check', 'url' => "/clases/{$this->id}/agenda", 'key' => 'agenda'],
+                ['label' => 'Foros', 'icon' => 'chat-dots', 'url' => null, 'key' => 'foros'],
+                ['label' => 'Grupos de Clase', 'icon' => 'people-fill', 'url' => "/clases/{$this->id}/grupos", 'key' => 'grupos'],
+                ['label' => 'Materiales', 'icon' => 'folder', 'url' => "/clases/{$this->id}/materiales", 'key' => 'materiales'],
+                ['label' => 'Mensajes', 'icon' => 'envelope', 'url' => '/mensajes', 'key' => 'mensajes'],
+                ['label' => 'Citas', 'icon' => 'calendar-event', 'url' => $this->urlCitas($request), 'key' => 'citas'],
             ],
             'estudiantes_inscritos' => $this->curso->matriculas()
                 ->where('paralelo_id', $this->paralelo_id)
                 ->with('alumno')
                 ->get()
+                ->sortBy(fn ($m) => mb_strtolower(trim((string) $m->alumno->apellidos) . ' ' . trim((string) $m->alumno->nombres)))
+                ->values()
                 ->map(function ($matricula) {
                     return [
                         'matricula_id' => $matricula->codigo_matricula ?? "MAT-{$matricula->id}",

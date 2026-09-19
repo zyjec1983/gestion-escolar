@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class Agenda extends Model
 {
     protected $fillable = [
-        'clase_docente_id', 'tipo_actividad_id', 'insumo_evaluacion_id',
-        'titulo_agenda', 'descripcion_instrucciones_html',
+        'clase_docente_id', 'tipo_actividad_id', 'insumo_evaluacion_id', 'unidad_id',
+        'titulo_agenda', 'descripcion_instrucciones_html', 'enlace',
         'fecha_inicio', 'fecha_entrega_limite', 'enviar_a_todos',
     ];
 
@@ -34,6 +34,16 @@ class Agenda extends Model
     public function insumoEvaluacion()
     {
         return $this->belongsTo(InsumoEvaluacion::class);
+    }
+
+    public function unidad()
+    {
+        return $this->belongsTo(Unidad::class);
+    }
+
+    public function alumnos()
+    {
+        return $this->belongsToMany(Alumno::class, 'agenda_alumnos');
     }
 
     public function archivosAdjuntos()

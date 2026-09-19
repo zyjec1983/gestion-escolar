@@ -35,6 +35,11 @@ class ClaseDocente extends Model
         return $this->hasMany(Agenda::class);
     }
 
+    public function materiales()
+    {
+        return $this->hasMany(Material::class);
+    }
+
     public function unidades()
     {
         return $this->hasMany(Unidad::class);
@@ -48,5 +53,10 @@ class ClaseDocente extends Model
     public function permisosNotas()
     {
         return $this->hasMany(PermisoNota::class);
+    }
+
+    public function asignacionGrupos()
+    {
+        return $this->hasMany(AsignacionGrupo::class);
     }
 }

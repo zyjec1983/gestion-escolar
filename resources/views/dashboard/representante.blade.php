@@ -58,7 +58,7 @@
         @endif
     </div>
 
-    <div class="row g-3 mb-4 row-cols-1 row-cols-sm-3">
+    <div class="row g-3 mb-4 row-cols-1 row-cols-sm-2 row-cols-md-4">
         <div class="col">
             <a href="{{ route('mensajes.index') }}" class="text-decoration-none">
                 <div class="card stat-card shadow-sm h-100 border-0"
@@ -68,6 +68,20 @@
                         <div>
                             <div class="fs-4 fw-bold">{{ $stats['mensajes'] ?? 0 }}</div>
                             <div class="small text-white-50">Mensajes sin leer</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ route('representante.agendas', ['alumno_id' => $alumno?->id]) }}" class="text-decoration-none">
+                <div class="card stat-card shadow-sm h-100 border-0"
+                     style="background: linear-gradient(135deg, #0b3d2e, #2d6a4f); color: #fff; animation-delay: 0.075s;">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <i class="bi bi-folder2-open fs-2"></i>
+                        <div>
+                            <div class="fs-4 fw-bold">{{ $stats['materiales'] ?? 0 }}</div>
+                            <div class="small text-white-50">Materiales disponibles</div>
                         </div>
                     </div>
                 </div>
