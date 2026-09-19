@@ -104,7 +104,7 @@
             }
         });
     </script>
-    @if(request()->is('mensajes*'))
+    @if(request()->is('mensajes*', 'observaciones*', 'docente/observaciones*'))
     <script>
         setInterval(function () {
             if (document.hidden) return;
@@ -113,7 +113,7 @@
             if (!escribiendo) {
                 location.reload();
             }
-        }, 15000);
+        }, 10000);
     </script>
     @endif
 </body>

@@ -80,7 +80,9 @@
         </li>
         @endif
         @php
-            $noLeidosMensajes = \App\Models\Mensaje::where('destinatario_id', auth()->id())->where('leido', false)->count();
+            $noLeidosMensajes = \App\Models\Mensaje::where('destinatario_id', auth()->id())
+                ->where('borrado_destinatario', false)
+                ->where('leido', false)->count();
         @endphp
         <li class="nav-item">
             <a href="{{ route('mensajes.index') }}" class="nav-link text-white d-flex justify-content-between align-items-center {{ request()->is('mensajes*') ? 'active' : '' }}">

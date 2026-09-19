@@ -9,7 +9,8 @@ class Mensaje extends Model
     protected $fillable = [
         'asunto', 'cuerpo_contenido', 'carpeta',
         'emisor_id', 'emisor_type', 'destinatario_id',
-        'contexto_estudiante_id', 'leido', 'fecha_envio',
+        'hilo_id', 'contexto_estudiante_id', 'leido', 'fecha_envio',
+        'borrado_emisor', 'borrado_destinatario',
     ];
 
     protected function casts(): array
@@ -17,7 +18,15 @@ class Mensaje extends Model
         return [
             'leido' => 'boolean',
             'fecha_envio' => 'datetime',
+            'hilo_id' => 'integer',
+            'borrado_emisor' => 'boolean',
+            'borrado_destinatario' => 'boolean',
         ];
+    }
+
+    public function hilo()
+    {
+        return $this->belongsTo(Mensaje::class, 'hilo_id');
     }
 
     public function emisor()

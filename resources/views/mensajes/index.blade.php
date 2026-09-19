@@ -3,118 +3,399 @@
 @section('titulo', 'Mensajes')
 
 @section('contenido')
-<div class="row mb-3">
-    <div class="col">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
         <h4 class="mb-0"><i class="bi bi-envelope me-2"></i>Mensajes</h4>
         <p class="text-muted mb-0">Bandeja de mensajes con docentes, estudiantes y representantes.</p>
     </div>
-    <div class="col-auto align-self-center">
-        <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#nuevoMensaje" aria-expanded="false">
+    <div>
+        <button class="btn btn-outline-danger btn-sm" type="button" id="btnEliminarSel" disabled>
+            <i class="bi bi-trash me-1"></i> Eliminar seleccionados
+        </button>
+        <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalNuevo">
             <i class="bi bi-pencil-square me-1"></i> Redactar
         </button>
     </div>
 </div>
 
-<div class="collapse mb-3" id="nuevoMensaje">
-    <div class="card shadow-sm">
-        <div class="card-header bg-white"><strong>Nuevo mensaje</strong></div>
-        <div class="card-body">
-            <form method="POST" action="{{ route('mensajes.store') }}" enctype="multipart/form-data">
-                @csrf
-                @if(session('exito'))
-                    <div class="alert alert-success alert-dismissible fade show">
-                        {{ session('exito') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+@if(session('exito'))
+    <div id="swal-success" data-message="{{ session('exito') }}" class="d-none"></div>
+@endif
+
+<ul class="nav nav-pills mb-2">
+    <li class="nav-item">
+        <span class="nav-link active">
+            Conversaciones
+            @if($no_leidos_total > 0)
+                <span class="badge bg-danger ms-1">{{ $no_leidos_total }}</span>
+            @endif
+        </span>
+    </li>
+    <li class="nav-item align-self-center ms-3">
+        <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="selTodos">
+            <label class="form-check-label small" for="selTodos">Seleccionar todos</label>
+        </div>
+    </li>
+</ul>
+
+<div class="card shadow-sm">
+    <div class="row g-0">
+        <div class="col-md-5 col-xl-4 border-end">
+            <div class="lista-hilos" style="max-height: 72vh; overflow-y: auto; display: grid; grid-template-columns: 40px 1fr; align-content: start;">
+                @forelse($hilos as $hilo)
+                    <div class="thread-cell text-center py-3 {{ $hilo['no_leidos'] > 0 ? 'bg-light' : '' }} {{ request()->query('hilo') == $hilo['id'] ? 'thread-active' : '' }}" style="grid-column: 1;">
+                        <input type="checkbox" class="form-check-input sel-hilo" value="{{ $hilo['id'] }}" onclick="event.stopPropagation()">
+                    </div>
+                    <div class="thread-cell py-2 thread-click {{ request()->query('hilo') == $hilo['id'] ? 'thread-active' : '' }} {{ $hilo['no_leidos'] > 0 ? 'bg-light' : '' }}"
+                         data-id="{{ $hilo['id'] }}" data-url="{{ route('mensajes.conversacion', $hilo['id']) }}" style="grid-column: 2; cursor: pointer;">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-person-circle fs-4 me-2 text-secondary"></i>
+                            <div class="flex-grow-1 overflow-hidden">
+                                <div class="d-flex justify-content-between">
+                                    <strong class="text-truncate {{ $hilo['no_leidos'] > 0 ? '' : 'fw-normal' }}">{{ $hilo['interlocutor'] }}</strong>
+                                    <small class="text-muted ms-1">{{ $hilo['fecha'] }}</small>
+                                </div>
+                                <div class="text-truncate small">
+                                    <span class="{{ $hilo['no_leidos'] > 0 ? 'fw-semibold' : 'text-muted' }}">{{ $hilo['ultimo_asunto'] }}</span>
+                                    @if($hilo['contexto_nombre']) <span class="badge bg-light text-dark border ms-1">Sobre {{ $hilo['contexto_nombre'] }}</span> @endif
+                                </div>
+                                @if($hilo['ultimo_cuerpo'])
+                                    <div class="text-truncate text-muted small">{{ $hilo['ultimo_cuerpo'] }}</div>
+                                @endif
+                            </div>
+                            @if($hilo['no_leidos'] > 0)
+                                <span class="badge rounded-pill bg-danger ms-2">{{ $hilo['no_leidos'] }}</span>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <div class="text-center text-muted py-5" style="grid-column: 1 / -1;">
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                        No hay mensajes en esta carpeta.
+                    </div>
+                @endforelse
+            </div>
+        </div>
+        <div class="col-md-7 col-xl-8">
+            <div id="panelLectura" class="d-flex flex-column" style="height: 72vh;">
+                @if($datosHilo)
+                    @include('mensajes._conversacion', $datosHilo + ['retorno' => route('mensajes.index', ['hilo' => $datosHilo['anchor_id']])])
+                @else
+                    <div class="flex-grow-1 d-flex align-items-center justify-content-center text-muted p-4">
+                        <div class="text-center">
+                            <i class="bi bi-envelope-open fs-1 mb-2 d-block"></i>
+                            Seleccione un mensaje para leer la conversación.
+                        </div>
                     </div>
                 @endif
-                <div class="mb-3">
-                    <label class="form-label">Destinatario</label>
-                    <select name="destinatario_id" id="destinatario" class="form-select" required>
-                        <option value="">Seleccione un contacto...</option>
-                        @foreach($contactos as $contacto)
-                            <option value="{{ $contacto['destinatario_id'] }}" data-contexto="{{ $contacto['contexto_estudiante_id'] }}">
-                                {{ $contacto['label'] }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <input type="hidden" name="contexto_estudiante_id" id="contexto_estudiante_id" value="">
-                    <input type="hidden" name="retorno" value="{{ route('mensajes.index') }}">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Asunto</label>
-                    <input type="text" name="asunto" class="form-control" maxlength="255" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Mensaje</label>
-                    <textarea name="cuerpo_contenido" rows="4" class="form-control"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Adjunto (opcional, máx. 10 MB)</label>
-                    <input type="file" name="adjunto" class="form-control">
-                </div>
-                <button type="submit" class="btn btn-primary"><i class="bi bi-send me-1"></i> Enviar</button>
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
-<ul class="nav nav-pills mb-3">
-    <li class="nav-item">
-        <a class="nav-link {{ $carpeta === 'recibidos' ? 'active' : '' }}" href="{{ route('mensajes.index', ['carpeta' => 'recibidos']) }}">
-            Recibidos @if($carpeta === 'recibidos' && $no_leidos_total > 0)
-                <span class="badge bg-danger ms-1">{{ $no_leidos_total }}</span>
-            @endif
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{ $carpeta === 'enviados' ? 'active' : '' }}" href="{{ route('mensajes.index', ['carpeta' => 'enviados']) }}">
-            Enviados
-        </a>
-    </li>
-</ul>
+<form id="frmEliminar" method="POST" action="{{ route('mensajes.destroy') }}">
+    @csrf
+    @method('DELETE')
+</form>
 
-@forelse($hilos as $hilo)
-<div class="card shadow-sm mb-2">
-    <a href="{{ route('mensajes.show', $hilo['id']) }}" class="text-decoration-none text-dark">
-        <div class="card-body py-2 d-flex align-items-center">
-            <i class="bi bi-person-circle fs-4 me-3 text-secondary"></i>
-            <div class="flex-grow-1 overflow-hidden">
-                <div class="d-flex justify-content-between">
-                    <strong>{{ $hilo['interlocutor'] }}</strong>
-                    <small class="text-muted">{{ $hilo['fecha'] }}</small>
+<div class="modal fade" id="modalNuevo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{{ route('mensajes.store') }}" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square me-1"></i>Nuevo mensaje</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="text-truncate small">
-                    <span class="text-muted">{{ $hilo['ultimo_asunto'] }}</span>
-                    @if($hilo['contexto_nombre']) <span class="badge bg-light text-dark border ms-1">Sobre {{ $hilo['contexto_nombre'] }}</span> @endif
+                <div class="modal-body">
+                    @if($compositor['rol'] === 'DOCENTE')
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-5">
+                                <label class="form-label">Curso / Nivel</label>
+                                <select id="compClase" class="form-select">
+                                    <option value="">Seleccione curso...</option>
+                                    @foreach($compositor['clases'] as $clase)
+                                        <option value="{{ $clase['id'] }}">{{ $clase['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Estudiante</label>
+                                <select id="compEstudiante" class="form-select" disabled>
+                                    <option value="">Seleccione estudiante...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Representante legal</label>
+                                <div id="compRepresentanteBox" class="border rounded px-2 py-1 bg-light small" style="min-height: 38px;">
+                                    <strong id="compRepresentanteNombre" class="text-muted">—</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">Enviar a:</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input type="radio" class="form-check-input" name="tipo_destinatario" id="compARep" value="representante" checked>
+                                    <label class="form-check-label" for="compARep">Representante legal</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input type="radio" class="form-check-input" name="tipo_destinatario" id="compAEst" value="estudiante">
+                                    <label class="form-check-label" for="compAEst">Estudiante</label>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-5">
+                                <label class="form-label">Materia</label>
+                                <select id="compMateria" class="form-select">
+                                    <option value="">Seleccione materia...</option>
+                                    @foreach($compositor['materias'] as $materia)
+                                        <option value="{{ $materia['id'] }}">{{ $materia['nombre'] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Docente</label>
+                                <select id="compDocente" class="form-select" disabled>
+                                    <option value="">Seleccione docente...</option>
+                                </select>
+                            </div>
+                        </div>
+                    @endif
+                    <input type="hidden" name="destinatario_id" id="composerDestinatario" value="">
+                    <input type="hidden" name="contexto_estudiante_id" id="composerContexto" value="">
+                    <input type="hidden" name="retorno" value="{{ route('mensajes.index', ['hilo' => request()->query('hilo')]) }}">
+                    <small class="text-muted" id="compAyuda"></small>
+                    <hr>
+                    <div class="mb-3">
+                        <label class="form-label">Asunto</label>
+                        <input type="text" name="asunto" class="form-control" maxlength="255" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mensaje</label>
+                        <textarea name="cuerpo_contenido" rows="4" class="form-control"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Adjunto (opcional, imágenes o PDF, máx. 5 MB)</label>
+                        <input type="file" name="adjunto" class="form-control" accept=".pdf,image/*">
+                    </div>
                 </div>
-            </div>
-            @if($hilo['no_leidos'] > 0)
-                <span class="badge rounded-pill bg-danger ms-3">{{ $hilo['no_leidos'] }}</span>
-            @endif
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-send me-1"></i> Enviar</button>
+                </div>
+            </form>
         </div>
-    </a>
+    </div>
 </div>
-@empty
-<div class="alert alert-light border text-center">
-    <i class="bi bi-inbox fs-2 d-block text-muted"></i>
-    No hay mensajes en esta carpeta.
-</div>
-@endforelse
 @endsection
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    var sel = document.getElementById('destinatario');
-    var contexto = document.getElementById('contexto_estudiante_id');
-    if (!sel || !contexto) return;
+    var panel = document.getElementById('panelLectura');
 
-    function syncContexto() {
-        var opt = sel.options[sel.selectedIndex];
-        contexto.value = opt && opt.dataset.contexto ? opt.dataset.contexto : '';
+    function reiniciarDestinatario() {
+        document.getElementById('composerDestinatario').value = '';
+        document.getElementById('composerContexto').value = '';
+        var ayuda = document.getElementById('compAyuda');
+        if (ayuda) ayuda.textContent = '';
     }
-    sel.addEventListener('change', syncContexto);
-    if (sel.selectedIndex > 0) syncContexto();
+
+    function enlazarPanel() {
+        panel.querySelectorAll('form.p-eliminar-hilo').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                var msg = form.dataset.confirm || '';
+                if (msg && !confirm(msg)) e.preventDefault();
+            });
+        });
+    }
+
+    function abrirConversacion(info) {
+        var cell = info.closest ? info.closest('.thread-click') : info;
+        if (!cell) return;
+        var url = cell.dataset.url;
+        var hiloId = cell.dataset.id || '';
+
+        document.querySelectorAll('.thread-active').forEach(function (el) { el.classList.remove('thread-active'); });
+
+        fetch(url)
+            .then(function (r) { if (!r.ok) throw new Error(); return r.text(); })
+            .then(function (html) {
+                panel.innerHTML = html;
+                enlazarPanel();
+                document.querySelectorAll('.thread-cell').forEach(function (celda) {
+                    var cb = celda.querySelector('input.sel-hilo');
+                    if (cb && String(cb.value) === String(hiloId)) celda.classList.add('thread-active');
+                });
+                if (window.history && window.history.replaceState) {
+                    var urlObj = new URL(window.location.href);
+                    urlObj.searchParams.set('hilo', hiloId);
+                    window.history.replaceState({}, '', urlObj.toString());
+                }
+            })
+            .catch(function () {
+                panel.innerHTML = '<div class="text-center text-muted p-5"><i class="bi bi-exclamation-triangle fs-2 d-block mb-2"></i>No se pudo cargar la conversación.</div>';
+            });
+    }
+
+    document.querySelectorAll('.thread-click').forEach(function (cell) {
+        cell.addEventListener('click', function (e) {
+            if (e.target.closest('a') || e.target.closest('input')) return;
+            abrirConversacion(cell);
+        });
+    });
+
+    var eliminarHiloForm = document.getElementById('frmEliminar');
+    document.getElementById('btnEliminarSel').addEventListener('click', function () {
+        var seleccion = document.querySelectorAll('.sel-hilo:checked');
+        if (!seleccion.length) return;
+        if (!confirm('¿Eliminar ' + seleccion.length + ' mensaje(s) de tu bandeja? El otro participante conservará su copia.')) return;
+        eliminarHiloForm.querySelectorAll('input[name="ids[]"]').forEach(function (i) { i.remove(); });
+        seleccion.forEach(function (cb) {
+            var inp = document.createElement('input');
+            inp.type = 'hidden';
+            inp.name = 'ids[]';
+            inp.value = cb.value;
+            eliminarHiloForm.appendChild(inp);
+        });
+        eliminarHiloForm.submit();
+    });
+
+    var selTodos = document.getElementById('selTodos');
+    selTodos.addEventListener('change', function () {
+        document.querySelectorAll('.sel-hilo').forEach(function (cb) { cb.checked = selTodos.checked; });
+        actualizarBotonEliminar();
+    });
+
+    document.querySelectorAll('.sel-hilo').forEach(function (cb) {
+        cb.addEventListener('change', actualizarBotonEliminar);
+    });
+
+    function actualizarBotonEliminar() {
+        var n = document.querySelectorAll('.sel-hilo:checked').length;
+        document.getElementById('btnEliminarSel').disabled = n === 0;
+    }
+
+    enlazarPanel();
+
+    var comp = @json($compositor);
+    var selClase = document.getElementById('compClase');
+    if (selClase) {
+        var selEstudiante = document.getElementById('compEstudiante');
+        var repNombre = document.getElementById('compRepresentanteNombre');
+        var radioRep = document.getElementById('compARep');
+        var radioEst = document.getElementById('compAEst');
+        var estudianteActual = null;
+
+        function claseSeleccionada() {
+            return (comp.clases || []).find(function (c) { return String(c.id) === selClase.value; });
+        }
+
+        function actualizarDestinatario() {
+            if (!estudianteActual) return reiniciarDestinatario();
+            var esRep = radioRep.checked;
+            var id = esRep ? estudianteActual.representante_id : estudianteActual.estudiante_user_id;
+            if (!id) {
+                if (esRep) {
+                    radioEst.checked = true;
+                    id = estudianteActual.estudiante_user_id;
+                } else {
+                    radioRep.checked = true;
+                    id = estudianteActual.representante_id;
+                }
+            }
+            document.getElementById('composerDestinatario').value = id || '';
+            document.getElementById('composerContexto').value = estudianteActual.id;
+            var ayuda = document.getElementById('compAyuda');
+            if (ayuda) {
+                ayuda.textContent = id
+                    ? 'Se enviará a: ' + (radioRep.checked ? (estudianteActual.representante_nombre || 'Representante') : estudianteActual.label) + ' (Estudiante)'
+                    : 'Este contacto no tiene usuario registrado para recibir mensajes.';
+            }
+        }
+
+        selClase.addEventListener('change', function () {
+            selEstudiante.innerHTML = '<option value="">Seleccione estudiante...</option>';
+            selEstudiante.disabled = true;
+            selEstudiante.value = '';
+            repNombre.textContent = '—';
+            repNombre.classList.add('text-muted');
+            estudianteActual = null;
+            reiniciarDestinatario();
+            var clase = claseSeleccionada();
+            if (!clase) return;
+            (clase.estudiantes || []).forEach(function (est) {
+                var opt = document.createElement('option');
+                opt.value = est.id;
+                opt.textContent = est.label;
+                selEstudiante.appendChild(opt);
+            });
+            selEstudiante.disabled = false;
+            var ayuda = document.getElementById('compAyuda');
+            if (ayuda) ayuda.textContent = 'Seleccione un estudiante para elegir destinatario.';
+        });
+
+        selEstudiante.addEventListener('change', function () {
+            if (!selEstudiante.value) {
+                estudianteActual = null;
+                return reiniciarDestinatario();
+            }
+            var clase = claseSeleccionada();
+            estudianteActual = (clase.estudiantes || []).find(function (e) { return String(e.id) === selEstudiante.value; }) || null;
+            repNombre.textContent = estudianteActual.representante_nombre || 'Sin representante registrado';
+            repNombre.classList.toggle('text-muted', !estudianteActual.representante_nombre);
+            radioEst.disabled = !estudianteActual.estudiante_user_id;
+            if (!radioEst.disabled && !radioRep.checked && !estudianteActual.representante_id) {
+                radioEst.checked = true;
+            }
+            actualizarDestinatario();
+        });
+
+        radioRep.addEventListener('change', actualizarDestinatario);
+        radioEst.addEventListener('change', actualizarDestinatario);
+    }
+
+    var selMateria = document.getElementById('compMateria');
+    if (selMateria) {
+        var selDocente = document.getElementById('compDocente');
+
+        selMateria.addEventListener('change', function () {
+            selDocente.innerHTML = '<option value="">Seleccione docente...</option>';
+            selDocente.disabled = true;
+            selDocente.value = '';
+            reiniciarDestinatario();
+            if (!selMateria.value) return;
+            var materia = (comp.materias || []).find(function (m) { return String(m.id) === selMateria.value; });
+            (materia.docentes || []).forEach(function (d) {
+                var opt = document.createElement('option');
+                opt.value = d.id;
+                opt.dataset.contexto = d.contexto_estudiante_id || '';
+                opt.textContent = d.nombre;
+                selDocente.appendChild(opt);
+            });
+            selDocente.disabled = false;
+            var ayuda = document.getElementById('compAyuda');
+            if (ayuda) ayuda.textContent = 'Seleccione el docente de la materia.';
+        });
+
+        selDocente.addEventListener('change', function () {
+            if (!selDocente.value) return reiniciarDestinatario();
+            document.getElementById('composerDestinatario').value = selDocente.value;
+            var opt = selDocente.options[selDocente.selectedIndex];
+            document.getElementById('composerContexto').value = opt.dataset.contexto || '';
+            var ayuda = document.getElementById('compAyuda');
+            if (ayuda) ayuda.textContent = 'Se enviará a: ' + opt.textContent;
+        });
+    }
+
+    window.abrirConversacion = abrirConversacion;
 });
 </script>
+<style>
+    .thread-active { background-color: #e7f1ff !important; }
+</style>
 @endpush

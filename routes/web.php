@@ -44,6 +44,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/mensajes', [MensajeController::class, 'index'])->name('mensajes.index');
     Route::post('/mensajes', [MensajeController::class, 'store'])->name('mensajes.store');
+    Route::delete('/mensajes', [MensajeController::class, 'destroy'])->name('mensajes.destroy');
+    Route::get('/mensajes/{id}/conversacion', [MensajeController::class, 'conversacion'])->name('mensajes.conversacion');
     Route::get('/mensajes/{id}', [MensajeController::class, 'show'])->name('mensajes.show');
 
     Route::get('/perfil', [ProfileController::class, 'index'])->name('perfil.index');
