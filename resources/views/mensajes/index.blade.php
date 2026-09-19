@@ -52,9 +52,9 @@
                         <div class="d-flex align-items-center">
                             <i class="bi bi-person-circle fs-4 me-2 text-secondary"></i>
                             <div class="flex-grow-1 overflow-hidden">
+                                <div class="small text-muted mb-1">{{ $hilo['fecha'] }}</div>
                                 <div class="d-flex justify-content-between">
-                                    <strong class="text-truncate {{ $hilo['no_leidos'] > 0 ? '' : 'fw-normal' }}">{{ $hilo['interlocutor'] }}</strong>
-                                    <small class="text-muted ms-1">{{ $hilo['fecha'] }}</small>
+                                    <strong class="text-truncate {{ $hilo['no_leidos'] > 0 ? 'fw-normal' : '' }}">{{ $hilo['interlocutor'] }}</strong>
                                 </div>
                                 <div class="text-truncate small">
                                     <span class="{{ $hilo['no_leidos'] > 0 ? 'fw-semibold' : 'text-muted' }}">{{ $hilo['ultimo_asunto'] }}</span>

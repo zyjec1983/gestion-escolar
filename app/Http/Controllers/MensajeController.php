@@ -56,8 +56,6 @@ class MensajeController extends Controller
                         : null,
                 ];
             })
-            ->values()
-            ->reverse()
             ->values();
 
         $datosHilo = null;
