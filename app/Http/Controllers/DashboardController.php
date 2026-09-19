@@ -38,10 +38,6 @@ class DashboardController extends Controller
 
     private function estudiante(Request $request)
     {
-        $user = $request->user();
-        $alumnos = $user->estudiantes()->with('matriculas')->get();
-        $noLeidos = $user->mensajesRecibidos()->where('leido', false)->count();
-
-        return view('dashboard.estudiante', compact('alumnos', 'noLeidos', 'user'));
+        return app(EstudianteController::class)->dashboard($request);
     }
 }

@@ -59,4 +59,9 @@ class ClaseDocente extends Model
     {
         return $this->hasMany(AsignacionGrupo::class);
     }
+
+    public function foros()
+    {
+        return $this->hasMany(Foro::class);
+    }
 }

@@ -60,7 +60,7 @@ class InicioClaseResource extends JsonResource
             'menu_aula_virtual' => [
                 ['label' => 'Inicio', 'icon' => 'house-door', 'url' => "/clases/{$this->id}", 'key' => 'inicio'],
                 ['label' => 'Agenda', 'icon' => 'clipboard-check', 'url' => "/clases/{$this->id}/agenda", 'key' => 'agenda'],
-                ['label' => 'Foros', 'icon' => 'chat-dots', 'url' => null, 'key' => 'foros'],
+                ['label' => 'Foros', 'icon' => 'chat-dots', 'url' => "/clases/{$this->id}/foros", 'key' => 'foros'],
                 ['label' => 'Grupos de Clase', 'icon' => 'people-fill', 'url' => "/clases/{$this->id}/grupos", 'key' => 'grupos'],
                 ['label' => 'Materiales', 'icon' => 'folder', 'url' => "/clases/{$this->id}/materiales", 'key' => 'materiales'],
                 ['label' => 'Mensajes', 'icon' => 'envelope', 'url' => '/mensajes', 'key' => 'mensajes'],

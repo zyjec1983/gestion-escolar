@@ -147,6 +147,18 @@ class MensajeController extends Controller
             }
         }
 
+        if ($request->user()->rol === 'ESTUDIANTE') {
+            $destinatario = User::find($validated['destinatario_id']);
+            $docentes = $this->compositorData($request->user())
+                ->get('materias', collect())
+                ->flatMap(fn ($materia) => collect($materia['docentes'] ?? []))
+                ->pluck('id');
+
+            if (!$destinatario || $destinatario->rol !== 'DOCENTE' || !$docentes->contains($destinatario->id)) {
+                abort(403, 'Solo puedes enviar mensajes a tus docentes.');
+            }
+        }
+
         $mensaje = Mensaje::create([
             'asunto' => $validated['asunto'],
             'cuerpo_contenido' => $validated['cuerpo_contenido'] ?? null,

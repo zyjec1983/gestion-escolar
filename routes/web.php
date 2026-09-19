@@ -1,13 +1,15 @@
-<?php
+﻿<?php
 
 use App\Http\Controllers\Admin\ConfiguracionController;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\MatriculaController;
 use App\Http\Controllers\Admin\PreRegistroController as AdminPreRegistroController;
 use App\Http\Controllers\AulaVirtualController;
+use App\Http\Controllers\ForoController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Api\DashboardController as ApiDashboardController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EstudianteController;
 use App\Http\Controllers\Directivo\HistorialCitaController;
 use App\Http\Controllers\Docente\ActaController;
 use App\Http\Controllers\MensajeController;
@@ -55,6 +57,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/clases/{clase}/grupos', [AulaVirtualController::class, 'storeGrupos'])->name('clases.grupos.store');
     Route::delete('/clases/{clase}/grupos', [AulaVirtualController::class, 'destroyGrupos'])->name('clases.grupos.destroy');
 
+    Route::get('/clases/{clase}/foros', [ForoController::class, 'index'])->name('clases.foros');
+    Route::get('/clases/{clase}/foros/contadores', [ForoController::class, 'contadores'])->name('clases.foros.contadores');
+    Route::get('/clases/{clase}/foros/crear', [ForoController::class, 'create'])->name('clases.foros.create');
+    Route::post('/clases/{clase}/foros', [ForoController::class, 'store'])->name('clases.foros.store');
+    Route::get('/foros/{foro}', [ForoController::class, 'show'])->name('foros.show');
+    Route::post('/foros/{foro}/intervenciones', [ForoController::class, 'storeIntervencion'])->name('foros.intervenciones.store');
+    Route::delete('/foros/{foro}', [ForoController::class, 'destroy'])->name('foros.destroy');
+
     Route::get('/mensajes', [MensajeController::class, 'index'])->name('mensajes.index');
     Route::post('/mensajes', [MensajeController::class, 'store'])->name('mensajes.store');
     Route::delete('/mensajes', [MensajeController::class, 'destroy'])->name('mensajes.destroy');
@@ -63,7 +73,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/perfil', [ProfileController::class, 'index'])->name('perfil.index');
     Route::post('/perfil', [ProfileController::class, 'update'])->name('perfil.update');
-    Route::post('/perfil/contraseña', [ProfileController::class, 'updatePassword'])->name('perfil.password');
+    Route::post('/perfil/contraseÃ±a', [ProfileController::class, 'updatePassword'])->name('perfil.password');
 
     Route::get('/planificaciones', [PlanificacionController::class, 'index'])->name('planificaciones.index');
 });
@@ -81,6 +91,10 @@ Route::middleware(['auth', 'role:REPRESENTANTE'])->group(function () {
     Route::get('/citas', [RepresentanteController::class, 'citas'])->name('representante.citas');
     Route::post('/citas', [RepresentanteController::class, 'storeCita'])->name('representante.citas.store');
     Route::get('/agendas', [RepresentanteController::class, 'agendas'])->name('representante.agendas');
+});
+
+Route::middleware(['auth', 'role:ESTUDIANTE'])->group(function () {
+    Route::get('/estudiante/agendas', [EstudianteController::class, 'agendas'])->name('estudiante.agendas');
 });
 
 Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->group(function () {
@@ -137,3 +151,4 @@ Route::get('/debug-data', function () {
     $dashboard = app(ApiDashboardController::class)->index(request());
     return $dashboard->toArray(request());
 });
+
