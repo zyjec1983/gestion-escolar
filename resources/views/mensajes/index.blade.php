@@ -54,10 +54,10 @@
                             <div class="flex-grow-1 overflow-hidden">
                                 <div class="small text-muted mb-1">{{ $hilo['fecha'] }}</div>
                                 <div class="d-flex justify-content-between">
-                                    <strong class="text-truncate {{ $hilo['no_leidos'] > 0 ? 'fw-normal' : '' }}">{{ $hilo['interlocutor'] }}</strong>
+                                    <strong class="text-truncate {{ $hilo['no_leidos'] > 0 ? 'fw-bold' : 'fw-normal' }}">{{ $hilo['interlocutor'] }}</strong>
                                 </div>
                                 <div class="text-truncate small">
-                                    <span class="{{ $hilo['no_leidos'] > 0 ? 'fw-semibold' : 'text-muted' }}">{{ $hilo['ultimo_asunto'] }}</span>
+                                    <span class="{{ $hilo['no_leidos'] > 0 ? 'fw-bold' : 'fw-normal' }}">{{ $hilo['ultimo_asunto'] }}</span>
                                     @if($hilo['contexto_nombre']) <span class="badge bg-light text-dark border ms-1">Sobre {{ $hilo['contexto_nombre'] }}</span> @endif
                                 </div>
                                 @if($hilo['ultimo_cuerpo'])
