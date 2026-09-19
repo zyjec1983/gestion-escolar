@@ -3,12 +3,12 @@
 @section('titulo', 'Mensajes')
 
 @section('contenido')
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
         <h4 class="mb-0"><i class="bi bi-envelope me-2"></i>Mensajes</h4>
         <p class="text-muted mb-0">Bandeja de mensajes con docentes, estudiantes y representantes.</p>
     </div>
-    <div>
+    <div class="d-flex flex-wrap gap-2">
         <button class="btn btn-outline-danger btn-sm" type="button" id="btnEliminarSel" disabled>
             <i class="bi bi-trash me-1"></i> Eliminar seleccionados
         </button>
@@ -41,7 +41,7 @@
 
 <div class="card shadow-sm">
     <div class="row g-0">
-        <div class="col-md-5 col-xl-4 border-end">
+        <div class="col-12 col-lg-5 col-xl-4 border-end" id="colLista">
             <div class="lista-hilos" style="max-height: 72vh; overflow-y: auto; display: grid; grid-template-columns: 40px 1fr; align-content: start;">
                 @forelse($hilos as $hilo)
                     <div class="thread-cell text-center py-3 {{ $hilo['no_leidos'] > 0 ? 'bg-light' : '' }} {{ request()->query('hilo') == $hilo['id'] ? 'thread-active' : '' }}" style="grid-column: 1;">
@@ -77,8 +77,13 @@
                 @endforelse
             </div>
         </div>
-        <div class="col-md-7 col-xl-8">
-            <div id="panelLectura" class="d-flex flex-column" style="height: 72vh;">
+        <div class="col-12 col-lg-7 col-xl-8 d-none d-lg-flex flex-column border-start" id="colPanel" data-hilo-abierto="{{ $datosHilo ? '1' : '0' }}" style="height: 72vh;">
+            <div class="border-bottom p-1 bg-light d-lg-none">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnVolverLista">
+                    <i class="bi bi-arrow-left me-1"></i> Conversaciones
+                </button>
+            </div>
+            <div id="panelLectura" class="flex-grow-1 d-flex flex-column overflow-hidden" style="min-height: 0;">
                 @if($datosHilo)
                     @include('mensajes._conversacion', $datosHilo + ['retorno' => route('mensajes.index', ['hilo' => $datosHilo['anchor_id']])])
                 @else
@@ -214,6 +219,25 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function esMovil() {
+        return window.matchMedia('(max-width: 991.98px)').matches;
+    }
+
+    function mostrarPanel() {
+        if (!esMovil()) return;
+        document.getElementById('colLista').classList.add('d-none');
+        var pane = document.getElementById('colPanel');
+        pane.classList.remove('d-none');
+        pane.classList.add('d-flex');
+    }
+
+    function volverALista() {
+        var pane = document.getElementById('colPanel');
+        pane.classList.add('d-none');
+        pane.classList.remove('d-flex');
+        document.getElementById('colLista').classList.remove('d-none');
+    }
+
     function abrirConversacion(info) {
         var cell = info.closest ? info.closest('.thread-click') : info;
         if (!cell) return;
@@ -236,9 +260,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     urlObj.searchParams.set('hilo', hiloId);
                     window.history.replaceState({}, '', urlObj.toString());
                 }
+                mostrarPanel();
             })
             .catch(function () {
                 panel.innerHTML = '<div class="text-center text-muted p-5"><i class="bi bi-exclamation-triangle fs-2 d-block mb-2"></i>No se pudo cargar la conversación.</div>';
+                mostrarPanel();
             });
     }
 
@@ -281,6 +307,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     enlazarPanel();
+
+    var btnVolver = document.getElementById('btnVolverLista');
+    if (btnVolver) btnVolver.addEventListener('click', volverALista);
+
+    if (document.getElementById('colPanel').dataset.hiloAbierto === '1') {
+        mostrarPanel();
+    }
 
     var comp = @json($compositor);
     var selClase = document.getElementById('compClase');
