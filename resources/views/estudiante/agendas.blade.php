@@ -108,12 +108,25 @@
                                 @if($agenda->fecha_inicio)
                                     <span class="text-muted d-block">Inicio: {{ $agenda->fecha_inicio->format('d/m/Y H:i') }}</span>
                                 @endif
-                                @if($agenda->fecha_entrega_limite)
+                                @if($agenda->estaEntregadaPor($alumno))
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check2-circle me-1"></i>Entregada
+                                    </span>
+                                @elseif($agenda->fecha_entrega_limite)
                                     <span class="badge bg-{{ $vencida ? 'danger' : 'success' }}">
                                         {{ $vencida ? 'Vencida' : 'Entrega' }}: {{ $agenda->fecha_entrega_limite->format('d/m/Y H:i') }}
                                     </span>
                                 @else
                                     <span class="badge bg-secondary">Sin fecha límite</span>
+                                @endif
+
+                                @if(!$agenda->estaEntregadaPor($alumno))
+                                    <form method="POST" action="{{ route('estudiante.agendas.marcar-entregada', $agenda) }}" class="d-inline mt-2">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-check2 me-1"></i>Marcar como entregada
+                                        </button>
+                                    </form>
                                 @endif
                             </div>
                         </div>

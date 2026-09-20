@@ -95,6 +95,7 @@ Route::middleware(['auth', 'role:REPRESENTANTE'])->group(function () {
 
 Route::middleware(['auth', 'role:ESTUDIANTE'])->group(function () {
     Route::get('/estudiante/agendas', [EstudianteController::class, 'agendas'])->name('estudiante.agendas');
+    Route::post('/estudiante/agendas/{agenda}/entregar', [EstudianteController::class, 'marcarEntregada'])->name('estudiante.agendas.marcar-entregada');
 });
 
 Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->group(function () {

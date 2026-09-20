@@ -46,6 +46,21 @@ class Agenda extends Model
         return $this->belongsToMany(Alumno::class, 'agenda_alumnos');
     }
 
+    public function estaEntregadaPor(Alumno $alumno): bool
+    {
+        return $this->alumnos()
+            ->wherePivot('alumno_id', $alumno->id)
+            ->wherePivotNotNull('entregada_en')
+            ->exists();
+    }
+
+    public function marcarEntregada(Alumno $alumno): void
+    {
+        $this->alumnos()->syncWithoutDetaching([
+            $alumno->id => ['entregada_en' => now()],
+        ]);
+    }
+
     public function archivosAdjuntos()
     {
         return $this->morphMany(ArchivoAdjunto::class, 'attachable');

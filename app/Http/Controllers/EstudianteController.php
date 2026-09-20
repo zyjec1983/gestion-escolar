@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alumno;
+use App\Models\Agenda;
 use App\Models\ClaseDocente;
 use App\Models\Foro;
 use App\Models\User;
@@ -59,12 +60,13 @@ class EstudianteController extends Controller
     {
         $clases = $this->clasesDeAlumno($alumno);
 
-        return $clases->groupBy('materia_id')->map(function ($grupoClases, $materiaId) {
+        return $clases->groupBy('materia_id')->map(function ($grupoClases, $materiaId) use ($alumno) {
             $clase = $grupoClases->first();
             $agendas = $grupoClases->flatMap->agendas->unique('id');
 
-            $activas = $agendas->filter(fn ($a) => $a->fecha_entrega_limite === null
-                || $a->fecha_entrega_limite->greaterThanOrEqualTo(\Illuminate\Support\Carbon::today()));
+            $activas = $agendas->filter(fn ($a) => !$a->estaEntregadaPor($alumno)
+                && ($a->fecha_entrega_limite === null
+                    || $a->fecha_entrega_limite->greaterThanOrEqualTo(\Illuminate\Support\Carbon::today())));
 
             return [
                 'id' => $materiaId,
@@ -106,6 +108,19 @@ class EstudianteController extends Controller
         ];
 
         return view('dashboard.estudiante', compact('user', 'alumnos', 'alumno', 'materias', 'stats'));
+    }
+
+    public function marcarEntregada(Request $request, Agenda $agenda)
+    {
+        $alumno = $this->alumnoPropio($request->user());
+
+        if (!$alumno) {
+            abort(403);
+        }
+
+        $agenda->marcarEntregada($alumno);
+
+        return redirect()->back()->with('success', 'Agenda marcada como entregada.');
     }
 
     public function agendas(Request $request)
