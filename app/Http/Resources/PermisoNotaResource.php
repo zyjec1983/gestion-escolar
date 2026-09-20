@@ -5,6 +5,9 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property-read \App\Models\ClaseDocente $claseDocente
+ */
 class PermisoNotaResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -18,7 +21,7 @@ class PermisoNotaResource extends JsonResource
                 'configuracion' => [
                     'columnas' => ['#', 'COD. PERMISO', 'UNIDAD', 'FECHA INICIO', 'FECHA TERMINACION', 'USUARIO ASIGNO', 'OPCIONES'],
                 ],
-                'datos' => $this->whenLoaded('permisosNotas', function () {
+                'datos' => $this->whenLoaded('claseDocente.permisosNotas', function () {
                     return $this->claseDocente->permisosNotas->map(function ($permiso, $index) {
                         return [
                             '#' => $index + 1,
@@ -29,7 +32,7 @@ class PermisoNotaResource extends JsonResource
                             'usuario_asigno' => $permiso->userAsigno->name,
                             'opciones' => [],
                         ];
-                    }) ?? [],
+                    }) ?? [];
                 }),
             ],
         ];
