@@ -151,6 +151,58 @@
                                 </div>
                             </div>
                         </div>
+                    @elseif($compositor['rol'] === 'INSPECCION')
+                        <div class="mb-2">
+                            <label for="compAlcance" class="form-label fw-semibold">Alcance de envío</label>
+                            <select name="alcance" id="compAlcance" class="form-select">
+                                <option value="">Seleccione alcance...</option>
+                                <option value="estudiante">Un estudiante y su representante</option>
+                                <option value="curso">Todos los de un curso</option>
+                                <option value="nivel">Todos de un nivel educativo</option>
+                                <option value="comunidad">Toda la comunidad educativa</option>
+                            </select>
+                        </div>
+
+                        <div id="boxEstudianteIns" class="d-none">
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-4">
+                                    <label for="insCurso" class="form-label">Curso</label>
+                                    <select id="insCurso" class="form-select"></select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="insParalelo" class="form-label">Paralelo</label>
+                                    <select id="insParalelo" class="form-select" disabled></select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="insAlumno" class="form-label">Estudiante</label>
+                                    <select name="alumno_id" id="insAlumno" class="form-select" disabled></select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="boxCursoIns" class="d-none mb-2">
+                            <label for="insCursoBatch" class="form-label">Curso</label>
+                            <select name="curso_id" id="insCursoBatch" class="form-select">
+                                <option value="">Seleccione curso...</option>
+                                @foreach($compositor['cursos'] as $c)
+                                    <option value="{{ $c['id'] }}">{{ $c['nombre'] }} ({{ $c['total_alumnos'] }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div id="boxNivelIns" class="d-none mb-2">
+                            <label for="insNivel" class="form-label">Nivel educativo</label>
+                            <select name="nivel_educativo" id="insNivel" class="form-select">
+                                <option value="basica">Básica ({{ $compositor['cursos']->where('es_bachillerato', false)->sum('total_alumnos') }} estudiantes)</option>
+                                <option value="bachillerato">Bachillerato ({{ $compositor['cursos']->where('es_bachillerato', true)->sum('total_alumnos') }} estudiantes)</option>
+                            </select>
+                        </div>
+
+                        <div id="boxComunidadIns" class="d-none mb-2">
+                            <div class="alert alert-info py-2 px-3 small mb-0">
+                                Llegará a todos los estudiantes, representantes, docentes y autoridades del centro.
+                            </div>
+                        </div>
                     @else
                         <div class="row g-2 mb-2">
                             <div class="col-md-5">
@@ -390,6 +442,90 @@ document.addEventListener('DOMContentLoaded', function () {
 
         radioRep.addEventListener('change', actualizarDestinatario);
         radioEst.addEventListener('change', actualizarDestinatario);
+    }
+
+    var selAlcanceIns = document.getElementById('compAlcance');
+    if (selAlcanceIns) {
+        var insCurso = document.getElementById('insCurso');
+        var insParalelo = document.getElementById('insParalelo');
+        var insAlumno = document.getElementById('insAlumno');
+        var boxesIns = {
+            estudiante: document.getElementById('boxEstudianteIns'),
+            curso: document.getElementById('boxCursoIns'),
+            nivel: document.getElementById('boxNivelIns'),
+            comunidad: document.getElementById('boxComunidadIns'),
+        };
+
+        function llenarOpciones(select, items, textoVacio) {
+            select.innerHTML = '';
+            var vacia = document.createElement('option');
+            vacia.value = '';
+            vacia.textContent = textoVacio;
+            select.appendChild(vacia);
+            items.forEach(function (it) {
+                var opt = document.createElement('option');
+                opt.value = it.id;
+                opt.textContent = it.nombre;
+                select.appendChild(opt);
+            });
+        }
+
+        function cursoIns() {
+            return (comp.cursos || []).find(function (c) { return String(c.id) === insCurso.value; }) || null;
+        }
+
+        selAlcanceIns.addEventListener('change', function () {
+            var alcance = selAlcanceIns.value;
+            Object.keys(boxesIns).forEach(function (k) {
+                if (boxesIns[k]) boxesIns[k].classList.add('d-none');
+            });
+            if (boxesIns[alcance]) boxesIns[alcance].classList.remove('d-none');
+
+            var ayuda = document.getElementById('compAyuda');
+            var textos = {
+                estudiante: 'Seleccione el estudiante: el mensaje llegará a él y a su representante.',
+                curso: 'Se enviará a todos los alumnos del curso y a sus representantes.',
+                nivel: 'Se enviará a todos los alumnos del nivel y a sus representantes.',
+                comunidad: 'Se enviará a toda la comunidad educativa del centro.',
+            };
+            if (ayuda) ayuda.textContent = textos[alcance] || '';
+
+            if (alcance === 'estudiante') {
+                if (!insCurso.options.length) {
+                    llenarOpciones(insCurso, (comp.cursos || []).filter(function (c) { return c.total_alumnos > 0; }), 'Seleccione curso...');
+                }
+                insParalelo.disabled = true;
+                insAlumno.disabled = true;
+            }
+        });
+
+        insCurso.addEventListener('change', function () {
+            insParalelo.innerHTML = '<option value="">Todos los paralelos</option>';
+            insAlumno.innerHTML = '<option value="">Todos los estudiantes</option>';
+            insAlumno.disabled = true;
+            var curso = cursoIns();
+            if (!curso) { insParalelo.disabled = true; return; }
+
+            llenarOpciones(insParalelo, curso.paralelos.filter(function (p) { return p.alumnos.length; }), 'Todos los paralelos');
+            insParalelo.disabled = false;
+        });
+
+        insParalelo.addEventListener('change', function () {
+            var curso = cursoIns();
+            if (!curso) return;
+            var paralelos = curso.paralelos.filter(function (p) { return p.alumnos.length; });
+            var elegido = paralelos.find(function (p) { return String(p.id) === insParalelo.value; });
+            var alumnos = elegido ? elegido.alumnos : [].concat.apply([], paralelos.map(function (p) { return p.alumnos; }));
+
+            insAlumno.innerHTML = '<option value="">Seleccione estudiante...</option>';
+            alumnos.forEach(function (a) {
+                var opt = document.createElement('option');
+                opt.value = a.id;
+                opt.textContent = a.label;
+                insAlumno.appendChild(opt);
+            });
+            insAlumno.disabled = alumnos.length === 0;
+        });
     }
 
     var selMateria = document.getElementById('compMateria');

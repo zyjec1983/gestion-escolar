@@ -28,6 +28,11 @@
                 <i class="bi bi-images me-2"></i> Carrusel Hero
             </a>
         </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.configuracion.index') }}" class="nav-link text-white {{ request()->is('admin/configuracion*') ? 'active' : '' }}">
+                <i class="bi bi-gear me-2"></i> Configuración
+            </a>
+        </li>
     </ul>
     <hr>
     <div class="mb-3">

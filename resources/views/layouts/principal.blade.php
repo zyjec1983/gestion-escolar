@@ -118,10 +118,43 @@
             </div>
         </li>
         @endif
-        @if(in_array($rol, ['ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA', 'INSPECCION', 'DECE']))
+        @if($rol === 'INSPECCION')
+        @php
+            $citasInspeccion = request()->is('inspeccion/citas*');
+        @endphp
+        <li class="nav-item mt-2">
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $citasInspeccion ? 'active' : '' }}"
+               data-bs-toggle="collapse" href="#submenuCitasInspeccion" aria-expanded="{{ $citasInspeccion ? 'true' : 'false' }}" aria-controls="submenuCitasInspeccion">
+                <span><i class="bi bi-calendar-event me-2"></i> Citas</span>
+                <i class="bi bi-chevron-down chevron-icon"></i>
+            </a>
+            <div class="collapse {{ $citasInspeccion ? 'show' : '' }}" id="submenuCitasInspeccion">
+                <ul class="nav nav-pills flex-column ms-3 mt-1">
+                    <li class="nav-item">
+                        <a href="{{ route('inspeccion.citas.agendar') }}" class="nav-link text-white small py-1 {{ request()->is('inspeccion/citas/agendar') ? 'active' : '' }}">
+                            <i class="bi bi-calendar-plus me-2"></i> Agendar cita
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('inspeccion.citas.historial') }}" class="nav-link text-white small py-1 {{ request()->is('inspeccion/citas/historial*') ? 'active' : '' }}">
+                            <i class="bi bi-clipboard2-data me-2"></i> Historial de citas
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        @endif
+        @if(in_array($rol, ['ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA', 'DECE']))
         <li class="nav-item mt-2">
             <a href="{{ route('directivo.citas.historial') }}" class="nav-link text-white {{ request()->is('directivo/citas*') ? 'active' : '' }}">
                 <i class="bi bi-clipboard2-data me-2"></i> Historial de citas
+            </a>
+        </li>
+        @endif
+        @if($rol === 'ADMIN')
+        <li class="nav-item mt-2">
+            <a href="{{ route('admin.configuracion.index') }}" class="nav-link text-white {{ request()->is('admin/*') ? 'active' : '' }}">
+                <i class="bi bi-gear me-2"></i> Configuración
             </a>
         </li>
         @endif

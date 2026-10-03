@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\MatriculaController;
 use App\Http\Controllers\Admin\PreRegistroController as AdminPreRegistroController;
 use App\Http\Controllers\AulaVirtualController;
 use App\Http\Controllers\ForoController;
+use App\Http\Controllers\Inspeccion\InspectorCitaController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Api\DashboardController as ApiDashboardController;
 use App\Http\Controllers\DashboardController;
@@ -121,7 +122,9 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
         Route::post('/velocidad', [HeroSlideController::class, 'updateVelocidad'])->name('velocidad');
     });
 
+    Route::get('/configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
     Route::post('/configuracion/sistema-evaluacion', [ConfiguracionController::class, 'updateSistemaEvaluacion'])->name('configuracion.sistema-evaluacion');
+    Route::post('/configuracion/zona-horaria', [ConfiguracionController::class, 'updateZonaHoraria'])->name('configuracion.zona-horaria');
 });
 
 Route::middleware(['auth', 'role:DOCENTE'])->prefix('docente')->name('docente.')->group(function () {
@@ -147,6 +150,13 @@ Route::middleware(['auth', 'role:DOCENTE'])->prefix('docente')->name('docente.')
 Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA,VICERRECTORA,INSPECCION,DECE'])->prefix('directivo')->name('directivo.')->group(function () {
     Route::get('/citas', [HistorialCitaController::class, 'index'])->name('citas.historial');
 });
+
+Route::middleware(['auth', 'role:INSPECCION,RECTORA,VICERRECTORA'])
+    ->prefix('inspeccion')->name('inspeccion.')->group(function () {
+        Route::get('/citas/agendar', [InspectorCitaController::class, 'agendar'])->name('citas.agendar');
+        Route::post('/citas/agendar', [InspectorCitaController::class, 'store'])->name('citas.store');
+        Route::get('/citas/historial', [InspectorCitaController::class, 'historial'])->name('citas.historial');
+    });
 
 Route::get('/debug-data', function () {
     $dashboard = app(ApiDashboardController::class)->index(request());

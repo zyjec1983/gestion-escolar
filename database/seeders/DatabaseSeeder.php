@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             // AlumnoSeeder::class,      // reemplazado por TestDataSeeder
             ClaseDocenteSeeder::class,
             TestDataSeeder::class,
+            NivelesAlumnosSeeder::class,
             // MatriculaSeeder::class,   // reemplazado por TestDataSeeder
             CircularSeeder::class,
             TipoObservacionSeeder::class,

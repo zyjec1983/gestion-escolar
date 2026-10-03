@@ -11,7 +11,7 @@ class Institucion extends Model
 
     protected $table = 'instituciones';
 
-    protected $fillable = ['nombre', 'subtitulo', 'plataforma_proveedor', 'sistema_evaluacion', 'pre_registro_activo', 'carousel_interval'];
+    protected $fillable = ['nombre', 'subtitulo', 'plataforma_proveedor', 'sistema_evaluacion', 'zona_horaria', 'pre_registro_activo', 'carousel_interval'];
 
     protected function casts(): array
     {

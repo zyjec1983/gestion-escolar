@@ -63,9 +63,12 @@ return [
     | will be used by the PHP date and date-time functions. The timezone
     | is set to "UTC" by default as it is suitable for most use cases.
     |
+    | This is only the starting point: the administrator picks the offset in
+    | Configuración and that value is the one that really applies.
+    |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', '+00:00'),
 
     /*
     |--------------------------------------------------------------------------
