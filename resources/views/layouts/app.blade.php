@@ -119,14 +119,29 @@
     </script>
     @if(request()->is('mensajes*', 'observaciones*', 'docente/observaciones*'))
     <script>
-        setInterval(function () {
-            if (document.hidden) return;
-            var el = document.activeElement;
-            var escribiendo = el && ['INPUT', 'TEXTAREA', 'SELECT'].indexOf(el.tagName) !== -1;
-            if (!escribiendo) {
-                location.reload();
+        (function () {
+            var modalAbierto = false;
+            document.addEventListener('show.bs.modal', function () { modalAbierto = true; });
+            document.addEventListener('hidden.bs.modal', function () { modalAbierto = false; });
+
+            function hayModalAbierto() {
+                return modalAbierto || !!document.querySelector('.modal.show');
             }
-        }, 10000);
+
+            function campoEnUso() {
+                var el = document.activeElement;
+                if (!el || el === document.body) return false;
+                if (['INPUT', 'TEXTAREA', 'SELECT'].indexOf(el.tagName) !== -1) return true;
+                return el.isContentEditable === true;
+            }
+
+            setInterval(function () {
+                if (document.hidden) return;
+                if (hayModalAbierto()) return;
+                if (campoEnUso()) return;
+                location.reload();
+            }, 10000);
+        })();
     </script>
     @endif
 </body>
