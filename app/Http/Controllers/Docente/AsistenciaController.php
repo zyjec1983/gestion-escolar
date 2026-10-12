@@ -25,22 +25,27 @@ class AsistenciaController extends Controller
 
         $alumnos = collect();
         $asistenciaExistente = collect();
+        $bloqueado = false;
 
         if ($clase) {
-            $matriculas = $clase->curso_id;
             $alumnos = Alumno::whereHas('matriculas', function ($q) use ($clase) {
                 $q->where('curso_id', $clase->curso_id)
                   ->where('paralelo_id', $clase->paralelo_id);
             })->orderBy('apellidos')->orderBy('nombres')->get();
 
-            $asistenciaExistente = Asistencia::where('clase_docente_id', $clase->id)
+            $asistenciaExistente = Asistencia::where('curso_id', $clase->curso_id)
+                ->where('paralelo_id', $clase->paralelo_id)
                 ->where('fecha', $fecha)
                 ->get()
                 ->keyBy('alumno_id');
+
+            // Una vez registrada la asistencia del aula, el docente ya no puede
+            // modificarla: solo Inspeccion puede hacerlo.
+            $bloqueado = $asistenciaExistente->isNotEmpty();
         }
 
         return view('docente.asistencia.index', compact(
-            'clases', 'clase', 'fecha', 'alumnos', 'asistenciaExistente'
+            'clases', 'clase', 'fecha', 'alumnos', 'asistenciaExistente', 'bloqueado'
         ));
     }
 
@@ -51,26 +56,39 @@ class AsistenciaController extends Controller
             'fecha' => 'required|date',
             'asistencia' => 'required|array',
             'asistencia.*.alumno_id' => 'required|exists:alumnos,id',
-            'asistencia.*.estado' => 'required|in:presente,justificada,injustificada',
+            'asistencia.*.estado' => 'required|in:presente,justificada,injustificada,atraso',
             'asistencia.*.observacion' => 'nullable|string|max:500',
         ]);
 
+        $clase = ClaseDocente::findOrFail($validated['clase_docente_id']);
+
+        $yaRegistrada = Asistencia::where('curso_id', $clase->curso_id)
+            ->where('paralelo_id', $clase->paralelo_id)
+            ->where('fecha', $validated['fecha'])
+            ->exists();
+
+        if ($yaRegistrada) {
+            return redirect()->route('docente.asistencia.index', [
+                'clase_docente_id' => $clase->id,
+                'fecha' => $validated['fecha'],
+            ])->with('error', 'La asistencia de este curso ya fue registrada. Solo Inspección puede modificarla.');
+        }
+
         foreach ($validated['asistencia'] as $item) {
-            Asistencia::updateOrCreate(
-                [
-                    'clase_docente_id' => $validated['clase_docente_id'],
-                    'alumno_id' => $item['alumno_id'],
-                    'fecha' => $validated['fecha'],
-                ],
-                [
-                    'estado' => $item['estado'],
-                    'observacion' => $item['observacion'] ?? null,
-                ]
-            );
+            Asistencia::create([
+                'curso_id' => $clase->curso_id,
+                'paralelo_id' => $clase->paralelo_id,
+                'alumno_id' => $item['alumno_id'],
+                'fecha' => $validated['fecha'],
+                'estado' => $item['estado'],
+                'observacion' => $item['observacion'] ?? null,
+                'clase_docente_id' => $clase->id,
+                'registrado_por' => $request->user()->id,
+            ]);
         }
 
         return redirect()->route('docente.asistencia.index', [
-            'clase_docente_id' => $validated['clase_docente_id'],
+            'clase_docente_id' => $clase->id,
             'fecha' => $validated['fecha'],
         ])->with('success', 'Asistencia guardada correctamente.');
     }

@@ -144,6 +144,30 @@
             </div>
         </li>
         @endif
+        @if($rol === 'INSPECCION')
+        <li class="nav-item mt-2">
+            <a href="{{ route('inspeccion.asistencia.index') }}"
+               class="nav-link text-white {{ request()->is('inspeccion/asistencia*') ? 'active' : '' }}">
+                <i class="bi bi-calendar-check me-2"></i> Asistencia
+            </a>
+        </li>
+        @endif
+        @if(in_array($rol, ['INSPECCION', 'RECTORA', 'VICERRECTORA', 'DECE']))
+        <li class="nav-item mt-2">
+            <a href="{{ route('inspeccion.observaciones.index') }}"
+               class="nav-link text-white {{ request()->is('inspeccion/observaciones*') ? 'active' : '' }}">
+                <i class="bi bi-exclamation-triangle me-2"></i> Observaciones
+            </a>
+        </li>
+        @endif
+        @if(in_array($rol, ['ADMIN', 'SECRETARIA', 'RECTORA']))
+        <li class="nav-item mt-2">
+            <a href="{{ route('actualizacion.index') }}"
+               class="nav-link text-white {{ request()->is('actualizacion*') ? 'active' : '' }}">
+                <i class="bi bi-pencil-square me-2"></i> Actualización de datos
+            </a>
+        </li>
+        @endif
         @if(in_array($rol, ['ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA', 'DECE']))
         <li class="nav-item mt-2">
             <a href="{{ route('directivo.citas.historial') }}" class="nav-link text-white {{ request()->is('directivo/citas*') ? 'active' : '' }}">

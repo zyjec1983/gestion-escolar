@@ -26,7 +26,7 @@
                     <th>Fecha</th>
                     <th>Tipo</th>
                     <th>Descripción</th>
-                    <th>Profesor</th>
+                    <th>Registrado por</th>
                 </tr>
             </thead>
             <tbody>

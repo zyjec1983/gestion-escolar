@@ -19,6 +19,7 @@ class PreRegistroFactory extends Factory
             'rep_numero_documento' => fake()->numerify('##########'),
             'rep_nombres' => fake()->firstName(),
             'rep_apellidos' => fake()->lastName(),
+            'rep_fecha_nacimiento' => fake()->date('Y-m-d', '1985-12-31'),
             'rep_email' => fake()->safeEmail(),
             'rep_telefono' => fake()->phoneNumber(),
             'alumno_tipo_documento' => 'cedula',

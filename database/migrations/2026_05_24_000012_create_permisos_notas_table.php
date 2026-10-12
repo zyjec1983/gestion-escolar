@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('permisos_notas', function (Blueprint $table) {
             $table->id();
             $table->string('codigo_permiso', 30);
-            $table->foreignId('clase_docente_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('unidad_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('clase_docente_id')->constrained('clases_docentes')->cascadeOnDelete();
+            $table->foreignId('unidad_id')->nullable()->constrained('unidades')->nullOnDelete();
             $table->dateTime('fecha_inicio');
             $table->dateTime('fecha_fin');
             $table->foreignId('user_asigno_id')->constrained('users')->cascadeOnDelete();

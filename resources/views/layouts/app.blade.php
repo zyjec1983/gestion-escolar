@@ -102,6 +102,19 @@
                     timerProgressBar: true,
                 });
             }
+
+            const aviso = document.getElementById('swal-warning');
+            if (aviso) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: aviso.dataset.message,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 6000,
+                    timerProgressBar: true,
+                });
+            }
         });
     </script>
     @if(request()->is('mensajes*', 'observaciones*', 'docente/observaciones*'))

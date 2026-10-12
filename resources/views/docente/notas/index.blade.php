@@ -2,6 +2,16 @@
 
 @section('titulo', 'Notas')
 
+@push('styles')
+<style>
+    /* El resaltado rojo de una casilla con nota inválida se mantiene hasta
+       que el valor se corrija, aunque el docente haga clic en otra casilla. */
+    #notas-table .form-control.is-invalid {
+        border-color: #dc3545 !important;
+    }
+</style>
+@endpush
+
 @php
     $trunc = function($v) {
         if ($v === null) return null;
@@ -83,7 +93,7 @@
                                     <td>{{ $i + 1 }}</td>
                                     <td>{{ $alumno->apellidos }} {{ $alumno->nombres }}</td>
                                     <td>
-                                        <input type="number" step="0.01" min="0.01" max="10" class="form-control form-control-sm text-center examen-input" name="notas[{{ $alumno->id }}][nota_examen]" value="{{ $n && $ne > 0 ? number_format($ne, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required>
+                                        <input type="text" inputmode="decimal" class="form-control form-control-sm text-center examen-input" name="notas[{{ $alumno->id }}][nota_examen]" value="{{ $n && $ne > 0 ? number_format($ne, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required>
                                     </td>
                                     <td class="text-center">
                                         @if($esFinal)
@@ -117,10 +127,10 @@
                             <tr>
                                 <th>#</th>
                                 <th>Estudiante</th>
-                                <th class="text-center">FII<br><small>10%</small></th>
-                                <th class="text-center">FFI<br><small>10%</small></th>
-                                <th class="text-center">FIG<br><small>10%</small></th>
-                                <th class="text-center">FFG<br><small>10%</small></th>
+                                <th class="text-center">FII</th>
+                                <th class="text-center">FFI</th>
+                                <th class="text-center">FIG</th>
+                                <th class="text-center">FFG</th>
                                 <th class="text-center">Form. 70%</th>
                                 <th class="text-center">Pr. Integrador<br><small>15%</small></th>
                                 <th class="text-center">Eval. Parcial<br><small>15%</small></th>
@@ -149,13 +159,13 @@
                                 <tr data-alumno="{{ $alumno->id }}" class="{{ $esFinal ? 'table-secondary' : '' }}">
                                     <td>{{ $i + 1 }}</td>
                                     <td>{{ $alumno->apellidos }} {{ $alumno->nombres }}</td>
-                                    <td><input type="number" step="0.01" min="0.01" max="10" class="form-control form-control-sm text-center nota-input" name="notas[{{ $alumno->id }}][fii]" value="{{ $n && $fii > 0 ? number_format($fii, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required></td>
-                                    <td><input type="number" step="0.01" min="0.01" max="10" class="form-control form-control-sm text-center nota-input" name="notas[{{ $alumno->id }}][ffi]" value="{{ $n && $ffi > 0 ? number_format($ffi, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required></td>
-                                    <td><input type="number" step="0.01" min="0.01" max="10" class="form-control form-control-sm text-center nota-input" name="notas[{{ $alumno->id }}][fig]" value="{{ $n && $fig > 0 ? number_format($fig, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required></td>
-                                    <td><input type="number" step="0.01" min="0.01" max="10" class="form-control form-control-sm text-center nota-input" name="notas[{{ $alumno->id }}][ffg]" value="{{ $n && $ffg > 0 ? number_format($ffg, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required></td>
+                                    <td><input type="text" inputmode="decimal" class="form-control form-control-sm text-center nota-input" name="notas[{{ $alumno->id }}][fii]" value="{{ $n && $fii > 0 ? number_format($fii, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required></td>
+                                    <td><input type="text" inputmode="decimal" class="form-control form-control-sm text-center nota-input" name="notas[{{ $alumno->id }}][ffi]" value="{{ $n && $ffi > 0 ? number_format($ffi, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required></td>
+                                    <td><input type="text" inputmode="decimal" class="form-control form-control-sm text-center nota-input" name="notas[{{ $alumno->id }}][fig]" value="{{ $n && $fig > 0 ? number_format($fig, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required></td>
+                                    <td><input type="text" inputmode="decimal" class="form-control form-control-sm text-center nota-input" name="notas[{{ $alumno->id }}][ffg]" value="{{ $n && $ffg > 0 ? number_format($ffg, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required></td>
                                     <td class="text-center fw-bold form70">{{ number_format($trunc($form70), 2, '.', '') }}</td>
-                                    <td><input type="number" step="0.01" min="0.01" max="10" class="form-control form-control-sm text-center nota-input" name="notas[{{ $alumno->id }}][proyecto_integrador]" value="{{ $n && $pi > 0 ? number_format($pi, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required></td>
-                                    <td><input type="number" step="0.01" min="0.01" max="10" class="form-control form-control-sm text-center nota-input" name="notas[{{ $alumno->id }}][evaluacion_parcial]" value="{{ $n && $ep > 0 ? number_format($ep, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required></td>
+                                    <td><input type="text" inputmode="decimal" class="form-control form-control-sm text-center nota-input" name="notas[{{ $alumno->id }}][proyecto_integrador]" value="{{ $n && $pi > 0 ? number_format($pi, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required></td>
+                                    <td><input type="text" inputmode="decimal" class="form-control form-control-sm text-center nota-input" name="notas[{{ $alumno->id }}][evaluacion_parcial]" value="{{ $n && $ep > 0 ? number_format($ep, 2, '.', '') : '' }}" placeholder="0.00" {{ $esFinal ? 'readonly' : '' }} required></td>
                                     <td class="text-center fw-bold eval30">{{ number_format($trunc($eval30), 2, '.', '') }}</td>
                                     <td class="text-center fw-bold total">{{ number_format($trunc($total), 2, '.', '') }}</td>
                                     <td class="text-center">
@@ -310,95 +320,231 @@
     if (!form) return;
     const esExamen = form.dataset.modo === 'examen';
 
-    form.querySelectorAll('.nota-input').forEach(input => {
-        input.addEventListener('input', function() {
-            const row = this.closest('tr');
-            if (!row) return;
-            const fii = parseFloat(row.querySelector('[name$="[fii]"]')?.value) || 0;
-            const ffi = parseFloat(row.querySelector('[name$="[ffi]"]')?.value) || 0;
-            const fig = parseFloat(row.querySelector('[name$="[fig]"]')?.value) || 0;
-            const ffg = parseFloat(row.querySelector('[name$="[ffg]"]')?.value) || 0;
-            const pi = parseFloat(row.querySelector('[name$="[proyecto_integrador]"]')?.value) || 0;
-            const ep = parseFloat(row.querySelector('[name$="[evaluacion_parcial]"]')?.value) || 0;
-            const form70 = ((fii + ffi + fig + ffg) / 40) * 7;
-            const eval30 = ((pi + ep) / 20) * 3;
-            const total = form70 + eval30;
-            row.querySelector('.form70').textContent = trunc2(form70).toFixed(2);
-            row.querySelector('.eval30').textContent = trunc2(eval30).toFixed(2);
-            row.querySelector('.total').textContent = trunc2(total).toFixed(2);
+    const RANGO_MIN = 0.01;
+    const RANGO_MAX = 10;
+    const RANGO_TEXTO = 'entre ' + RANGO_MIN + ' y ' + RANGO_MAX;
+
+    const MENSAJE_RANGO = 'La nota debe estar ' + RANGO_TEXTO
+        + '. El 0 no se admite porque significa "sin nota": deja el campo vacío.';
+    const MENSAJE_FORMATO = 'Formato inválido. Escribe un número de 0 a 10 con hasta 2 decimales '
+        + '(ejemplo: 9.5, 9,50 o 10).';
+
+    const ETIQUETAS_CAMPO = {
+        fii: 'FII',
+        ffi: 'FFI',
+        fig: 'FIG',
+        ffg: 'FFG',
+        proyecto_integrador: 'Proyecto Integrador',
+        evaluacion_parcial: 'Evaluación Parcial',
+        nota_examen: 'Examen Quimestral',
+    };
+
+    const nombreDeAlumno = inp =>
+        inp.closest('tr')?.querySelector('td:nth-child(2)')?.textContent?.trim() || '';
+
+    const nombreDeCampo = inp => {
+        const clave = inp.name.match(/\[([^\]]+)\]$/)?.[1] ?? '';
+        return ETIQUETAS_CAMPO[clave] || clave;
+    };
+
+    const listaHTML = items => items.map(t => '• ' + t).join('<br>');
+
+    // Acepta coma o punto al escribir y deja siempre el punto en el casillero.
+    function normalizarComa(nota) {
+        if (nota.value.includes(',')) {
+            nota.value = nota.value.replace(/,/g, '.');
+        }
+    }
+
+    // Diagnostica una nota mientras se digita. Campo vacio = sin nota, es valido.
+    function problemaDe(nota) {
+        const bruto = nota.value.trim();
+
+        if (bruto === '') return null;
+        if (!/^-?\d+(\.\d+)?$/.test(bruto)) return { codigo: 'formato', mensaje: MENSAJE_FORMATO };
+
+        const decimales = bruto.split('.')[1] ?? '';
+
+        if (decimales.length > 2) {
+            return { codigo: 'formato', mensaje: 'Máximo 2 decimales. Escribió ' + decimales.length + '.' };
+        }
+
+        const valor = parseFloat(bruto);
+
+        if (valor < RANGO_MIN || valor > RANGO_MAX) return { codigo: 'rango', mensaje: MENSAJE_RANGO };
+
+        return null;
+    }
+
+    // Resalta la celda y devuelve true si la nota es válida. El detalle del
+    // error se muestra con SweetAlert, no debajo del casillero.
+    function marcarNota(nota) {
+        const problema = problemaDe(nota);
+
+        if (problema === null) {
+            nota.classList.remove('is-invalid');
+            return true;
+        }
+
+        nota.classList.add('is-invalid');
+        return false;
+    }
+
+    const filaEsValida = row =>
+        [...row.querySelectorAll('.nota-input, .examen-input')]
+            .every(nota => problemaDe(nota) === null);
+
+    // Recalcula la fila. Si algún valor es inválido no muestra un total
+    // inventado: lo deja en "—" para no confundir.
+    function pintarFila(row) {
+        if (!row) return;
+
+        const celdas = ['form70', 'eval30', 'total']
+            .map(clase => row.querySelector('.' + clase))
+            .filter(Boolean);
+
+        if (celdas.length === 0) return;
+
+        if (!filaEsValida(row)) {
+            celdas.forEach(celda => {
+                celda.textContent = '—';
+                celda.classList.add('text-danger', 'fw-bold');
+            });
+            return;
+        }
+
+        const leer = campo => {
+            const bruto = (row.querySelector('[name$="[' + campo + ']"]')?.value ?? '')
+                .trim()
+                .replace(',', '.');
+            return bruto === '' ? 0 : parseFloat(bruto);
+        };
+
+        const form70 = ((leer('fii') + leer('ffi') + leer('fig') + leer('ffg')) / 40) * 7;
+        const eval30 = ((leer('proyecto_integrador') + leer('evaluacion_parcial')) / 20) * 3;
+
+        celdas.forEach(celda => celda.classList.remove('text-danger'));
+        row.querySelector('.form70').textContent = trunc2(form70).toFixed(2);
+        row.querySelector('.eval30').textContent = trunc2(eval30).toFixed(2);
+        row.querySelector('.total').textContent = trunc2(form70 + eval30).toFixed(2);
+    }
+
+    // No abrir dos SweetAlert seguidos cuando el docente pulsa un boton de
+    // guardado con un campo invalido (blur ocurre antes que click).
+    let yendoAGuardar = false;
+    form.querySelectorAll('button[data-tipo]').forEach(btn => {
+        btn.addEventListener('mousedown', () => { yendoAGuardar = true; });
+    });
+
+    // Validación en vivo: la casilla se marca en rojo al instante y el
+    // resaltado se mantiene hasta que el valor quede correcto, aunque el
+    // docente haga clic en otra casilla.
+    form.querySelectorAll('.nota-input, .examen-input').forEach(nota => {
+        nota.addEventListener('input', function () {
+            normalizarComa(this);
+            marcarNota(this);
+            pintarFila(this.closest('tr'));
+        });
+
+        // Al perder el foco se vuelve a evaluar para que el rojo no se borre
+        // por el solo hecho de mover el cursor a otra casilla.
+        nota.addEventListener('blur', function () {
+            marcarNota(this);
+        });
+
+        // Al salir del campo se avisa con SweetAlert y se devuelve el foco.
+        nota.addEventListener('change', function () {
+            if (yendoAGuardar || marcarNota(this)) return;
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Nota inválida',
+                html: '<b>' + nombreDeAlumno(this) + '</b> — ' + nombreDeCampo(this)
+                    + '<br><br>' + problemaDe(this).mensaje,
+                confirmButtonText: 'Corregir',
+            }).then(() => this.focus());
         });
     });
+
+    function revisarNotas(inputs, exigirTodos) {
+        const malFormato = [];
+        const fueraDeRango = [];
+        const vacios = [];
+
+        inputs.forEach(inp => {
+            const bruto = inp.value.trim();
+
+            if (bruto === '') {
+                marcarNota(inp);
+                if (exigirTodos) vacios.push(nombreDeAlumno(inp));
+                return;
+            }
+
+            if (marcarNota(inp)) return;
+
+            const referencia = nombreDeAlumno(inp) + ' — ' + nombreDeCampo(inp) + ': ' + bruto;
+
+            if (problemaDe(inp).codigo === 'formato') malFormato.push(referencia);
+            else fueraDeRango.push(referencia);
+        });
+
+        if (malFormato.length > 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Formato de nota inválido',
+                html: 'Se admiten hasta <b>2 decimales</b>, con punto o con coma.<br>'
+                    + 'Ejemplos válidos: 9.5, 9,50, 10.<br><br>'
+                    + 'Corrige estos campos:<br>' + listaHTML(malFormato),
+                confirmButtonText: 'Corregir',
+            });
+            return true;
+        }
+
+        if (fueraDeRango.length > 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Notas fuera de rango',
+                html: 'Cada nota debe estar <b>' + RANGO_TEXTO + '</b>.<br>'
+                    + 'El <b>0</b> no se admite porque significa "sin nota"; '
+                    + 'para dejar un campo vacío simplemente no lo llenes.<br><br>'
+                    + 'Revisa estos campos:<br>' + listaHTML(fueraDeRango),
+                confirmButtonText: 'Corregir',
+            });
+            return true;
+        }
+
+        if (vacios.length > 0) {
+            const unicos = [...new Set(vacios)];
+            Swal.fire({
+                icon: 'error',
+                title: 'Completa todos los casilleros',
+                text: 'Para guardar como Final no puede quedar ningún campo vacío.\n\n'
+                    + 'Estudiantes con campos vacíos:\n' + unicos.map(n => '• ' + n).join('\n'),
+                confirmButtonText: 'OK',
+            });
+            return true;
+        }
+
+        return false;
+    }
+
+    const inputsEditables = () => {
+        const selector = esExamen ? '.examen-input' : '.nota-input';
+        return form.querySelectorAll(selector + ':not([readonly])');
+    };
 
     form.querySelectorAll('button[data-tipo]').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const tipo = this.dataset.tipo;
 
+            if (revisarNotas(inputsEditables(), tipo === 'final')) {
+                return;
+            }
+
             if (tipo === 'parcial') {
                 document.getElementById('tipo_guardado').value = 'parcial';
                 form.submit();
-                return;
-            }
-
-            const selector = esExamen ? '.examen-input' : '.nota-input';
-            const inputs = form.querySelectorAll(selector + ':not([readonly])');
-            inputs.forEach(inp => inp.classList.remove('is-invalid'));
-
-            const vacios = [];
-            inputs.forEach(inp => {
-                if (!inp.value || inp.value.trim() === '') {
-                    inp.classList.add('is-invalid');
-                    const nombre = inp.closest('tr')?.querySelector('td:nth-child(2)')?.textContent?.trim();
-                    if (nombre && !vacios.includes(nombre)) vacios.push(nombre);
-                }
-            });
-
-            if (vacios.length > 0) {
-                const lista = vacios.map(n => '• ' + n).join('\n');
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Completa todos los casilleros',
-                    text: 'Estudiantes con campos vacíos:\n' + lista,
-                    confirmButtonText: 'OK',
-                });
-                return;
-            }
-
-            const invalidos = [];
-            inputs.forEach(inp => {
-                const val = parseFloat(inp.value);
-                if (isNaN(val) || val <= 0 || val > 10) {
-                    inp.classList.add('is-invalid');
-                    const nombre = inp.closest('tr')?.querySelector('td:nth-child(2)')?.textContent?.trim();
-                    const campo = inp.name.match(/\[(\w+)\]$/)?.[1] ?? '';
-                    invalidos.push(nombre + ' (' + campo + ')');
-                }
-            });
-
-            if (invalidos.length > 0) {
-                const lista = invalidos.map(n => '• ' + n).join('\n');
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Notas fuera de rango',
-                    text: 'Cada nota debe ser > 0 y ≤ 10. Revisa:\n' + lista,
-                    confirmButtonText: 'OK',
-                });
-                return;
-            }
-
-            const inputsConComa = [];
-            form.querySelectorAll(selector).forEach(inp => {
-                if (inp.value.includes(',')) {
-                    inputsConComa.push(inp.name);
-                }
-            });
-            if (inputsConComa.length > 0) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Usa punto (.) como separador decimal',
-                    text: 'Campos con coma: ' + inputsConComa.join(', '),
-                    confirmButtonText: 'Corregir',
-                });
                 return;
             }
 
@@ -417,6 +563,16 @@
                 }
             });
         });
+    });
+
+    // Al pulsar Enter dentro de la tabla se valida igual que "Guardado Parcial".
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (revisarNotas(inputsEditables(), false)) {
+            return;
+        }
+        document.getElementById('tipo_guardado').value = 'parcial';
+        form.submit();
     });
 })();
 </script>

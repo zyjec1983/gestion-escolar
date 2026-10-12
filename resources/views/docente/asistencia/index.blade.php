@@ -9,6 +9,9 @@
     @if(session('success'))
         <div id="swal-success" data-message="{{ session('success') }}" hidden></div>
     @endif
+    @if(session('error'))
+        <div id="swal-warning" data-message="{{ session('error') }}" hidden></div>
+    @endif
 
     <form method="GET" class="row g-3 mb-4">
         <div class="col-md-4">
@@ -28,6 +31,13 @@
     </form>
 
     @if($alumnos->isNotEmpty())
+        @if($bloqueado)
+            <div class="alert alert-warning">
+                <i class="bi bi-lock-fill me-1"></i>
+                La asistencia de este curso ya fue registrada. Solo Inspección puede modificarla.
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('docente.asistencia.store') }}">
             @csrf
             <input type="hidden" name="clase_docente_id" value="{{ $clase->id }}">
@@ -41,13 +51,14 @@
                             <th>Estudiante</th>
                             <th class="text-center">
                                 <div class="form-check d-flex justify-content-center">
-                                    <input class="form-check-input" type="checkbox" id="todosPresentes">
+                                    <input class="form-check-input" type="checkbox" id="todosPresentes" {{ $bloqueado ? 'disabled' : '' }}>
                                     <label class="form-check-label ms-1">Presente</label>
                                 </div>
                             </th>
                             <th class="text-center">Justificada</th>
                             <th class="text-center">Injustificada</th>
-                            <th>Observación</th>
+                            <th class="text-center">Atraso</th>
+                            <th>Observaciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -61,33 +72,44 @@
                                 <td>{{ $alumno->apellidos }} {{ $alumno->nombres }}</td>
                                 <td class="text-center">
                                     <input type="radio" class="form-check-input"
-                                        name="asistencia[{{ $alumno->id }}][estado]" value="presente" {{ $estado == 'presente' ? 'checked' : '' }}>
+                                        name="asistencia[{{ $alumno->id }}][estado]" value="presente"
+                                        {{ $estado == 'presente' ? 'checked' : '' }} {{ $bloqueado ? 'disabled' : '' }}>
                                 </td>
                                 <td class="text-center">
                                     <input type="radio" class="form-check-input"
-                                        name="asistencia[{{ $alumno->id }}][estado]" value="justificada" {{ $estado == 'justificada' ? 'checked' : '' }}>
+                                        name="asistencia[{{ $alumno->id }}][estado]" value="justificada"
+                                        {{ $estado == 'justificada' ? 'checked' : '' }} {{ $bloqueado ? 'disabled' : '' }}>
                                 </td>
                                 <td class="text-center">
                                     <input type="radio" class="form-check-input"
-                                        name="asistencia[{{ $alumno->id }}][estado]" value="injustificada" {{ $estado == 'injustificada' ? 'checked' : '' }}>
+                                        name="asistencia[{{ $alumno->id }}][estado]" value="injustificada"
+                                        {{ $estado == 'injustificada' ? 'checked' : '' }} {{ $bloqueado ? 'disabled' : '' }}>
+                                </td>
+                                <td class="text-center">
+                                    <input type="radio" class="form-check-input"
+                                        name="asistencia[{{ $alumno->id }}][estado]" value="atraso"
+                                        {{ $estado == 'atraso' ? 'checked' : '' }} {{ $bloqueado ? 'disabled' : '' }}>
                                 </td>
                                 <td>
                                     <input type="text" class="form-control form-control-sm"
                                         name="asistencia[{{ $alumno->id }}][observacion]"
-                                        value="{{ $existente?->observacion }}" placeholder="Opcional">
+                                        value="{{ $existente?->observacion }}" placeholder="Observaciones"
+                                        {{ $bloqueado ? 'disabled' : '' }}>
                                 </td>
+                                <input type="hidden" name="asistencia[{{ $alumno->id }}][alumno_id]" value="{{ $alumno->id }}">
                             </tr>
-                            <input type="hidden" name="asistencia[{{ $alumno->id }}][alumno_id]" value="{{ $alumno->id }}">
                         @endforeach
                     </tbody>
                 </table>
             </div>
 
-            <div class="d-flex justify-content-end mt-3">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-save me-1"></i>Guardar Asistencia
-                </button>
-            </div>
+            @unless($bloqueado)
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-1"></i>Guardar Asistencia
+                    </button>
+                </div>
+            @endunless
         </form>
     @elseif($clase)
         <div class="alert alert-info">No hay estudiantes asignados a esta clase.</div>

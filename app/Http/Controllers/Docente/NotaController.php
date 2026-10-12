@@ -14,6 +14,17 @@ use Illuminate\Validation\ValidationException;
 
 class NotaController extends Controller
 {
+    /**
+     * Campos de nota del grid. Admiten coma o punto al escribirse, pero
+     * siempre se guardan con punto: la columna es decimal(5,2) y PHP, SQL,
+     * JSON y Excel no interpretan una coma como separador decimal.
+     */
+    private const CAMPOS_NOTA = [
+        'fii', 'ffi', 'fig', 'ffg',
+        'proyecto_integrador', 'evaluacion_parcial',
+        'nota_examen',
+    ];
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -67,8 +78,39 @@ class NotaController extends Controller
         ));
     }
 
+    /**
+     * Normaliza la coma decimal a punto ANTES de validar, para que un 9,5
+     * escrito a mano quede como 9.5 y no sea rechazado por la regla numeric.
+     */
+    private function normalizarDecimales(Request $request): void
+    {
+        $notas = $request->input('notas');
+
+        if (!is_array($notas)) {
+            return;
+        }
+
+        $formateadas = [];
+
+        foreach ($notas as $alumnoId => $item) {
+            if (is_array($item)) {
+                foreach (self::CAMPOS_NOTA as $campo) {
+                    if (isset($item[$campo]) && is_string($item[$campo])) {
+                        $item[$campo] = str_replace(',', '.', trim($item[$campo]));
+                    }
+                }
+            }
+
+            $formateadas[$alumnoId] = $item;
+        }
+
+        $request->merge(['notas' => $formateadas]);
+    }
+
     public function store(Request $request)
     {
+        $this->normalizarDecimales($request);
+
         $sistema = $this->sistemaEvaluacion();
         $opciones = $this->opcionesNotas($sistema);
         $parcialesValidos = array_column($opciones, 'parcial');
@@ -84,15 +126,19 @@ class NotaController extends Controller
             'notas.*.alumno_id' => 'required|exists:alumnos,id',
         ];
 
+        // decimal:0,2 mirrors la columna decimal(5,2): sin ella el servidor
+        // aceptaba 9.555 y lo guardaba crudo en SQLite, que no trunca.
+        $nota = 'nullable|numeric|decimal:0,2|min:0.01|max:10';
+
         if ($tipo === 'examen') {
-            $rules['notas.*.nota_examen'] = 'nullable|numeric|min:0.01|max:10';
+            $rules['notas.*.nota_examen'] = $nota;
         } else {
-            $rules['notas.*.fii'] = 'nullable|numeric|min:0.01|max:10';
-            $rules['notas.*.ffi'] = 'nullable|numeric|min:0.01|max:10';
-            $rules['notas.*.fig'] = 'nullable|numeric|min:0.01|max:10';
-            $rules['notas.*.ffg'] = 'nullable|numeric|min:0.01|max:10';
-            $rules['notas.*.proyecto_integrador'] = 'nullable|numeric|min:0.01|max:10';
-            $rules['notas.*.evaluacion_parcial'] = 'nullable|numeric|min:0.01|max:10';
+            $rules['notas.*.fii'] = $nota;
+            $rules['notas.*.ffi'] = $nota;
+            $rules['notas.*.fig'] = $nota;
+            $rules['notas.*.ffg'] = $nota;
+            $rules['notas.*.proyecto_integrador'] = $nota;
+            $rules['notas.*.evaluacion_parcial'] = $nota;
         }
 
         $validated = $request->validate($rules);

@@ -34,6 +34,7 @@
             <tr><th>Número Documento</th><td>{{ $preRegistro->rep_numero_documento }}</td></tr>
             <tr><th>Nombres</th><td>{{ $preRegistro->rep_nombres }}</td></tr>
             <tr><th>Apellidos</th><td>{{ $preRegistro->rep_apellidos }}</td></tr>
+            <tr><th>Fecha de nacimiento</th><td>{{ $preRegistro->rep_fecha_nacimiento?->format('d/m/Y') ?? '-' }}</td></tr>
             <tr><th>Email</th><td>{{ $preRegistro->rep_email }}</td></tr>
             <tr><th>Teléfono</th><td>{{ $preRegistro->rep_telefono ?? '-' }}</td></tr>
         </table>

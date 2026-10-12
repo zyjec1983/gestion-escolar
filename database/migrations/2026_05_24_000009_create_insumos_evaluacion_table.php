@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('codigo', 30)->nullable()->unique();
             $table->string('tipo')->nullable();
-            $table->foreignId('clase_docente_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('clase_docente_id')->constrained('clases_docentes')->cascadeOnDelete();
             $table->decimal('peso_porcentual', 5, 2)->nullable();
             $table->timestamps();
 

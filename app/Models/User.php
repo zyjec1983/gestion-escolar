@@ -15,7 +15,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'apellidos', 'email', 'password',
-        'rol', 'institucion_id', 'telefono',
+        'rol', 'institucion_id', 'telefono', 'numero_cedula', 'fecha_nacimiento',
     ];
 
     protected $hidden = [
@@ -26,8 +26,30 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'fecha_nacimiento' => 'date',
             'password' => 'hashed',
         ];
+    }
+
+    /** Edad cumplida. Null si la persona no tiene fecha de nacimiento registrada. */
+    public function edad(): ?int
+    {
+        return $this->fecha_nacimiento?->age;
+    }
+
+    /**
+     * Un representante legal tiene que ser mayor de edad. Las cuentas viejas
+     * pueden no tener la fecha cargada, asi que sin dato no se puede afirmar
+     * que sea menor: se devuelve null y quien valida decide que hacer.
+     */
+    public function esAdulto(): ?bool
+    {
+        return $this->edad() === null ? null : $this->edad() >= 18;
+    }
+
+    public function nombreCompleto(): string
+    {
+        return trim("{$this->name} {$this->apellidos}");
     }
 
     public function institucion()
@@ -78,5 +100,10 @@ class User extends Authenticatable
     public function permisosAsignados()
     {
         return $this->hasMany(PermisoNota::class, 'user_asigno_id');
+    }
+
+    public function cambiosDeRepresentante()
+    {
+        return $this->hasMany(RepresentanteCambio::class, 'registrado_por');
     }
 }

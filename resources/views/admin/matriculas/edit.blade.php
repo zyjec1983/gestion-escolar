@@ -59,7 +59,7 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Tipo de Sangre</label>
-                        <input type="text" name="tipo_sangre" class="form-control" value="{{ old('tipo_sangre', $matricula->alumno->tipo_sangre) }}">
+                        @include('partials.tipo-sangre', ['name' => 'tipo_sangre', 'value' => $matricula->alumno->tipo_sangre])
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Fecha Nac. (año, mes, día)</label>

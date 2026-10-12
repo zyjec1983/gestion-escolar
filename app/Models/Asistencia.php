@@ -9,14 +9,39 @@ class Asistencia extends Model
     protected $table = 'asistencia';
 
     protected $fillable = [
-        'clase_docente_id', 'alumno_id', 'fecha', 'estado', 'observacion',
+        'curso_id',
+        'paralelo_id',
+        'alumno_id',
+        'fecha',
+        'estado',
+        'observacion',
+        'clase_docente_id',
+        'registrado_por',
+        'editado_por',
+        'editado_en',
     ];
 
     protected function casts(): array
     {
         return [
             'fecha' => 'date',
+            'editado_en' => 'datetime',
         ];
+    }
+
+    public function curso()
+    {
+        return $this->belongsTo(Curso::class);
+    }
+
+    public function paralelo()
+    {
+        return $this->belongsTo(Paralelo::class);
+    }
+
+    public function alumno()
+    {
+        return $this->belongsTo(Alumno::class);
     }
 
     public function claseDocente()
@@ -24,8 +49,13 @@ class Asistencia extends Model
         return $this->belongsTo(ClaseDocente::class);
     }
 
-    public function alumno()
+    public function registradoPor()
     {
-        return $this->belongsTo(Alumno::class);
+        return $this->belongsTo(User::class, 'registrado_por');
+    }
+
+    public function editadoPor()
+    {
+        return $this->belongsTo(User::class, 'editado_por');
     }
 }

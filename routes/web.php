@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\PreRegistroController as AdminPreRegistroControll
 use App\Http\Controllers\AulaVirtualController;
 use App\Http\Controllers\ForoController;
 use App\Http\Controllers\Inspeccion\InspectorCitaController;
+use App\Http\Controllers\Inspeccion\InspectorObservacionController;
+use App\Http\Controllers\Inspeccion\InspectorAsistenciaController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Api\DashboardController as ApiDashboardController;
 use App\Http\Controllers\DashboardController;
@@ -19,6 +21,7 @@ use App\Http\Controllers\Docente\CitaController;
 use App\Http\Controllers\Docente\NotaController;
 use App\Http\Controllers\Docente\ObservacionController;
 use App\Http\Controllers\PreRegistroController;
+use App\Http\Controllers\Secretaria\ActualizacionDatosController;
 use App\Http\Controllers\PlanificacionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RepresentanteController;
@@ -123,9 +126,19 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
     });
 
     Route::get('/configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
-    Route::post('/configuracion/sistema-evaluacion', [ConfiguracionController::class, 'updateSistemaEvaluacion'])->name('configuracion.sistema-evaluacion');
-    Route::post('/configuracion/zona-horaria', [ConfiguracionController::class, 'updateZonaHoraria'])->name('configuracion.zona-horaria');
+    Route::post('/configuracion/sistema_evaluacion', [ConfiguracionController::class, 'updateSistemaEvaluacion'])->name('configuracion.sistema-evaluacion');
+    Route::post('/configuracion/zona_horaria', [ConfiguracionController::class, 'updateZonaHoraria'])->name('configuracion.zona-horaria');
 });
+
+// Actualizacion de datos de alumnos y de su representante legal.
+Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA'])
+    ->prefix('actualizacion')
+    ->name('actualizacion.')
+    ->group(function () {
+        Route::get('/', [ActualizacionDatosController::class, 'index'])->name('index');
+        Route::get('/{alumno}', [ActualizacionDatosController::class, 'edit'])->name('edit');
+        Route::put('/{alumno}', [ActualizacionDatosController::class, 'update'])->name('update');
+    });
 
 Route::middleware(['auth', 'role:DOCENTE'])->prefix('docente')->name('docente.')->group(function () {
     Route::get('/asistencia', [AsistenciaController::class, 'index'])->name('asistencia.index');
@@ -151,15 +164,22 @@ Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA,VICERRECTORA,INSPECCIO
     Route::get('/citas', [HistorialCitaController::class, 'index'])->name('citas.historial');
 });
 
-Route::middleware(['auth', 'role:INSPECCION,RECTORA,VICERRECTORA'])
+Route::middleware(['auth', 'role:INSPECCION,RECTORA,VICERRECTORA,DECE'])
     ->prefix('inspeccion')->name('inspeccion.')->group(function () {
         Route::get('/citas/agendar', [InspectorCitaController::class, 'agendar'])->name('citas.agendar');
         Route::post('/citas/agendar', [InspectorCitaController::class, 'store'])->name('citas.store');
         Route::get('/citas/historial', [InspectorCitaController::class, 'historial'])->name('citas.historial');
+
+        Route::get('/observaciones', [InspectorObservacionController::class, 'index'])->name('observaciones.index');
+        Route::post('/observaciones', [InspectorObservacionController::class, 'store'])->name('observaciones.store');
+        Route::get('/observaciones/{alumno}/print', [InspectorObservacionController::class, 'print'])->name('observaciones.print');
+        Route::get('/asistencia', [InspectorAsistenciaController::class, 'index'])->name('asistencia.index');
+        Route::post('/asistencia', [InspectorAsistenciaController::class, 'store'])->name('asistencia.store');
     });
 
 Route::get('/debug-data', function () {
     $dashboard = app(ApiDashboardController::class)->index(request());
     return $dashboard->toArray(request());
 });
+
 

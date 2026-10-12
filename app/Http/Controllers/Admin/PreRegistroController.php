@@ -15,8 +15,10 @@ use App\Notifications\SolicitudAprobada;
 use App\Notifications\SolicitudRechazada;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class PreRegistroController extends Controller
 {
@@ -42,7 +44,7 @@ class PreRegistroController extends Controller
 
     public function createForm()
     {
-        $cursos = Curso::all();
+        $cursos = Curso::enOrdenEscolar()->get();
         $paralelos = Paralelo::all();
         $periodo = PeriodoLectivo::where('activo', true)->first();
         $adminMode = true;
@@ -83,7 +85,7 @@ class PreRegistroController extends Controller
         return back()->with('success', "Inscripciones {$estado} correctamente.");
     }
 
-    public function aprobar($id)
+    public function aprobar(Request $request, $id)
     {
         $preRegistro = PreRegistro::with(['curso', 'paralelo', 'periodo'])->findOrFail($id);
 
@@ -91,25 +93,35 @@ class PreRegistroController extends Controller
             return back()->with('error', 'Esta solicitud ya fue procesada.');
         }
 
+        // La cuenta del representante queda con su cedula y fecha de nacimiento
+        // para que el sistema pueda comprobar que es mayor de edad.
+        $validated = $request->validate([
+            'rep_fecha_nacimiento' => [
+                'required',
+                'date',
+                Rule::date()->before(now()->subYears(18)->addDay()->startOfDay()),
+            ],
+        ]);
+
+        $preRegistro->update(['rep_fecha_nacimiento' => $validated['rep_fecha_nacimiento']]);
+
         $password = Str::password(10);
 
         $userData = [
             'name' => $preRegistro->rep_nombres,
             'apellidos' => $preRegistro->rep_apellidos,
             'email' => $preRegistro->rep_email,
+            'numero_cedula' => $preRegistro->rep_numero_documento,
+            'fecha_nacimiento' => $preRegistro->rep_fecha_nacimiento,
             'password' => Hash::make($password),
             'rol' => 'REPRESENTANTE',
             'institucion_id' => 1,
         ];
 
-        $representante = User::where('email', $preRegistro->rep_email)->first()
-            ?: User::create($userData);
-
         $ultimoCodigo = Alumno::max('id') ?? 0;
         $codigoAlumno = now()->year . str_pad($ultimoCodigo + 1, 6, '0', STR_PAD_LEFT);
 
         $alumnoData = [
-            'codigo' => $codigoAlumno,
             'numero_cedula' => $preRegistro->alumno_numero_cedula ?: $preRegistro->alumno_numero_documento,
             'nombres' => $preRegistro->alumno_nombres,
             'apellidos' => $preRegistro->alumno_apellidos,
@@ -174,25 +186,43 @@ class PreRegistroController extends Controller
             'representante_alterno_telefono' => $preRegistro->alterno_telefono,
             'representante_alterno_email' => $preRegistro->alterno_email,
             'representante_alterno_direccion' => $preRegistro->alterno_direccion,
-            'representante_user_id' => $representante->id,
         ];
 
-        $alumno = Alumno::create($alumnoData);
+        // Cuenta del representante, alumno y matricula: o se guarda todo o no
+        // se guarda nada, para no dejar solicitudes a medio aprobar.
+        [$representante, $matricula] = DB::transaction(function () use ($preRegistro, $userData, $password, $alumnoData, $codigoAlumno) {
+            $representante = User::where('email', $preRegistro->rep_email)->first();
 
-        $matricula = Matricula::create([
-            'codigo_matricula' => "MAT-{$alumno->id}",
-            'alumno_id' => $alumno->id,
-            'curso_id' => $preRegistro->curso_id,
-            'paralelo_id' => $preRegistro->paralelo_id,
-            'periodo_id' => $preRegistro->periodo_id,
-            'especializacion' => $preRegistro->especializacion,
-        ]);
+            if ($representante) {
+                $representante->update([
+                    'name' => $userData['name'],
+                    'apellidos' => $userData['apellidos'],
+                    'numero_cedula' => $userData['numero_cedula'],
+                    'fecha_nacimiento' => $userData['fecha_nacimiento'],
+                ]);
+            } else {
+                $representante = User::create($userData);
+            }
 
-        $preRegistro->update([
-            'estado' => 'aprobado',
-            'fecha_aprobacion' => now(),
-            'aprobado_por' => auth()->id(),
-        ]);
+            $alumno = Alumno::create([...$alumnoData, 'codigo' => $codigoAlumno, 'representante_user_id' => $representante->id]);
+
+            $matricula = Matricula::create([
+                'codigo_matricula' => "MAT-{$alumno->id}",
+                'alumno_id' => $alumno->id,
+                'curso_id' => $preRegistro->curso_id,
+                'paralelo_id' => $preRegistro->paralelo_id,
+                'periodo_id' => $preRegistro->periodo_id,
+                'especializacion' => $preRegistro->especializacion,
+            ]);
+
+            $preRegistro->update([
+                'estado' => 'aprobado',
+                'fecha_aprobacion' => now(),
+                'aprobado_por' => auth()->id(),
+            ]);
+
+            return [$representante, $matricula];
+        });
 
         $representante->notify(new SolicitudAprobada($preRegistro, $representante->email, $password));
 

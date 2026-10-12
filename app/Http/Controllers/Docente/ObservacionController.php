@@ -2,15 +2,29 @@
 
 namespace App\Http\Controllers\Docente;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\ObservacionBaseController;
 use App\Models\Alumno;
 use App\Models\ClaseDocente;
-use App\Models\Observacion;
-use App\Models\TipoObservacion;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
-class ObservacionController extends Controller
+class ObservacionController extends ObservacionBaseController
 {
+    protected function rutaIndex(): string
+    {
+        return 'docente.observaciones.index';
+    }
+
+    protected function prefijoRuta(): string
+    {
+        return 'docente.observaciones';
+    }
+
+    protected function selector(): string
+    {
+        return 'clase';
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -24,7 +38,6 @@ class ObservacionController extends Controller
         $alumnos = collect();
         $alumnoSeleccionado = null;
         $observaciones = collect();
-        $tiposObservacion = TipoObservacion::orderBy('nombre')->get();
 
         $alumnoId = $request->query('alumno_id');
 
@@ -42,50 +55,54 @@ class ObservacionController extends Controller
             }
 
             if ($alumnoSeleccionado) {
-                $observaciones = Observacion::with(['tipoObservacion', 'profesor'])
-                    ->where('alumno_id', $alumnoSeleccionado->id)
-                    ->latest()
-                    ->get();
+                $observaciones = $this->historial($alumnoSeleccionado->id);
             }
         }
 
-        return view('docente.observaciones.index', compact(
-            'clases', 'clase', 'alumnos', 'alumnoSeleccionado',
-            'observaciones', 'tiposObservacion'
+        return view($this->vistaIndex(), $this->datosVista([
+            'clases' => $clases,
+            'clase' => $clase,
+            'alumnos' => $alumnos,
+            'alumnoSeleccionado' => $alumnoSeleccionado,
+            'observaciones' => $observaciones,
+        ]));
+    }
+
+    /**
+     * Un docente solo puede registrar observaciones de alumnos de sus clases.
+     * Se replica el criterio del listado: mismo curso y mismo paralelo que
+     * alguna de sus clases, sin importar la clase que envie el formulario.
+     */
+    protected function validarAlcance(Request $request, Alumno $alumno): void
+    {
+        $clases = ClaseDocente::where('user_id', $request->user()->id)
+            ->get(['id', 'curso_id', 'paralelo_id']);
+
+        if ($clases->isEmpty()) {
+            throw ValidationException::withMessages([
+                'alumno_id' => 'No tienes clases asignadas, asi que no puedes registrar observaciones.',
+            ]);
+        }
+
+        $matriculas = $alumno->matriculas()->get(['curso_id', 'paralelo_id']);
+
+        $pertenece = $clases->contains(fn (ClaseDocente $clase) => $matriculas->contains(
+            fn ($matricula) => $matricula->curso_id == $clase->curso_id
+                && $matricula->paralelo_id == $clase->paralelo_id
         ));
+
+        if (!$pertenece) {
+            throw ValidationException::withMessages([
+                'alumno_id' => 'Ese alumno no pertenece a ninguna de tus clases.',
+            ]);
+        }
     }
 
-    public function store(Request $request)
+    protected function parametrosTrasGuardar(Request $request, Alumno $alumno): array
     {
-        $validated = $request->validate([
-            'alumno_id' => 'required|exists:alumnos,id',
-            'tipo_observacion_id' => 'required|exists:tipos_observacion,id',
-            'descripcion_texto' => 'required|string|max:1000',
-            'notificar_representante' => 'boolean',
-        ]);
-
-        Observacion::create([
-            'alumno_id' => $validated['alumno_id'],
-            'tipo_observacion_id' => $validated['tipo_observacion_id'],
-            'user_id' => $request->user()->id,
-            'descripcion_texto' => $validated['descripcion_texto'],
-            'notificar_representante' => $request->boolean('notificar_representante'),
-        ]);
-
-        return redirect()->route('docente.observaciones.index', [
-            'clase_docente_id' => $request->query('clase_docente_id'),
-            'alumno_id' => $validated['alumno_id'],
-        ])->with('success', 'Observación registrada correctamente.');
-    }
-
-    public function print($alumnoId)
-    {
-        $alumno = Alumno::findOrFail($alumnoId);
-        $observaciones = Observacion::with(['tipoObservacion', 'profesor'])
-            ->where('alumno_id', $alumnoId)
-            ->latest()
-            ->get();
-
-        return view('docente.observaciones.print', compact('alumno', 'observaciones'));
+        return [
+            'clase_docente_id' => $request->input('clase_docente_id'),
+            'alumno_id' => $alumno->id,
+        ];
     }
 }

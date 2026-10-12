@@ -13,7 +13,7 @@ class PreRegistro extends Model
 
     protected $fillable = [
         'rep_tipo_documento', 'rep_numero_documento', 'rep_nombres', 'rep_apellidos',
-        'rep_email', 'rep_telefono',
+        'rep_email', 'rep_telefono', 'rep_fecha_nacimiento',
         'alumno_tipo_documento', 'alumno_numero_documento', 'alumno_nombres', 'alumno_apellidos',
         'alumno_genero', 'alumno_fecha_nacimiento',         'direccion_domiciliaria', 'alumno_numero_cedula', 'alumno_tipo_sangre',
         'alumno_etnia', 'alumno_nacionalidad', 'alumno_telefono_convencional', 'alumno_celular',
@@ -44,6 +44,7 @@ class PreRegistro extends Model
     {
         return [
             'alumno_fecha_nacimiento' => 'date',
+            'rep_fecha_nacimiento' => 'date',
             'fecha_aprobacion' => 'datetime',
             'alumno_padece_enfermedad' => 'boolean',
             'alumno_tiene_tratamiento' => 'boolean',

@@ -3,6 +3,13 @@
 @section('titulo', 'Solicitud de Matrícula')
 
 @section('contenido')
+@php
+    // El atributo pattern de HTML ya viene anclado: no se le pone ^ ni $.
+    // Nombres y apellidos: solo letras, con acentos, apostilos y guiones.
+    $patronTexto = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?:[ '\\-][A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)*";
+    // Cédula o pasaporte: numeros o texto, sin simbolos ni espacios.
+    $patronDocumento = "[A-Za-z0-9]{5,20}";
+@endphp
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-10">
@@ -72,22 +79,28 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small">Número de Documento <span class="text-danger">*</span></label>
-                                <input type="text" name="rep_numero_documento" class="form-control @error('rep_numero_documento') is-invalid @enderror" value="{{ old('rep_numero_documento') }}" required>
+                                <input type="text" name="rep_numero_documento" class="form-control @error('rep_numero_documento') is-invalid @enderror" value="{{ old('rep_numero_documento') }}" pattern="{{ $patronDocumento }}" maxlength="20" inputmode="text" title="Cédula o pasaporte: números o texto, entre 5 y 20 caracteres." required>
                                 @error('rep_numero_documento') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small">Teléfono</label>
-                                <input type="text" name="rep_telefono" class="form-control" value="{{ old('rep_telefono') }}">
+                                <input type="text" name="rep_telefono" class="form-control" value="{{ old('rep_telefono') }}" maxlength="20" inputmode="tel">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small">Nombres <span class="text-danger">*</span></label>
-                                <input type="text" name="rep_nombres" class="form-control @error('rep_nombres') is-invalid @enderror" value="{{ old('rep_nombres') }}" required>
+                                <input type="text" name="rep_nombres" class="form-control @error('rep_nombres') is-invalid @enderror" value="{{ old('rep_nombres') }}" pattern="{{ $patronTexto }}" maxlength="255" title="Solo letras." required>
                                 @error('rep_nombres') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small">Apellidos <span class="text-danger">*</span></label>
-                                <input type="text" name="rep_apellidos" class="form-control @error('rep_apellidos') is-invalid @enderror" value="{{ old('rep_apellidos') }}" required>
+                                <input type="text" name="rep_apellidos" class="form-control @error('rep_apellidos') is-invalid @enderror" value="{{ old('rep_apellidos') }}" pattern="{{ $patronTexto }}" maxlength="255" title="Solo letras." required>
                                 @error('rep_apellidos') <small class="text-danger">{{ $message }}</small> @enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small">Fecha de nacimiento <span class="text-danger">*</span></label>
+                                <input type="date" name="rep_fecha_nacimiento" class="form-control @error('rep_fecha_nacimiento') is-invalid @enderror" value="{{ old('rep_fecha_nacimiento') }}" required>
+                                <small class="text-muted">El representante legal debe ser mayor de edad.</small>
+                                @error('rep_fecha_nacimiento') <small class="text-danger d-block">{{ $message }}</small> @enderror
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small">Correo Electrónico <span class="text-danger">*</span></label>
@@ -108,23 +121,23 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small">Número de Documento <span class="text-danger">*</span></label>
-                                <input type="text" name="alumno_numero_documento" class="form-control @error('alumno_numero_documento') is-invalid @enderror" value="{{ old('alumno_numero_documento') }}" required>
+                                <input type="text" name="alumno_numero_documento" class="form-control @error('alumno_numero_documento') is-invalid @enderror" value="{{ old('alumno_numero_documento') }}" pattern="{{ $patronDocumento }}" maxlength="20" title="Cédula o pasaporte: números o texto, entre 5 y 20 caracteres." required>
                                 @error('alumno_numero_documento') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small"># Cédula</label>
-                                <input type="text" name="alumno_numero_cedula" class="form-control" value="{{ old('alumno_numero_cedula') }}">
+                                <input type="text" name="alumno_numero_cedula" class="form-control" value="{{ old('alumno_numero_cedula') }}" pattern="{{ $patronDocumento }}" maxlength="20" title="Cédula: números o texto, entre 5 y 20 caracteres.">
                             </div>
                             <div class="col-md-7">
                                 <label class="form-label small">Apellidos y Nombres <span class="text-danger">*</span></label>
-                                <input type="text" id="alumno_apellidos_nombres" class="form-control" value="{{ old('alumno_apellidos_nombres') }}" required>
+                                <input type="text" id="alumno_apellidos_nombres" class="form-control" value="{{ old('alumno_apellidos_nombres') }}" pattern="{{ $patronTexto }}" maxlength="255" title="Solo letras." required>
                                 <input type="hidden" name="alumno_nombres" id="alumno_nombres_hidden" value="{{ old('alumno_nombres') }}">
                                 <input type="hidden" name="alumno_apellidos" id="alumno_apellidos_hidden" value="{{ old('alumno_apellidos') }}">
                                 @error('alumno_nombres') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small">Tipo Sangre</label>
-                                <input type="text" name="alumno_tipo_sangre" class="form-control" value="{{ old('alumno_tipo_sangre') }}">
+                                @include('partials.tipo-sangre', ['name' => 'alumno_tipo_sangre'])
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small">Fecha Nac. (año, mes, día)</label>
@@ -328,9 +341,9 @@
                         </div>
                         <div class="row g-3 mb-3">
                             <h6 class="text-secondary">Padre</h6>
-                            <div class="col-md-5"><label class="form-label small">Nombres y apellidos del Padre</label><input type="text" name="padre_nombres_apellidos" class="form-control" value="{{ old('padre_nombres_apellidos') }}"></div>
-                            <div class="col-md-2"><label class="form-label small">Cédula</label><input type="text" name="padre_cedula" class="form-control" value="{{ old('padre_cedula') }}"></div>
-                            <div class="col-md-3"><label class="form-label small">Teléf. Vigente</label><input type="text" name="padre_telefono" class="form-control" value="{{ old('padre_telefono') }}"></div>
+                            <div class="col-md-5"><label class="form-label small">Nombres y apellidos del Padre</label><input type="text" name="padre_nombres_apellidos" class="form-control" value="{{ old('padre_nombres_apellidos') }}" pattern="{{ $patronTexto }}" maxlength="255" title="Solo letras."></div>
+                            <div class="col-md-2"><label class="form-label small">Cédula</label><input type="text" name="padre_cedula" class="form-control" value="{{ old('padre_cedula') }}" pattern="{{ $patronDocumento }}" maxlength="20" title="Cédula: números o texto, entre 5 y 20 caracteres."></div>
+                            <div class="col-md-3"><label class="form-label small">Teléf. Vigente</label><input type="text" name="padre_telefono" class="form-control" value="{{ old('padre_telefono') }}" maxlength="20" inputmode="tel"></div>
                             <div class="col-md-2">
                                 <label class="form-label small">Facturador</label>
                                 <div class="d-flex gap-3">
@@ -340,13 +353,13 @@
                             </div>
                             <div class="col-md-4"><label class="form-label small">Profesión del Padre o actividad que realiza</label><input type="text" name="padre_profesion" class="form-control" value="{{ old('padre_profesion') }}"></div>
                             <div class="col-md-5"><label class="form-label small">Dirección domicilio</label><input type="text" name="padre_direccion" class="form-control" value="{{ old('padre_direccion') }}"></div>
-                            <div class="col-md-3"><label class="form-label small">Email</label><input type="email" name="padre_email" class="form-control" value="{{ old('padre_email') }}"></div>
+                            <div class="col-md-3"><label class="form-label small">Email</label><input type="email" name="padre_email" class="form-control" value="{{ old('padre_email') }}" maxlength="255"></div>
                         </div>
                         <div class="row g-3 mb-3">
                             <h6 class="text-secondary">Madre</h6>
-                            <div class="col-md-5"><label class="form-label small">Nombres y apellidos de la Madre</label><input type="text" name="madre_nombres_apellidos" class="form-control" value="{{ old('madre_nombres_apellidos') }}"></div>
-                            <div class="col-md-2"><label class="form-label small">Cédula</label><input type="text" name="madre_cedula" class="form-control" value="{{ old('madre_cedula') }}"></div>
-                            <div class="col-md-3"><label class="form-label small">Teléf. Vigente</label><input type="text" name="madre_telefono" class="form-control" value="{{ old('madre_telefono') }}"></div>
+                            <div class="col-md-5"><label class="form-label small">Nombres y apellidos de la Madre</label><input type="text" name="madre_nombres_apellidos" class="form-control" value="{{ old('madre_nombres_apellidos') }}" pattern="{{ $patronTexto }}" maxlength="255" title="Solo letras."></div>
+                            <div class="col-md-2"><label class="form-label small">Cédula</label><input type="text" name="madre_cedula" class="form-control" value="{{ old('madre_cedula') }}" pattern="{{ $patronDocumento }}" maxlength="20" title="Cédula: números o texto, entre 5 y 20 caracteres."></div>
+                            <div class="col-md-3"><label class="form-label small">Teléf. Vigente</label><input type="text" name="madre_telefono" class="form-control" value="{{ old('madre_telefono') }}" maxlength="20" inputmode="tel"></div>
                             <div class="col-md-2">
                                 <label class="form-label small">Facturador</label>
                                 <div class="d-flex gap-3">
@@ -356,7 +369,7 @@
                             </div>
                             <div class="col-md-4"><label class="form-label small">Profesión de la Madre o actividad que realiza</label><input type="text" name="madre_profesion" class="form-control" value="{{ old('madre_profesion') }}"></div>
                             <div class="col-md-5"><label class="form-label small">Dirección domicilio</label><input type="text" name="madre_direccion" class="form-control" value="{{ old('madre_direccion') }}"></div>
-                            <div class="col-md-3"><label class="form-label small">Email</label><input type="email" name="madre_email" class="form-control" value="{{ old('madre_email') }}"></div>
+                            <div class="col-md-3"><label class="form-label small">Email</label><input type="email" name="madre_email" class="form-control" value="{{ old('madre_email') }}" maxlength="255"></div>
                         </div>
 
                         {{-- FACTURACIÓN --}}
@@ -368,17 +381,17 @@
                             </div>
                         </div>
                         <div class="row g-3 mb-4">
-                            <div class="col-md-5"><label class="form-label small">Nombre y Apellidos del Facturador *</label><input type="text" name="facturador_nombre" class="form-control facturable" value="{{ old('facturador_nombre') }}" required></div>
-                            <div class="col-md-2"><label class="form-label small">Cédula *</label><input type="text" name="facturador_cedula" class="form-control facturable" value="{{ old('facturador_cedula') }}" required></div>
-                            <div class="col-md-2"><label class="form-label small">Teléfono *</label><input type="text" name="facturador_telefono" class="form-control facturable" value="{{ old('facturador_telefono') }}" required></div>
-                            <div class="col-md-3"><label class="form-label small">Email *</label><input type="email" name="facturador_email" class="form-control facturable" value="{{ old('facturador_email') }}" required></div>
+                            <div class="col-md-5"><label class="form-label small">Nombre y Apellidos del Facturador *</label><input type="text" name="facturador_nombre" class="form-control facturable" value="{{ old('facturador_nombre') }}" pattern="{{ $patronTexto }}" maxlength="255" title="Solo letras." required></div>
+                            <div class="col-md-2"><label class="form-label small">Cédula *</label><input type="text" name="facturador_cedula" class="form-control facturable" value="{{ old('facturador_cedula') }}" pattern="{{ $patronDocumento }}" maxlength="20" title="Cédula: números o texto, entre 5 y 20 caracteres." required></div>
+                            <div class="col-md-2"><label class="form-label small">Teléfono *</label><input type="text" name="facturador_telefono" class="form-control facturable" value="{{ old('facturador_telefono') }}" maxlength="20" inputmode="tel" required></div>
+                            <div class="col-md-3"><label class="form-label small">Email *</label><input type="email" name="facturador_email" class="form-control facturable" value="{{ old('facturador_email') }}" maxlength="255" required></div>
                             <div class="col-md-8"><label class="form-label small">Dirección *</label><input type="text" name="facturador_direccion" class="form-control facturable" value="{{ old('facturador_direccion') }}" required></div>
                         </div>
 
                         {{-- REPRESENTANTE ALTERNO --}}
                         <h6 class="fw-bold text-primary mb-3 border-bottom pb-2"><i class="bi bi-person-check me-2"></i>Representante en caso de no ser la Madre o el Padre</h6>
                         <div class="row g-3 mb-4">
-                            <div class="col-md-6"><label class="form-label small">Nombre del Representante</label><input type="text" name="alterno_nombre" class="form-control" value="{{ old('alterno_nombre') }}"></div>
+                            <div class="col-md-6"><label class="form-label small">Nombre del Representante</label><input type="text" name="alterno_nombre" class="form-control" value="{{ old('alterno_nombre') }}" pattern="{{ $patronTexto }}" maxlength="255" title="Solo letras."></div>
                             <div class="col-md-6">
                                 <label class="form-label small">Parentesco</label>
                                 <div class="d-flex gap-3 flex-wrap">
@@ -389,24 +402,26 @@
                                     <input type="text" name="alterno_parentesco_otro" class="form-control form-control-sm w-auto" id="alto_otro_texto" placeholder="Especifique" value="{{ old('alterno_parentesco') }}">
                                 </div>
                             </div>
-                            <div class="col-md-3"><label class="form-label small">Cédula</label><input type="text" name="alterno_cedula" class="form-control" value="{{ old('alterno_cedula') }}"></div>
-                            <div class="col-md-3"><label class="form-label small">Teléfono</label><input type="text" name="alterno_telefono" class="form-control" value="{{ old('alterno_telefono') }}"></div>
-                            <div class="col-md-3"><label class="form-label small">Email</label><input type="email" name="alterno_email" class="form-control" value="{{ old('alterno_email') }}"></div>
+                            <div class="col-md-3"><label class="form-label small">Cédula</label><input type="text" name="alterno_cedula" class="form-control" value="{{ old('alterno_cedula') }}" pattern="{{ $patronDocumento }}" maxlength="20" title="Cédula: números o texto, entre 5 y 20 caracteres."></div>
+                            <div class="col-md-3"><label class="form-label small">Teléfono</label><input type="text" name="alterno_telefono" class="form-control" value="{{ old('alterno_telefono') }}" maxlength="20" inputmode="tel"></div>
+                            <div class="col-md-3"><label class="form-label small">Email</label><input type="email" name="alterno_email" class="form-control" value="{{ old('alterno_email') }}" maxlength="255"></div>
                             <div class="col-md-3"><label class="form-label small">Dirección</label><input type="text" name="alterno_direccion" class="form-control" value="{{ old('alterno_direccion') }}"></div>
                         </div>
 
                         {{-- MATRICULANDO --}}
                         <h6 class="fw-bold text-primary mb-3 border-bottom pb-2"><i class="bi bi-card-checklist me-2"></i>Datos Obligatorios - Matriculando</h6>
                         <div class="row g-3 mb-4">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label small">Curso <span class="text-danger">*</span></label>
-                                <select name="curso_id" class="form-select @error('curso_id') is-invalid @enderror" required>
+                                <select name="grado" id="curso_grado" class="form-select @error('curso_id') is-invalid @enderror" required>
                                     <option value="">Seleccionar curso</option>
-                                    @foreach($cursos as $curso)
-                                    <option value="{{ $curso->id }}" @selected(old('curso_id')==$curso->id)>{{ $curso->nombre }}</option>
+                                    @foreach(\App\Models\Curso::porGrado() as $clave => $info)
+                                        <option value="{{ $clave }}" @selected(old('grado') === $clave)>{{ $info['etiqueta'] }}</option>
                                     @endforeach
                                 </select>
-                                @error('curso_id') <small class="text-danger">{{ $message }}</small> @enderror
+                                <input type="hidden" name="curso_id" id="curso_id" value="{{ old('curso_id') }}">
+                                <small class="text-danger d-block" id="aviso_curso"></small>
+                                @error('curso_id') <small class="text-danger d-block">{{ $message }}</small> @enderror
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small">Paralelo <span class="text-danger">*</span></label>
@@ -420,7 +435,11 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small">Especialización</label>
-                                <input type="text" name="especializacion" class="form-control" value="{{ old('especializacion') }}">
+                                <select name="especializacion" id="especializacion" class="form-select @error('especializacion') is-invalid @enderror" data-valor="{{ old('especializacion') }}" disabled>
+                                    <option value="">Seleccionar</option>
+                                </select>
+                                <small class="text-muted d-block" id="ayuda_especializacion">Solo aplica a Segundo y Tercero.</small>
+                                @error('especializacion') <small class="text-danger d-block">{{ $message }}</small> @enderror
                             </div>
                             @if($periodo)
                             <div class="col-12">
@@ -464,6 +483,80 @@ document.addEventListener('DOMContentLoaded', function () {
     toggleField('alumno_toma_medicina', 'gpo_medicina');
     toggleField('alumno_tiene_nee', 'gpo_nee');
     toggleField('alumno_tiene_carnet_discapacidad', 'gpo_carnet');
+
+    // El formulario muestra el GRADO (Octavo, Noveno, ... Tercero) y no el
+    // nombre completo del curso, porque los cursos de Segundo ya traen la
+    // especializacion pegada al nombre y hay 320 alumnos matriculados en
+    // ellos: renombrarlos seria reasignar matriculas. El curso real se
+    // resuelve aqui y se manda en un campo oculto.
+    const POR_GRADO = @json(\App\Models\Curso::porGrado());
+    const GRADOS_CON_ESPECIALIZACION = @json(\App\Models\Curso::GRADOS_CON_ESPECIALIZACION);
+    const selectGrado = document.getElementById('curso_grado');
+    const selectEspecializacion = document.getElementById('especializacion');
+    const inputCurso = document.getElementById('curso_id');
+    const avisoCurso = document.getElementById('aviso_curso');
+    const ayudaEspecializacion = document.getElementById('ayuda_especializacion');
+
+    function cursosDelGrado(grado) {
+        return (POR_GRADO[grado] || {}).cursos || [];
+    }
+
+    function resolverCurso(grado, especializacion) {
+        const encontrado = cursosDelGrado(grado).find(
+            c => (c.especializacion || '') === (especializacion || '')
+        );
+        return encontrado ? encontrado.id : '';
+    }
+
+    function actualizarCurso() {
+        const grado = selectGrado.value;
+        const info = POR_GRADO[grado];
+        const pide = GRADOS_CON_ESPECIALIZACION.indexOf(grado) !== -1;
+        const cursos = cursosDelGrado(grado);
+
+        avisoCurso.textContent = '';
+
+        if (grado && cursos.length === 0) {
+            avisoCurso.textContent = 'Todavía no hay un curso configurado para ' + (info.etiqueta || grado) + '.';
+            inputCurso.value = '';
+        }
+
+        if (!pide) {
+            // Octavo a Primero: la especializacion no aplica y se apaga.
+            selectEspecializacion.disabled = true;
+            selectEspecializacion.innerHTML = '<option value="">Seleccionar</option>';
+            selectEspecializacion.removeAttribute('required');
+            ayudaEspecializacion.textContent = 'Solo aplica a Segundo y Tercero.';
+            inputCurso.value = grado && cursos.length ? resolverCurso(grado, '') : '';
+            return;
+        }
+
+        // Segundo y Tercero: se listan las especializaciones que existen de
+        // verdad en la base para ese grado.
+        const opciones = cursos
+            .map(c => c.especializacion)
+            .filter(Boolean);
+
+        const anterior = selectEspecializacion.value || selectEspecializacion.dataset.valor || '';
+        selectEspecializacion.innerHTML = '<option value="">Seleccionar</option>'
+            + opciones.map(e => '<option value="' + e + '">' + e + '</option>').join('');
+
+        if (opciones.indexOf(anterior) !== -1) {
+            selectEspecializacion.value = anterior;
+        }
+
+        selectEspecializacion.disabled = false;
+        selectEspecializacion.toggleAttribute('required', opciones.length > 0);
+        ayudaEspecializacion.textContent = opciones.length
+            ? 'Elige la especialización del grado.'
+            : 'Este grado todavía no tiene especialidades configuradas.';
+
+        inputCurso.value = resolverCurso(grado, selectEspecializacion.value);
+    }
+
+    selectGrado.addEventListener('change', actualizarCurso);
+    selectEspecializacion.addEventListener('change', actualizarCurso);
+    actualizarCurso();
 
     document.getElementById('copiarPadreFact').addEventListener('click', function () {
         document.querySelector('input[name="facturador_nombre"]').value = document.querySelector('input[name="padre_nombres_apellidos"]').value || '';

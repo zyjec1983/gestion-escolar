@@ -46,6 +46,7 @@
                         <tr><th class="text-muted">Nombres</th><td>{{ $preRegistro->rep_nombres }}</td></tr>
                         <tr><th class="text-muted">Apellidos</th><td>{{ $preRegistro->rep_apellidos }}</td></tr>
                         <tr><th class="text-muted">Email</th><td>{{ $preRegistro->rep_email }}</td></tr>
+                        <tr><th class="text-muted">Fecha de nacimiento</th><td>{{ $preRegistro->rep_fecha_nacimiento?->format('d/m/Y') ?? 'No registrada' }}</td></tr>
                         <tr><th class="text-muted">Teléfono</th><td>{{ $preRegistro->rep_telefono ?? '-' }}</td></tr>
                     </table>
                 </div>
@@ -228,7 +229,13 @@
         <div class="col-md-6">
             <form method="POST" action="{{ route('admin.pre-registros.aprobar', $preRegistro->id) }}">
                 @csrf
-                <button type="submit" class="btn btn-success w-100 py-3" onclick="return confirm('¿Aprobar esta solicitud? Se creará el usuario representante automáticamente.')">
+                <label class="form-label small">Fecha de nacimiento del representante <span class="text-danger">*</span></label>
+                <input type="date" name="rep_fecha_nacimiento"
+                       class="form-control mb-1 @error('rep_fecha_nacimiento') is-invalid @enderror"
+                       value="{{ old('rep_fecha_nacimiento', $preRegistro->rep_fecha_nacimiento?->format('Y-m-d')) }}" required>
+                <small class="text-muted">Debe ser mayor de edad. Las solicitudes anteriores a este dato se completan aqui.</small>
+                @error('rep_fecha_nacimiento') <small class="text-danger d-block">{{ $message }}</small> @enderror
+                <button type="submit" class="btn btn-success w-100 py-3 mt-2" onclick="return confirm('¿Aprobar esta solicitud? Se creará el usuario representante automáticamente.')">
                     <i class="bi bi-check-circle me-2"></i>Aprobar Solicitud
                 </button>
             </form>

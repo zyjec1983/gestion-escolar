@@ -9,6 +9,17 @@ class Alumno extends Model
 {
     use HasFactory;
 
+    /**
+     * Catalogo unico de tipos de sangre. Los formularios lo muestran como
+     * lista y la validacion lo exige, para que nadie escriba "O pos" o "A+1".
+     */
+    public const TIPOS_SANGRE = [
+        'A+', 'A-',
+        'B+', 'B-',
+        'AB+', 'AB-',
+        'O+', 'O-',
+    ];
+
     protected $fillable = [
         'codigo', 'numero_cedula', 'nombres', 'apellidos', 'fecha_nacimiento', 'genero',
         'tipo_sangre', 'etnia', 'nacionalidad',
@@ -61,6 +72,12 @@ class Alumno extends Model
     public function matriculas()
     {
         return $this->hasMany(Matricula::class);
+    }
+
+    /** Historial de representantes legales que ha tenido el alumno. */
+    public function cambiosRepresentante()
+    {
+        return $this->hasMany(RepresentanteCambio::class);
     }
 
     public function observaciones()

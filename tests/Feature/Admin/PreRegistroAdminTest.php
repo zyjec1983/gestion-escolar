@@ -27,7 +27,7 @@ class PreRegistroAdminTest extends TestCase
         parent::setUp();
 
         $this->admin = User::factory()->admin()->create();
-        $this->curso = Curso::factory()->create();
+        $this->curso = Curso::factory()->create(['nombre' => 'OCTAVO GRADO', 'codigo' => 'OCTA2']);
         $this->paralelo = Paralelo::factory()->create();
         $this->periodo = PeriodoLectivo::factory()->create(['activo' => true]);
     }
@@ -45,6 +45,7 @@ class PreRegistroAdminTest extends TestCase
             'rep_numero_documento' => '1712345678',
             'rep_nombres' => 'Carlos',
             'rep_apellidos' => 'Pérez',
+            'rep_fecha_nacimiento' => '1985-03-10',
             'rep_email' => 'carlos@example.com',
             'rep_telefono' => '0999999999',
             'alumno_tipo_documento' => 'cedula',
@@ -56,6 +57,7 @@ class PreRegistroAdminTest extends TestCase
             'alumno_genero' => 'masculino',
             'alumno_tipo_sangre' => 'O+',
             'curso_id' => $this->curso->id,
+            'grado' => 'OCTAVO',
             'paralelo_id' => $this->paralelo->id,
         ];
     }
@@ -170,7 +172,7 @@ class PreRegistroAdminTest extends TestCase
 
         $response->assertSessionHasErrors([
             'tipo_solicitud', 'rep_tipo_documento', 'rep_numero_documento',
-            'rep_nombres', 'rep_apellidos', 'rep_email',
+            'rep_nombres', 'rep_apellidos', 'rep_fecha_nacimiento', 'rep_email',
         ]);
     }
 
@@ -188,7 +190,9 @@ class PreRegistroAdminTest extends TestCase
             'alumno_apellidos' => 'Pérez',
         ]);
 
-        $response = $this->post(route('admin.pre-registros.aprobar', $pre->id));
+        $response = $this->post(route('admin.pre-registros.aprobar', $pre->id), [
+            'rep_fecha_nacimiento' => '1985-03-10',
+        ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
@@ -200,6 +204,8 @@ class PreRegistroAdminTest extends TestCase
 
         $user = User::where('email', 'representante@test.com')->first();
         $this->assertNotNull($user);
+        $this->assertSame('1985-03-10', $user->fecha_nacimiento->format('Y-m-d'));
+        $this->assertSame($pre->rep_numero_documento, $user->numero_cedula);
 
         $this->assertDatabaseHas('alumnos', [
             'nombres' => 'Juanito',
@@ -244,14 +250,57 @@ class PreRegistroAdminTest extends TestCase
             'rep_apellidos' => 'Pérez',
         ]);
 
-        $this->post(route('admin.pre-registros.aprobar', $pre->id));
+        $this->post(route('admin.pre-registros.aprobar', $pre->id), [
+            'rep_fecha_nacimiento' => '1985-03-10',
+        ]);
 
         $this->assertDatabaseCount('users', 2);
+        $this->assertSame('1985-03-10', $existingUser->fresh()->fecha_nacimiento->format('Y-m-d'));
 
         Notification::assertSentTo(
             $existingUser,
             SolicitudAprobada::class
         );
+    }
+
+    /** @test */
+    public function aprobar_exige_fecha_de_nacimiento_del_representante()
+    {
+        $this->actingAsAdmin();
+        Notification::fake();
+
+        $pre = PreRegistro::factory()->create([
+            'rep_email' => 'sin-fecha@test.com',
+            'rep_fecha_nacimiento' => null,
+        ]);
+
+        $response = $this->post(route('admin.pre-registros.aprobar', $pre->id), []);
+
+        $response->assertSessionHasErrors('rep_fecha_nacimiento');
+        $this->assertDatabaseMissing('alumnos', ['nombres' => $pre->alumno_nombres]);
+        $this->assertDatabaseMissing('users', ['email' => 'sin-fecha@test.com']);
+        $this->assertSame('pendiente', $pre->fresh()->estado);
+    }
+
+    /** @test */
+    public function aprobar_no_acepta_un_representante_menor_de_edad()
+    {
+        $this->actingAsAdmin();
+        Notification::fake();
+
+        $pre = PreRegistro::factory()->create([
+            'rep_email' => 'menor@test.com',
+            'rep_fecha_nacimiento' => '2012-01-01',
+        ]);
+
+        $response = $this->post(route('admin.pre-registros.aprobar', $pre->id), [
+            'rep_fecha_nacimiento' => '2012-01-01',
+        ]);
+
+        $response->assertSessionHasErrors('rep_fecha_nacimiento');
+        $this->assertDatabaseMissing('users', ['email' => 'menor@test.com']);
+        $this->assertDatabaseMissing('matriculas', ['alumno_id' => 0]);
+        $this->assertSame('pendiente', $pre->fresh()->estado);
     }
 
     /** @test */

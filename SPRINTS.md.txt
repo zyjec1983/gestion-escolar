@@ -1,0 +1,676 @@
+﻿================================================================================
+ SISTEMA DE GESTION ESCOLAR - ESTADO DE SPRINTS
+================================================================================
+ Proyecto : Sistema de Gestion Escolar (UE)
+ Ruta     : C:\xampp\htdocs\gestion-escolar
+ Stack    : Laravel + SQLite + Bootstrap 5 (XAMPP)
+ Rama     : main
+ Documento generado al cierre del commit c562267
+
+--------------------------------------------------------------------------------
+ 1. ACCESOS (VERIFICADOS CONTRA LA BASE, NO COPIADOS)
+--------------------------------------------------------------------------------
+Estas 5 cuentas existen y su contrasena fue comprobada con Hash::check().
+
+  EMAIL                        CONTRASENA    ROL
+  ---------------------------  ------------  --------------
+  secretaria@fake.edu.ec       admin123      ADMIN
+  rector@fake.edu.ec           admin123      ADMIN
+  inspector@ue.edu.ec          password      INSPECCION
+  crodrigue@fake.edu.ec        password      DOCENTE
+  cmendoza@email.com           password      REPRESENTANTE
+
+  Base actual: 571 usuarios, con estos 5 roles presentes:
+  ADMIN, DOCENTE, ESTUDIANTE, INSPECCION, REPRESENTANTE
+
+  Advertencia 1: el codigo de rutas menciona tambien SECRETARIA, RECTORA,
+  VICERRECTORA y DECE, pero NO hay ninguna cuenta con esos roles en la base.
+  O sea que si entras como secretaria@fake.edu.ec tu rol real es ADMIN, no
+  SECRETARIA. Esos 4 roles todavia no tienen usuarios.
+
+  Advertencia 2: no se documenta aqui ninguna contrasena de ESTUDIANTE porque no
+  hay una cuenta fija de ese rol. Las 220 cuentas de alumno y sus 220
+  representantes se generan con NivelesAlumnosSeeder y estan en usuarios.txt.
+
+  Advertencia 3: estas contrasenas son de una base local de pruebas. No
+  publiques este archivo tal cual en un servidor real.
+
+--------------------------------------------------------------------------------
+ 2. SPRINTS DESARROLLADOS (orden real segun git log)
+--------------------------------------------------------------------------------
+El repositorio tiene 29 commits. El primero es del 2026-05-25 y el ultimo es
+del 2026-10-03. Los grupos siguientes son una lectura de ese historial: un
+commit puede tocar varios areas a la vez.
+SPRINT 0 - Cimientos                                    2026-05-25  [completo]
+  Commit inicial 2cfc54c. Base del sistema: institucion, cursos, paralelos,
+  matriculas, notas, asistencia, periodos lectivos, permisos, usuarios y roles.
+  Este commit ya traia tambien el pre-registro, el alta y edicion de matriculas
+  y el carrusel de portada (Hero Slides).
+
+SPRINT 1 - Notas, actas y reportes                       2026-09-17  [completo]
+  Notas por quimestre, actas imprimibles, exportacion PDF y Excel.
+
+SPRINT 2 - Aula virtual (base) + mensajeria interna      2026-09-17  [completo]
+  Aula virtual con rol ESTUDIANTE y bandeja de mensajes interna tipo web.
+
+SPRINT 3 - Portal REPRESENTANTE                          2026-09-17  [completo]
+  Dashboard con observaciones solo lectura, solicitud de citas, agenda propia,
+  sidebar por rol y contador de citas pendientes.
+
+SPRINT 4 - Citas del DOCENTE                             2026-09-17  [completo]
+  Solicitudes pendientes, calendario del dia en formato grande, registro de
+  resultado (asistencia, dudas, evidencia) y expiracion de pendientes vencidos.
+
+SPRINT 5 - Perfil de usuario                            2026-09-17  [completo]
+  Datos (correo, celular), 4 nombres, cambio de contrasena y alertas SweetAlert.
+
+SPRINT 6 - Planificaciones de unidad                     2026-09-18  [completo]
+  CRUD de unidades, replica a paralelos, unidad actual en aula virtual
+  calculada por fecha y clase, acceso para directingos y docente.
+
+SPRINT 7 - Mensajeria tipo Outlook                       2026-09-18  [completo]
+  Hilos (REDACTAR = conversacion nueva), borrado por lado tipo email, adjuntos
+  hasta 5 MB, auto-refresh 10 s, toasts, responsive movil, orden LIFO, negrita
+  en no leidos y fecha/hora sobre el remitente.
+
+SPRINT 8 - Aula virtual completa                        2026-09-18  [completo]
+  Agenda con seleccion multiple de alumnos, materiales (subida y descarga,
+  representante solo lectura con alerta), grupos de clase aleatorios equilibrados
+  con descarga JPG via html2canvas.
+
+SPRINT 9 - Portal ESTUDIANTE                            2026-09-19  [completo]
+  Dashboard con tarjetas de materias, agenda y materiales por materia con alerta
+  de nuevos, foro de discusion por clase, y restriccion de mensajeria del
+  estudiante solo a sus docentes. Marcar agenda como entregada.
+
+SPRINT 10 - Citas de INSPECCION + difusion              2026-10-03  [completo]
+  Commit c562267. Agenda de citas propia del inspector (agendar e historial con
+  jerarquia) y difusion de mensajes por alcance.
+
+SPRINT 11 - Zona horaria configurable                    2026-10-03  [completo]
+  Commit c562267. 23 desfases UTC-11 a UTC+11 elegibles por el ADMIN, aplicados
+  en AppServiceProvider.
+
+--------------------------------------------------------------------------------
+ 3. MODULO POR MODULO: QUE HAY Y QUE FALTA
+--------------------------------------------------------------------------------
+LEGENDAS
+  [OK]    terminado y con pruebas automaticas
+  [OK-S]  terminado, funciona, pero SIN pruebas (deuda tecnica)
+  [PARC]  terminado a medias
+  [PEND]  pendiente / no implementado
+
+AUTENTICACION Y PERFIL                                   [OK]
+  Login, logout, perfil, cambio de contrasena.
+  Pruebas: Auth/LoginTest (8), ProfileTest (8)
+
+PRE-REGISTRO                                              [OK]
+  Formulario publico, listado admin, aprobar, rechazar, alta manual, PDF.
+  El representante legal debe ser mayor de edad: se pide su fecha de
+  nacimiento en el formulario y se vuelve a exigir al aprobar, porque de ahi
+  sale la matricula. La aprobacion crea cuenta, alumno y matricula en una
+  sola transaccion.
+   Pruebas: PreRegistroTest (26), Admin/PreRegistroAdminTest (18)
+
+CURSOS Y ESPECIALIZACIONES                               [OK]
+  El formulario NO muestra el nombre del curso sino el GRADO, en orden escolar:
+  Octavo, Noveno, Decimo, Primero, Segundo y Tercero. El curso real se resuelve
+  en el navegador y se manda en un campo oculto curso_id.
+
+  Por que no se puede hacer lo mas simple (un curso por grado y renombrar los
+  demas): los 320 alumnos ya estan matriculados y sus cursos existen. Segundo
+  tiene cinco filas (una por especializacion) con 20 matriculas cada una, mas
+  Noveno 100, Decimo 40, Octavo 40 y Primero 40. Renombrar o consolidar esos
+  cursos seria reasignar matriculas. Ademas la especializacion vivia duplicada:
+  dentro del nombre del curso Y en la columna pre_registros.especializacion (y
+  en matriculas.especializacion).
+
+  Como quedo:
+    - Curso::GRADOS son los seis grados y el texto que ve la persona.
+    - Curso::porGrado() agrupa los cursos reales de cada grado en el orden
+      escolar, con la especializacion de cada uno ya normalizada al catalogo
+      ("FISICO MATEMATICA" del nombre se lee como "FÃ­sico-MatemÃ¡tica").
+    - La especializacion se habilita solo en Segundo y Tercero, se arma con las
+      especializaciones que de verdad existen para ese grado y es obligatoria.
+    - El servidor exige que grado y curso concuerden, que la especializacion
+      venga del catalogo, que corresponda al curso elegido y que no falte en un
+      grado que la pide.
+    - Un curso sin grado reconocible no se ofrece en el formulario, y un grado
+      sin cursos configurados avisa en pantalla en vez de dejar enviar.
+
+  OJO DATO: no existe ningun curso de TERCERO en la base. Sale en el listado y
+  avisa que no hay curso configurado. Hay que crearlo antes de poder matricular
+  a alguien en Tercero.
+  Pruebas: PreRegistroTest (11)
+
+MATRICULAS                                                [OK]
+  Alta y edicion admin, estados de matricula.
+  Pruebas: Admin/MatriculaTest (10)
+
+TIPO DE SANGRE                                            [OK]
+  El catalogo vive en Alumno::TIPOS_SANGRE (A+, A-, B+, B-, AB+, AB-, O+, O-)
+  y es la unica fuente: los tres formularios que lo piden (solicitud de
+  matricula, edicion de matricula y ficha de actualizacion) lo muestran como
+  lista desplegable mediante el parcial partials/tipo-sangre, y las reglas de
+  validacion exigen que el valor este en el catalogo. Antes era un campo de
+  texto libre con solo la regla max:5, que admitia "O positivo", "a+" o "O+1".
+  La base no tiene ningun alumno con tipo de sangre registrado todavia (los 320
+  estan en NULL), asi que el endurecimiento no descarto datos.
+  Pruebas: PreRegistroTest (4), Secretaria/ActualizacionDatosTest (4)
+
+ACTUALIZACION DE DATOS                                   [OK]
+  Modulo de secretaria para buscar alumnos por cedula o apellidos y corregir
+  cualquier dato de la ficha, incluida la seccion del representante legal.
+  Permite cambiar de representante o dar de alta una cuenta nueva. Cada cambio
+  queda en la tabla representante_cambios, SIN campo de motivo (divorcio,
+  salida del pais, prision y demas son contexto de la secretaria, no un dato
+  que el sistema deba conocer).
+  El representante legal tiene que ser una persona de 18 o mas: no se puede
+  crear una cuenta nueva sin fecha de nacimiento, ni asignar como legal a
+  alguien menor o sin fecha registrada. Si se conserva al mismo de antes, si
+  se puede completar su fecha en la misma ficha.
+   Pruebas: Secretaria/ActualizacionDatosTest (27)
+
+REPRESENTANTE LEGAL OBLIGATORIO                         [OK]
+  alumnos.representante_user_id es NOT NULL y la base lo impide. Antes
+  existian 0 de 320 alumnos sin representante, asi que la migracion no
+  descarto ninguna fila.
+  Medido en la base actual: 246 cuentas de representante y NINGUNA tiene fecha
+  de nacimiento, asi que los 320 alumnos salen en "fichas por regularizar".
+  Importante: 0 representantes son menores de edad, o sea que la regla no se
+  esta violando, es que hoy no se puede comprobar. Por eso el modulo no bloquea
+  guardar la ficha de un alumno cuyo representante sigue sin fecha (si lo
+  hara, Secretaria no podria corregir nada); solo impide crear o asignar una
+  cuenta que no sea adulta, y el listado "fichas por regularizar" permite
+  encontrarlos sin saber cedula ni apellido.
+  Pruebas: InspectorObservacionTest > "la base de datos no permite alumnos
+  sin representante" (1 caso)
+
+DOCENTE - ASISTENCIA                                      [OK-S]
+  Registro por clase y fecha.
+  Sin pruebas.
+
+DOCENTE - OBSERVACIONES                                   [OK]
+  Registro, listado e impresion, limitado a los alumnos de sus clases.
+  Pruebas: InspectorObservacionTest (4 casos de alcance del docente) y
+  Api/ObservacionApiTest (5 casos de alcance por API).
+
+DOCENTE - NOTAS                                           [OK]
+  Registro por periodo,evaluacion y docente.
+  Pruebas: NotasQuimestreTest (16)
+
+  Decimales: la base SIEMPRE guarda punto decimal, nunca coma. Las columnas
+  son decimal(5,2) y en SQLite quedan como numeric; los valores reales ya
+  guardados son enteros o reales (74 integer + 1 real, 0 filas con coma,
+  0 filas guardadas como texto).
+
+  AL ESCRIBIR se aceptan coma o punto (9,5 y 9.5), porque en Ecuador la
+  notacion correcta es la coma y obligar a pelear contra eso genera
+  errores. La normalizacion a punto se hace en DOS capas:
+    1) NotaController::normalizarDecimales() reemplaza coma por punto
+       ANTES de validar, asi un 9,5 no lo rechaza la regla numeric.
+    2) El JS normaliza en el evento "input", para que el casillero y el
+       preview ya muestren el punto.
+  No se toco number_format en ningun lado: actas, PDF y Excel siguen
+  mostrando 9.50 con punto (30+ chamadas en el proyecto).
+
+  Se aggadio la regla decimal:0,2 a la validacion del servidor. Antes
+  numeric|min:0.01|max:10 aceptaba 9.555 y lo guardaba crudo en SQLite,
+  que NO truca (en MySQL se habria redondeado a 9.56 o 9.55). Con
+  decimal:0,2 el servidor y el navegador coinciden, y 0.01123 (el valor
+  que escribio la docente) pasa a ser 0.01 en vez de convertirse en 0 a
+  escondidas: parseFloat("0,01123") daba 0.
+
+  Verificacion de que la coma calcula igual que el punto:
+    fii=9,5 ffi=8 fig=7,25 ffg=10 pi=9,5 ep=8
+    -> form70 6.08 | eval30 2.62 | total 8.70 (truncado, como se muestra)
+    -> identico escribiendolo con punto, byte por byte en la base
+  OJO con el redondeo: la app TRUNCA con floor, no redondea. eval30 crudo
+  es 2.625, se muestra 2.62 y no 2.63. CalculoNotas::notaParcialDe()
+  devuelve el valor SIN truncar (8.70625) y el truncado ocurre solo al
+  mostrar, en la vista y en el JS.
+
+  Rango: cada nota debe estar entre 0.01 y 10. El 0 no se admite porque
+  significa "sin nota"; para dejar un campo vacio no se llena. El mensaje
+  de SweetAlert indica el rango y lista estudiante + campo + valor.
+
+  Validacion EN VIVO (al digitar): antes solo se validaba al pulsar un
+  boton, y el preview calculaba totales absurdos. Se reprodujo el caso
+  reportado por una docente: fii=123, ffi=12, fig=0.00, ffg=0,01123,
+  pi=234, ep=123346 -> el navegador mostraba form70=23.62,
+  eval30=18553.50 y total=18577.12 sin avisar nada. Ahora cada tecla
+  dispara problemaDe() y marcarNota(): la celda se pone roja y aparece el
+  mensaje con el rango. Al salir del campo (change) se abre SweetAlert y
+  se devuelve el foco al casillero. Si un valor es invalido la fila
+  muestra "—" en form70/eval30/total en vez de un total inventado.
+  Con un flag (yendoAGuardar, en mousedown) se evita que el blur abra un
+  SweetAlert y el clic del boton abra otro.
+
+  ALCANCE DE LA REVISION: los valores reportados NO estan corruptos en la
+  base. La alumna 20 (BAQUE RIVADENEIRA PAULA ANDREA) tiene fii=0, ffi=0,
+  fig=0, ffg=0, pi=0, ep=0, estado=parcial, created/updated 2026-05-25.
+  Los numeros que se copiaron eran el preview en vivo del JS y el badge
+  "Parcial" de esa fila de ceros ya existente. Auditoria global de la tabla
+  notas: 0 notas > 10, 0 con coma, 0 guardadas como texto.
+
+  Boton "Guardado Parcial": antes NO validaba nada y enviaba el formulario
+  en crudo, asi que un 12 o una coma llegaban al servidor y producian una
+  pagina de error 422 de Laravel. Ahora pasa por la misma validacion que
+  "Guardado Final", salvo que allows campos vacios. Enter dentro de la tabla
+  se trata como guardado parcial.
+
+  Leyendas de la tabla: se quito el "10%" de FII, FFI, FIG y FFG. Se
+  conservan "Form. 70%", "Pr. Integrador 15%", "Eval. Parcial 15%" y
+  "Eval. 30%".
+
+DOCENTE - ACTAS                                           [OK-S]
+  Listado, PDF y Excel.
+  Pruebas: PdfRenderSmokeTest (1, solo renderizado)  <-- ES DEBIL, ver seccion 6
+
+DOCENTE - CITAS                                           [OK]
+  Solicitudes, agenda del dia y registro de resultado.
+  Pruebas: CitaRegistroTest (10)
+
+AULA VIRTUAL                                              [PARC]
+  Clases, agenda por materia, materiales, grupos, Insider.
+  Pruebas: AulaVirtualTest (18), pero 1 de los 18 falla (ver seccion 4 y 6).
+
+FORO DE DISCUSION                                         [OK]
+  Hilos, intervenciones, contadores, moderacion.
+  Pruebas: ForoTest (11)
+
+MENSAJERIA                                                [OK]
+  Bandeja, hilos, adjuntos, difusion por alcance.
+  Pruebas: MensajeTest (13)
+
+REPRESENTANTE                                             [OK]
+  Dashboard, observaciones, citas, agendas.
+  Pruebas: RepresentanteDashboardTest (11)
+
+ESTUDIANTE                                                [OK]
+  Dashboard, agendas, marcar entregada, aula virtual.
+  Pruebas: EstudianteDashboardTest (4)
+
+DIRECTIVO - HISTORIAL DE CITAS                            [OK-S]
+  Historial estadistico con reincidencia.
+  Sin pruebas.
+
+INSPECCION - CITAS                                        [PARC]
+  Agendar e historial funcionan y sus rutas responden.
+  Sin pruebas propias. Se apoya en CitaRegistroTest, pero ese cubre el flujo
+  del DOCENTE, no el del inspector.
+
+INSPECCION - DIFUSION DE MENSAJES                        [PARC]
+  Verificada a mano (conteos exactos por alcance y adjuntos compartidos),
+  pero SIN pruebas que lo cubran. Es lo mas fragil que hay ahora mismo.
+
+INSPECCION - OBSERVACIONES                                 [OK]
+  Selector en cascada curso > paralelo > estudiante, con acceso para
+  INSPECCION, RECTORA, VICERRECTORA y DECE (el DECE entra porque la revision
+  del historial disciplinario es responsabilidad suya). Al guardar siempre se
+  notifica al representante mediante un Mensaje en su buzon (no hay correo:
+  MAIL_MAILER=log). Si el alumno no tiene representante, la observacion se
+  guarda igual y se avisa en pantalla que no se pudo enviar el aviso.
+
+  Alcance ya respetado en las dos capas:
+    - Web: el docente solo registra sobre alumnos de sus clases (mismo curso y
+      paralelo que una clase suya); el resto de roles con alcance global.
+    - API: POST /api/observaciones y GET /api/clases/{id}/observaciones
+      rechazan con 403 a cualquier rol que no sea el docente de esa clase o una
+      autoridad. Antes de esto la API no tenia ninguna restriccion de rol ni de
+      alcance: un representante podia registrar observaciones de cualquier alumno.
+
+  Pruebas: InspectorObservacionTest (19), Api/ObservacionApiTest (9)
+
+PLANIFICACIONES                                           [OK]
+  CRUD, replica a paralelos, unidad actual.
+  Pruebas: PlanificacionTest (13)
+
+ADMIN - CONFIGURACION                                     [OK]
+  Sistema de evaluacion y zona horaria (23 desfases).
+  Pruebas: ZonaHorariaTest (17)
+
+ADMIN - CARRUSEL HERO                                     [OK-S]
+  CRUD de slides y velocidad. Sin pruebas.
+
+CARRUSEL / LANDING                                        [OK-S]
+  Slides activos en welcome.
+  Pruebas: ExampleTest (1, generico)
+
+MIDDLEWARE DE ROLES                                       [OK]
+  Pruebas: Unit/RoleMiddlewareTest (6)
+
+--------------------------------------------------------------------------------
+4. COBERTURA DE PRUEBAS (conteo real, con "phpunit --list-tests")
+--------------------------------------------------------------------------------
+  tests/Feature/AulaVirtualTest.php ............ 18
+  tests/Feature/ZonaHorariaTest.php ............ 17
+  tests/Feature/InspectorObservacionTest.php ..... 19
+  tests/Feature/Secretaria/ActualizacionDatosTest  27
+  tests/Feature/Api/ObservacionApiTest.php ...... 13
+  tests/Feature/Admin/PreRegistroAdminTest.php . 18
+  tests/Feature/MensajeTest.php ............... 13
+  tests/Feature/PlanificacionTest.php .......... 13
+  tests/Feature/ForoTest.php ................... 11
+  tests/Feature/RepresentanteDashboardTest .... 11
+  tests/Feature/CitaRegistroTest.php ........... 10
+  tests/Feature/Admin/MatriculaTest.php ........ 10
+  tests/Feature/NotasQuimestreTest.php ......... 16
+  tests/Feature/Auth/LoginTest.php ............. 8
+  tests/Feature/PreRegistroTest.php ............ 11
+  tests/Feature/ProfileTest.php ................  8
+  tests/Feature/EstudianteDashboardTest.php ....  4
+  tests/Feature/HttpTest.php ................... 4
+  tests/Feature/PdfRenderSmokeTest.php .........  1
+  tests/Feature/ExampleTest.php ................  1
+  tests/Unit/RoleMiddlewareTest.php .............  6
+  tests/Unit/ExampleTest.php ....................  1
+
+  TOTAL: 259 casos de prueba
+    - tests/Feature/  20 archivos, 252 pruebas (funcionales y de extremo a extremo)
+    - tests/Unit/      2 archivos,   7 pruebas (logica pura)
+
+  Nota: casi todo el proyecto se prueba con feature tests. De las 7 pruebas
+  unitarias, 6 son del RoleMiddleware y la otra es el ExampleTest de fabrica,
+  que no comprueba nada. No hay pruebas unitarias de modelos, helpers ni
+  del calculo de zona horaria.
+
+  Ultima ejecucion completa: 258 pruebas pasan, 1 falla (de 259).
+  La que falla es AulaVirtualTest > "estudiante accede a sus clases por
+  matricula". Se confirmo que ya fallaba ANTES de los cambios de zona horaria
+  (se reprodujo con el AppServiceProvider neutralizado), asi que es previa y no
+  la introdujo este trabajo.
+
+  Comando:  php artisan test
+  Listar los casos:  php vendor/phpunit/phpunit/phpunit --list-tests
+  Base de pruebas: SQLite en memoria, NO toca database/database.sqlite
+
+--------------------------------------------------------------------------------
+ 5. UBICACION DE LAS RUTAS
+--------------------------------------------------------------------------------
+Web: todo sale de routes/web.php. API: al final, desde routes/api.php.
+Los grupos de middleware definen quien puede entrar a cada parte. Nombres y
+URLs verificados con "php artisan route:list --json" (107 rutas).
+
+  PUBLICAS (sin login)
+    GET  /                       welcome / landing con carrusel   (sin nombre)
+    GET  /pre-registro           pre-registro.create
+    POST /pre-registro           pre-registro.store
+    GET  /login                  login
+    POST /logout                 logout
+
+  AUTENTICADOS (cualquier rol)
+    GET  /dashboard                          dashboard
+    GET  /clases                             clases.index
+    GET  /clases/{id}                        clases.show
+    GET  /clases/{clase}/agenda              clases.agenda
+    POST /clases/{clase}/agenda              clases.agenda.store
+    GET  /clases/{clase}/agenda/{agenda}/editar   clases.agenda.edit
+    DEL  /clases/{clase}/agenda/{agenda}      clases.agenda.destroy
+    GET  /clases/{clase}/materiales           clases.materiales
+    POST /clases/{clase}/materiales           clases.materiales.store
+    DEL  /clases/{clase}/materiales/{material} clases.materiales.destroy
+    GET  /clases/{clase}/grupos               clases.grupos
+    POST /clases/{clase}/grupos               clases.grupos.store
+    DEL  /clases/{clase}/grupos               clases.grupos.destroy
+    GET  /clases/{clase}/foros                clases.foros
+    POST /clases/{clase}/foros                clases.foros.store
+    GET  /clases/{clase}/foros/contadores     clases.foros.contadores
+    GET  /clases/{clase}/foros/crear          clases.foros.create
+    GET  /foros/{foro}                        foros.show
+    POST /foros/{foro}/intervenciones         foros.intervenciones.store
+    DEL  /foros/{foro}                        foros.destroy
+    GET  /mensajes                            mensajes.index
+    POST /mensajes                            mensajes.store
+    DEL  /mensajes                            mensajes.destroy
+    GET  /mensajes/{id}                       mensajes.show
+    GET  /mensajes/{id}/conversacion          mensajes.conversacion
+    GET  /perfil                              perfil.index
+    POST /perfil                              perfil.update
+    POST /perfil/contrase%C3%83%C2%B1a        perfil.password
+       OJO: esa URL esta mal escrita en el codigo (doble-codificacion).
+           Ver seccion 6, punto 9. El boton funciona igual porque la vista usa
+           route('perfil.password'), pero /perfil/contraseÃ±a da 404.
+    GET  /planificaciones                     planificaciones.index
+
+  ADMIN, SECRETARIA, RECTORA, VICERRECTORA, DOCENTE
+    GET  /planificaciones/crear               planificaciones.create
+    POST /planificaciones                     planificaciones.store
+    GET  /planificaciones/{unidad}/editar     planificaciones.edit
+    PUT  /planificaciones/{unidad}            planificaciones.update
+    DEL  /planificaciones/{unidad}            planificaciones.destroy
+
+  REPRESENTANTE
+    GET  /observaciones                       representante.observaciones
+    GET  /citas                               representante.citas
+    POST /citas                               representante.citas.store
+    GET  /agendas                             representante.agendas
+
+  ESTUDIANTE
+    GET  /estudiante/agendas                  estudiante.agendas
+    POST /estudiante/agendas/{agenda}/entregar estudiante.agendas.marcar-entregada
+
+  DOCENTE  (prefijo /docente)
+    GET  /docente/asistencia                  docente.asistencia.index
+    POST /docente/asistencia                  docente.asistencia.store
+    GET  /docente/observaciones               docente.observaciones.index
+    POST /docente/observaciones               docente.observaciones.store
+    GET  /docente/observaciones/{alumno}/print docente.observaciones.print
+    GET  /docente/citas                       docente.citas.index
+    POST /docente/citas                       docente.citas.store
+    POST /docente/citas/{id}/registrar        docente.citas.registrar
+    GET  /docente/notas                       docente.notas.index
+    POST /docente/notas                       docente.notas.store
+    GET  /docente/actas                       docente.actas.index
+    GET  /docente/actas/pdf                   docente.actas.pdf
+    GET  /docente/actas/excel                 docente.actas.excel
+
+  ADMIN  (prefijo /admin, y de nombre admin.)
+    GET  /admin/pre-registros                admin.pre-registros.index
+    POST /admin/pre-registros/toggle         admin.pre-registros.toggle
+    GET  /admin/pre-registros/nueva          admin.pre-registros.create
+    POST /admin/pre-registros/manual         admin.pre-registros.store-manual
+    GET  /admin/pre-registros/{id}           admin.pre-registros.show
+    POST /admin/pre-registros/{id}/aprobar   admin.pre-registros.aprobar
+    POST /admin/pre-registros/{id}/rechazar  admin.pre-registros.rechazar
+    GET  /admin/pre-registros/{id}/pdf       admin.pre-registros.pdf
+    GET  /admin/matriculas/{id}/editar       admin.matriculas.edit
+    PUT  /admin/matriculas/{id}              admin.matriculas.update
+    GET  /admin/hero-slides                  admin.hero-slides.index
+    GET  /admin/hero-slides/crear            admin.hero-slides.create
+    POST /admin/hero-slides                  admin.hero-slides.store
+    GET  /admin/hero-slides/{id}/editar      admin.hero-slides.edit
+    PUT  /admin/hero-slides/{id}             admin.hero-slides.update
+    DEL  /admin/hero-slides/{id}             admin.hero-slides.destroy
+    POST /admin/hero-slides/velocidad        admin.hero-slides.velocidad
+    GET  /admin/configuracion                admin.configuracion.index
+    POST /admin/configuracion/sistema-evaluacion  admin.configuracion.sistema-evaluacion
+    POST /admin/configuracion/zona-horaria   admin.configuracion.zona-horaria
+
+  INSPECCION, RECTORA, VICERRECTORA y DECE  (prefijo /inspeccion)
+    GET  /inspeccion/citas/agendar           inspeccion.citas.agendar
+    POST /inspeccion/citas/agendar           inspeccion.citas.store
+    GET  /inspeccion/citas/historial         inspeccion.citas.historial
+    GET  /inspeccion/observaciones           inspeccion.observaciones.index
+    POST /inspeccion/observaciones           inspeccion.observaciones.store
+    GET  /inspeccion/observaciones/{alumno}/print inspeccion.observaciones.print
+
+  ADMIN, SECRETARIA, RECTORA, VICERRECTORA, INSPECCION, DECE
+    GET  /directivo/citas                    directivo.citas.historial
+
+  ADMIN, SECRETARIA, RECTORA  (prefijo /actualizacion)
+    GET  /actualizacion                      actualizacion.index
+    GET  /actualizacion/{alumno}             actualizacion.edit
+    PUT  /actualizacion/{alumno}             actualizacion.update
+
+  SIN MIDDLEWARE DE AUTENTICACION
+    GET  /debug-data                         Api\DashboardController   <-- ver seccion 6
+
+  API REST (routes/api.php, prefijo /api). Todas exigen token de Sanctum,
+  menos /api/health. Ninguna tiene nombre de ruta.
+    GET  /api/health                           publica, sin token
+    GET  /api/dashboard
+    GET  /api/clases
+    GET  /api/clases/{id}
+    GET  /api/clases/{claseId}/notas
+    GET  /api/clases/{claseId}/observaciones
+    POST /api/observaciones
+    GET  /api/agenda
+    POST /api/agenda
+    GET  /api/circulares
+    GET  /api/mensajes
+    POST /api/mensajes
+    GET  /api/mensajes/{id}
+
+  INFRAESTRUCTURA DE LARAVEL (no es del sistema)
+    GET  /sanctum/csrf-cookie                sanctum.csrf-cookie
+    GET  /storage/{path}                     storage.local
+    PUT  /storage/{path}                     storage.local.upload
+    GET  /up                                (chequeo de salud de Laravel 11)
+
+  Conteo final: 107 rutas declaradas (92 web + 14 api + 1 /up), de las cuales 4
+  son de infraestructura de Laravel y 1 (/debug-data) es un descuido del
+  proyecto. Las 14 rutas api las atienden los controladores de
+  app/Http/Controllers/Api y consumen token de Sanctum. La consola (tareas
+  programadas) esta aparte en routes/console.php y no cuenta como ruta HTTP.
+
+  Nota: /debug-data NO tiene middleware auth. Expone el JSON del dashboard a
+  cualquiera que conozca la URL. No es una fuga grave porque el dashboard filtra
+  por rol, pero deberia moverse detras de auth.
+
+--------------------------------------------------------------------------------
+ 6. DEUDA TECNICA DETECTADA (priorizada)
+--------------------------------------------------------------------------------
+ALTA
+  1. /debug-data sin middleware 'auth'. Ver seccion 5.
+
+  2. ~~POST /api/observaciones no notificaba al representante.~~ RESUELTO. La
+     notificacion se movio a un trait compartido
+     (Concerns/NotificaObservacionAlRepresentante) que usan tanto
+     ObservacionBaseController como el controlador de la API, asi que la regla
+     "el representante siempre recibe la observacion" ya se cumple por los dos
+     caminos. En la API el aviso es obligatorio para las autoridades y opcional
+     para el docente, igual que en la pantalla. Cubierto por 4 pruebas de
+     ObservacionApiTest.
+
+  3. ForoController.php tiene 9 textos con doble-codificacion, y el usuario los
+     ve en pantalla: sale "intervenciÃƒÂ³n", "aÃƒÂºn", "cerrÃƒÂ³", "mÃƒÂ¡s",
+     "conclusiÃƒÂ³n". Son los mensajes de error y de exito al publicar en el
+     foro, en las lineas 134, 142, 143, 156, 169, 184, 185 y 294.
+     Comprobado byte a byte: cada acentuado quedo como 'Ãƒ' + caracter latin1
+     en vez de un unico caracter UTF-8.
+
+  4. La difusion de mensajes del INSPECCION no tiene pruebas. Es la logica mas
+     compleja que se escribio (alcance, exclusiones, un mensaje por destinatario
+     en una transaccion, adjuntos compartidos) y solo esta verificada a mano.
+     Un cambio futuro la rompe en silencio.
+
+MEDIA
+  5. Las citas del INSPECCION no tienen pruebas propias; CitaRegistroTest cubre
+     el flujo del docente.
+
+  6. AulaVirtualTest tiene 1 caso que falla ("estudiante accede a sus clases
+     por matricula"). Es previo a este trabajo, asi que la suite nunca ha
+     estado en verde al 100%. Deberia arreglarse o marcarse como omitido.
+
+  7. La zona horaria usa desfases fijos, no zonas IANA. Se eligio asi a proposito
+     para que el usuario elija una ciudad y no tenga que sufrir el cambio de
+     hora: no se aplica horario de verano ni ajustes por pais. En un institute
+     con horario de verano la hora quedara mal.
+
+  8. ActaController solo tiene cobertura de humo (PdfRenderSmokeTest, 1 caso):
+     confirma que el PDF se dibuja, no que las notas sean correctas.
+
+  9. 4 roles del codigo sin ninguna cuenta: SECRETARIA, RECTORA, VICERRECTORA,
+     DECE. Si se prueban esos flujos a mano no hay con quien entrar.
+
+  10. Tres claves foraneas apuntan a tablas que no existen, por usar
+      constrained() sin argumento en migraciones viejas:
+      - permisos_notas.unidad_id      -> "unidads"   (la real es "unidades")
+      - permisos_notas.clase_docente_id -> "clase_docentes" (la real es
+        "clases_docentes")
+      - insumos_evaluacion.clase_docente_id -> "clase_docentes" (idem)
+      Las migraciones originales ya se corrigieron, asi que toda instalacion
+      nueva queda bien. Pero las bases ya migrateadas guardan la FK rota: en
+      SQLite no se nota al escribir y revienta al borrar un usuario de las
+      tablas colgadas (permisos_notas, insumos_evaluacion), con un error del
+      tipo "no such table: main.clase_docentes". Hoy no hay ninguna pantalla
+      que borre usuarios, asi que esta latente. Arreglarla exige reconstruir
+      esas dos tablas (SQLite no permite cambiar una FK en sitio) o rehacer la
+      base; por eso no se toco todavia.
+
+  11. La regla de "el representante legal debe ser mayor de edad" se valida en
+      los formularios (pre-registro, matricula, actualizacion de datos), pero
+      no en la base. El NOT NULL de alumnos.representante_user_id es lo unico
+      que garantiza que no haya alumnos sin representante; la edad depende de
+      que las tres pantallas la comprueben. Si alguien inserta un User menor
+      como representante por consola o por una pantalla nueva, la base lo
+      acepta.
+
+BAJA
+  12. Otros 2 casos de doble-codificacion, sin efecto visible para el usuario:
+     - routes/web.php linea 77: "contrasena" quedo como 'Ãƒ' + 'Â±'. El boton de
+       cambiar contrasena SI funciona, porque la vista usa route('perfil.password')
+       y Laravel genera la misma URL que el sistema registro. Lo raro es que la
+       direccion se ve /perfil/contrase%C3%83%C2%B1a y que si alguien escribe
+       /perfil/contraseÃ±a a mano le da 404.
+     - tests/Feature/NotasQuimestreTest.php linea 27: un dato de ejemplo del
+       test se llama 'ÃƒÂ¡tica' en vez de 'MatemÃ¡tica'. Solo afecta al test.
+
+  13. Sin pruebas: asistencia docente, historial de citas de directiva,
+      carrusel Hero, landing.
+
+  14. Los 2 tests de ExampleTest no aportan nada. Se pueden borrar.
+
+  15. No hay analizador de estilo ni formateador (pint / php-cs-fixer). Las
+      advertencias de Intelephense se corrigieron a mano commit a commit.
+
+  16. Falta nivel de avisos en PHP: se ven DEPRECATED de conversion float->int en
+      algunas zonas de pruebas.
+
+  17. Las 7 tablas con created_at que nunca se corrigieron del UTC inicial siguen
+      desfasadas. La unica que muestra hora al usuario es 'observaciones' (4
+      filas). mensajes ya quedo corregida.
+
+--------------------------------------------------------------------------------
+ 7. ESTRUCTURA DEL PROYECTO
+--------------------------------------------------------------------------------
+  app/Http/Controllers/       controladores (subcarpetas: Admin, Docente,
+                              Directivo, Inspeccion, Secretaria, Api, Auth)
+  app/Models/                29 modelos
+  app/Helpers/helpers.php    helpers globales (notas y zona horaria)
+  app/Providers/             AppServiceProvider aplica la zona horaria
+  app/Http/Middleware/       RoleMiddleware (control de acceso por rol)
+  database/migrations/       46 migraciones
+  database/seeders/          21 seeders
+  database/factories/        9 factories
+  resources/views/           54 vistas blade en 15 carpetas
+  routes/                    web.php (165 lineas), api.php (36), console.php
+  tests/Feature/             17 archivos, 162 pruebas (funcionales y e2e)
+  tests/Unit/                2 archivos, 7 pruebas (logica pura)
+
+  Configuracion clave:
+  - Base:      database/database.sqlite (esta en .gitignore, no se sube)
+  - Zona:      23 desfases en tabla instituciones.columna zona_horaria
+  - .env:      APP_TIMEZONE (solo si el admin no ha elegido una)
+
+--------------------------------------------------------------------------------
+ 8. COMO REPRODUCIR
+--------------------------------------------------------------------------------
+  Requisitos: XAMPP con Apache y PHP, y la base en database/database.sqlite
+
+  Instalar dependencias:      composer install
+  Crear la base:              touch database/database.sqlite
+  Correr migraciones:         php artisan migrate --seed
+  Servidor:                   php artisan serve
+  Entrar:                     http://localhost:8000  (o /gestion-escolar)
+  Pruebas:                    php artisan test
+  Pruebas de un area:         php artisan test --filter=ZonaHorariaTest
+  Crear un alumno de prueba:  php artisan db:seed --class=NivelesAlumnosSeeder
+
+  Nota: el seeder NivelesAlumnosSeeder genera 220 alumnos con sus
+  representantes y es idempotente (puedes correrlo las veces que quieras).
+  Las contrasenas quedan en usuarios.txt.
+================================================================================
+
+

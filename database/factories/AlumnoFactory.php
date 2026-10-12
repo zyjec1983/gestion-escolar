@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Alumno;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class AlumnoFactory extends Factory
@@ -18,6 +19,10 @@ class AlumnoFactory extends Factory
             'apellidos' => fake()->lastName(),
             'fecha_nacimiento' => fake()->date('Y-m-d', '2015-12-31'),
             'genero' => fake()->randomElement(['masculino', 'femenino']),
+            // Por regla ningun alumno puede quedar sin representante, y la
+            // columna es NOT NULL. Cada test que necesite otro representante lo
+            // sobrescribe; esta cuenta solo sirve para cumplir la restriccion.
+            'representante_user_id' => User::factory()->representante(),
         ];
     }
 }
