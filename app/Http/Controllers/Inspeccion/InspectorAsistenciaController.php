@@ -11,9 +11,9 @@ use Illuminate\Support\Carbon;
 
 class InspectorAsistenciaController extends Controller
 {
-    public function index(Request $request)
+    public static function aulasDisponibles()
     {
-        $aulas = Matricula::query()
+        return Matricula::query()
             ->join('cursos', 'matriculas.curso_id', '=', 'cursos.id')
             ->join('paralelos', 'matriculas.paralelo_id', '=', 'paralelos.id')
             ->select(
@@ -34,6 +34,11 @@ class InspectorAsistenciaController extends Controller
             ->orderBy('cursos.nombre')
             ->orderBy('paralelos.nombre')
             ->get();
+    }
+
+    public function index(Request $request)
+    {
+        $aulas = self::aulasDisponibles();
 
         $primera = $aulas->first();
 
@@ -51,12 +56,12 @@ class InspectorAsistenciaController extends Controller
         if ($aula) {
             $alumnos = Alumno::whereHas('matriculas', function ($q) use ($aula) {
                 $q->where('curso_id', $aula->curso_id)
-                  ->where('paralelo_id', $aula->paralelo_id);
+                    ->where('paralelo_id', $aula->paralelo_id);
             })->orderBy('apellidos')->orderBy('nombres')->get();
 
             $asistenciaExistente = Asistencia::where('curso_id', $aula->curso_id)
                 ->where('paralelo_id', $aula->paralelo_id)
-                ->where('fecha', $fecha)
+                ->whereDate('fecha', $fecha)
                 ->get()
                 ->keyBy('alumno_id');
         }
@@ -84,7 +89,7 @@ class InspectorAsistenciaController extends Controller
             $existente = Asistencia::where('curso_id', $validated['curso_id'])
                 ->where('paralelo_id', $validated['paralelo_id'])
                 ->where('alumno_id', $item['alumno_id'])
-                ->where('fecha', $validated['fecha'])
+                ->whereDate('fecha', $validated['fecha'])
                 ->first();
 
             if ($existente) {

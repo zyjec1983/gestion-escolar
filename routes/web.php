@@ -169,12 +169,25 @@ Route::middleware(['auth', 'role:INSPECCION,RECTORA,VICERRECTORA,DECE'])
         Route::get('/citas/agendar', [InspectorCitaController::class, 'agendar'])->name('citas.agendar');
         Route::post('/citas/agendar', [InspectorCitaController::class, 'store'])->name('citas.store');
         Route::get('/citas/historial', [InspectorCitaController::class, 'historial'])->name('citas.historial');
+        Route::post('/citas/{cita}/registrar', [InspectorCitaController::class, 'registrar'])->name('citas.registrar');
 
         Route::get('/observaciones', [InspectorObservacionController::class, 'index'])->name('observaciones.index');
         Route::post('/observaciones', [InspectorObservacionController::class, 'store'])->name('observaciones.store');
         Route::get('/observaciones/{alumno}/print', [InspectorObservacionController::class, 'print'])->name('observaciones.print');
+
+        // Catálogo de tipos de observación (configuración)
+        Route::get('/observaciones/tipos', [\App\Http\Controllers\Inspeccion\TipoObservacionController::class, 'index'])->name('observaciones.tipos.index');
+        Route::post('/observaciones/tipos', [\App\Http\Controllers\Inspeccion\TipoObservacionController::class, 'store'])->name('observaciones.tipos.store');
+        Route::patch('/observaciones/tipos/{tipo}/toggle', [\App\Http\Controllers\Inspeccion\TipoObservacionController::class, 'toggleActivo'])->name('observaciones.tipos.toggle');
+        Route::post('/observaciones/tipos/edicion', [\App\Http\Controllers\Inspeccion\TipoObservacionController::class, 'alternarEdicionGlobal'])->name('observaciones.tipos.alternar');
+
+        // Reportes de observaciones
+        Route::get('/observaciones/reporte/alumno', [\App\Http\Controllers\Inspeccion\ObservacionReporteController::class, 'reportePorAlumno'])->name('observaciones.reporte.alumno');
+        Route::get('/observaciones/reporte/alumno/pdf', [\App\Http\Controllers\Inspeccion\ObservacionReporteController::class, 'pdfPorAlumno'])->name('observaciones.reporte.alumno.pdf');
+        Route::get('/observaciones/estadisticas', [\App\Http\Controllers\Inspeccion\ObservacionEstadisticasController::class, 'index'])->name('observaciones.estadisticas');
         Route::get('/asistencia', [InspectorAsistenciaController::class, 'index'])->name('asistencia.index');
         Route::post('/asistencia', [InspectorAsistenciaController::class, 'store'])->name('asistencia.store');
+        Route::get('/asistencia/estadisticas', [\App\Http\Controllers\Inspeccion\InspectorAsistenciaEstadisticasController::class, 'index'])->name('asistencia.estadisticas');
     });
 
 Route::get('/debug-data', function () {

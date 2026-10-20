@@ -30,12 +30,12 @@ class AsistenciaController extends Controller
         if ($clase) {
             $alumnos = Alumno::whereHas('matriculas', function ($q) use ($clase) {
                 $q->where('curso_id', $clase->curso_id)
-                  ->where('paralelo_id', $clase->paralelo_id);
+                    ->where('paralelo_id', $clase->paralelo_id);
             })->orderBy('apellidos')->orderBy('nombres')->get();
 
             $asistenciaExistente = Asistencia::where('curso_id', $clase->curso_id)
                 ->where('paralelo_id', $clase->paralelo_id)
-                ->where('fecha', $fecha)
+                ->whereDate('fecha', $fecha)
                 ->get()
                 ->keyBy('alumno_id');
 
@@ -64,7 +64,7 @@ class AsistenciaController extends Controller
 
         $yaRegistrada = Asistencia::where('curso_id', $clase->curso_id)
             ->where('paralelo_id', $clase->paralelo_id)
-            ->where('fecha', $validated['fecha'])
+            ->whereDate('fecha', $validated['fecha'])
             ->exists();
 
         if ($yaRegistrada) {

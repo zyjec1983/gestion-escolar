@@ -73,12 +73,18 @@ class InspectorCitaController extends Controller
                 ->orderBy('nombre')->get(['id', 'nombre'])
             : Paralelo::orderBy('nombre')->get(['id', 'nombre']);
 
-        $alumnos = Alumno::with('representante')
-            ->whereHas('matriculas', fn ($q) => $q
-                ->when($nivelId, fn ($qq) => $qq->where('curso_id', $nivelId))
-                ->when($paraleloId, fn ($qq) => $qq->where('paralelo_id', $paraleloId)))
-            ->orderBy('apellidos')->orderBy('nombres')
-            ->get();
+        // El listado de estudiantes solo se carga cuando el inspector
+        // selecciona al menos un filtro (nivel, paralelo o estudiante).
+        $filtroActivo = (bool) ($nivelId || $paraleloId || $alumnoId);
+
+        $alumnos = $filtroActivo
+            ? Alumno::with('representante')
+                ->whereHas('matriculas', fn ($q) => $q
+                    ->when($nivelId, fn ($qq) => $qq->where('curso_id', $nivelId))
+                    ->when($paraleloId, fn ($qq) => $qq->where('paralelo_id', $paraleloId)))
+                ->orderBy('apellidos')->orderBy('nombres')
+                ->get()
+            : collect();
 
         $alumnoSel = $alumnoId ? $alumnos->firstWhere('id', $alumnoId) : null;
 
@@ -129,7 +135,7 @@ class InspectorCitaController extends Controller
 
         return view('inspeccion.citas.historial', compact(
             'niveles', 'paralelos', 'alumnos',
-            'nivelId', 'paraleloId', 'alumnoSel', 'citas', 'stats', 'porAlumno',
+            'nivelId', 'paraleloId', 'alumnoSel', 'citas', 'stats', 'porAlumno', 'filtroActivo',
         ));
     }
 
@@ -161,5 +167,37 @@ class InspectorCitaController extends Controller
         return redirect()->route('inspeccion.citas.agendar', [
             'alumno_id' => $validated['alumno_id'],
         ])->with('success', 'Cita agendada correctamente.');
+    }
+
+    /**
+     * Registra el resultado de una cita que el propio inspector agendo
+     * (el inspector es el citador: docente_id). Evita que quede "por
+     * registrar" cuando el representante asistio o no llego.
+     */
+    public function registrar(Request $request, int $id)
+    {
+        $cita = Cita::where('docente_id', $request->user()->id)->findOrFail($id);
+
+        abort_if($cita->registrada(), 409, 'Esta cita ya tiene un registro de resultado.');
+        abort_if($cita->fecha_inicio->gt(now()), 422, 'Aún no ha pasado la hora de la cita.');
+
+        $validated = $request->validate([
+            'resultado' => 'required|in:asistio,no_asistio',
+            'dudas_aclaradas' => 'nullable|boolean|required_if:resultado,asistio',
+            'evidencia' => 'required|string|min:10|max:3000',
+        ]);
+
+        $cita->update([
+            'resultado' => $validated['resultado'],
+            'dudas_aclaradas' => $validated['resultado'] === 'asistio'
+                ? (bool) $request->boolean('dudas_aclaradas')
+                : null,
+            'evidencia' => trim($validated['evidencia']),
+            'registrada_por' => $request->user()->id,
+            'registrada_en' => now(),
+            'estado' => 'realizada',
+        ]);
+
+        return redirect()->back()->with('success', 'Resultado de la cita registrado y evidencia guardada.');
     }
 }

@@ -35,7 +35,8 @@ abstract class ObservacionBaseController extends Controller
 
     protected function tiposObservacion()
     {
-        return TipoObservacion::orderBy('nombre')->get();
+        // Solo los tipos habilitados por rectorado aparecen en el select.
+        return TipoObservacion::activos()->orderBy('nombre')->get();
     }
 
     /**
@@ -62,7 +63,10 @@ abstract class ObservacionBaseController extends Controller
     {
         $validated = $request->validate([
             'alumno_id' => 'required|exists:alumnos,id',
-            'tipo_observacion_id' => 'required|exists:tipos_observacion,id',
+            'tipo_observacion_id' => [
+                'required',
+                \Illuminate\Validation\Rule::exists('tipos_observacion', 'id')->where('activo', true),
+            ],
             'descripcion_texto' => 'required|string|max:1000',
             'notificar_representante' => 'boolean',
         ]);

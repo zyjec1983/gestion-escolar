@@ -145,19 +145,65 @@
         </li>
         @endif
         @if($rol === 'INSPECCION')
+        @php
+            $asistenciaActivas = request()->is('inspeccion/asistencia*');
+        @endphp
         <li class="nav-item mt-2">
-            <a href="{{ route('inspeccion.asistencia.index') }}"
-               class="nav-link text-white {{ request()->is('inspeccion/asistencia*') ? 'active' : '' }}">
-                <i class="bi bi-calendar-check me-2"></i> Asistencia
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $asistenciaActivas ? 'active' : '' }}"
+               data-bs-toggle="collapse" href="#submenuAsistencia" aria-expanded="{{ $asistenciaActivas ? 'true' : 'false' }}" aria-controls="submenuAsistencia">
+                <span><i class="bi bi-calendar-check me-2"></i> Asistencia</span>
+                <i class="bi bi-chevron-down chevron-icon"></i>
             </a>
+            <div class="collapse {{ $asistenciaActivas ? 'show' : '' }}" id="submenuAsistencia">
+                <ul class="nav nav-pills flex-column ms-3 mt-1">
+                    <li class="nav-item">
+                        <a href="{{ route('inspeccion.asistencia.index') }}" class="nav-link text-white small py-1 {{ request()->is('inspeccion/asistencia') ? 'active' : '' }}">
+                            <i class="bi bi-clipboard-check me-2"></i> Tomar asistencia
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('inspeccion.asistencia.estadisticas') }}" class="nav-link text-white small py-1 {{ request()->is('inspeccion/asistencia/estadisticas*') ? 'active' : '' }}">
+                            <i class="bi bi-bar-chart-line me-2"></i> Estadísticas
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
         @endif
         @if(in_array($rol, ['INSPECCION', 'RECTORA', 'VICERRECTORA', 'DECE']))
+        @php
+            $observacionesActivas = request()->is('inspeccion/observaciones*');
+        @endphp
         <li class="nav-item mt-2">
-            <a href="{{ route('inspeccion.observaciones.index') }}"
-               class="nav-link text-white {{ request()->is('inspeccion/observaciones*') ? 'active' : '' }}">
-                <i class="bi bi-exclamation-triangle me-2"></i> Observaciones
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $observacionesActivas ? 'active' : '' }}"
+               data-bs-toggle="collapse" href="#submenuObservaciones" aria-expanded="{{ $observacionesActivas ? 'true' : 'false' }}" aria-controls="submenuObservaciones">
+                <span><i class="bi bi-exclamation-triangle me-2"></i> Observaciones</span>
+                <i class="bi bi-chevron-down chevron-icon"></i>
             </a>
+            <div class="collapse {{ $observacionesActivas ? 'show' : '' }}" id="submenuObservaciones">
+                <ul class="nav nav-pills flex-column ms-3 mt-1">
+                    <li class="nav-item">
+                        <a href="{{ route('inspeccion.observaciones.index') }}" class="nav-link text-white small py-1 {{ request()->is('inspeccion/observaciones') || request()->is('inspeccion/observaciones/index') ? 'active' : '' }}">
+                            <i class="bi bi-send me-2"></i> Enviar observación
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('inspeccion.observaciones.reporte.alumno') }}" class="nav-link text-white small py-1 {{ request()->is('inspeccion/observaciones/reporte/alumno*') ? 'active' : '' }}">
+                            <i class="bi bi-person me-2"></i> Reporte por alumno
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('inspeccion.observaciones.estadisticas') }}" class="nav-link text-white small py-1 {{ request()->is('inspeccion/observaciones/estadisticas*') ? 'active' : '' }}">
+                            <i class="bi bi-bar-chart-line me-2"></i> Estadísticas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('inspeccion.observaciones.tipos.index') }}" class="nav-link text-white small py-1 {{ request()->is('inspeccion/observaciones/tipos*') ? 'active' : '' }}">
+                            <i class="bi bi-gear-fill me-2"></i> Tipos de observación
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
         @endif
         @if(in_array($rol, ['ADMIN', 'SECRETARIA', 'RECTORA']))
