@@ -146,31 +146,30 @@ class MensajeController extends Controller
             'adjunto' => 'nullable|file|max:5120',
             // El inspector difunde por alcance, salvo que esté respondiendo.
             'alcance' => $esInspeccion && ! $esRespuesta ? 'required|in:estudiante,nivel,curso,comunidad' : 'nullable|in:estudiante,nivel,curso,comunidad',
-            'alumno_id' => Rule::requiredIf($alcance === 'estudiante') . '|nullable|exists:alumnos,id',
-            'nivel_educativo' => Rule::requiredIf($alcance === 'nivel') . '|nullable|in:basica,bachillerato',
-            'curso_id' => Rule::requiredIf($alcance === 'curso') . '|nullable|exists:cursos,id',
+            'alumno_id' => Rule::requiredIf($alcance === 'estudiante').'|nullable|exists:alumnos,id',
+            'nivel_educativo' => Rule::requiredIf($alcance === 'nivel').'|nullable|in:basica,bachillerato',
+            'curso_id' => Rule::requiredIf($alcance === 'curso').'|nullable|exists:cursos,id',
         ]);
 
-        if ($esInspeccion && !empty($validated['alcance'])) {
+        if ($esInspeccion && ! empty($validated['alcance'])) {
             return $this->enviarDifusion($request, $validated);
         }
 
-        if (!empty($validated['hilo_id'])) {
+        if (! empty($validated['hilo_id'])) {
             $hiloOrigen = Mensaje::find($validated['hilo_id']);
-            if (!$hiloOrigen || !$this->participaEn($request->user(), $hiloOrigen)) {
+            if (! $hiloOrigen || ! $this->participaEn($request->user(), $hiloOrigen)) {
                 abort(403, 'Hilo de conversación inválido.');
             }
         }
 
-
         if ($request->user()->rol === 'ESTUDIANTE') {
             $destinatario = User::find($validated['destinatario_id']);
-            $docentes = $this->compositorData($request->user())
-                ->get('materias', collect())
+            $docentes = collect($this->compositorData($request->user())->get('cursos', []))
+                ->flatMap(fn ($curso) => collect($curso['materias'] ?? []))
                 ->flatMap(fn ($materia) => collect($materia['docentes'] ?? []))
                 ->pluck('id');
 
-            if (!$destinatario || $destinatario->rol !== 'DOCENTE' || !$docentes->contains($destinatario->id)) {
+            if (! $destinatario || $destinatario->rol !== 'DOCENTE' || ! $docentes->contains($destinatario->id)) {
                 abort(403, 'Solo puedes enviar mensajes a tus docentes.');
             }
         }
@@ -190,7 +189,7 @@ class MensajeController extends Controller
 
         if ($request->hasFile('adjunto')) {
             $archivo = $request->file('adjunto');
-            $ruta = $archivo->store('mensajes/' . $request->user()->id, 'public');
+            $ruta = $archivo->store('mensajes/'.$request->user()->id, 'public');
 
             ArchivoAdjunto::create([
                 'attachable_type' => Mensaje::class,
@@ -201,6 +200,7 @@ class MensajeController extends Controller
         }
 
         $retorno = $request->input('retorno', route('mensajes.index'));
+
         return redirect($retorno)->with('exito', 'Mensaje enviado correctamente.');
     }
 
@@ -230,7 +230,7 @@ class MensajeController extends Controller
         }
 
         $destinatarios = $destinatarios
-            ->reject(fn ($id) => !$id || $id === $emisor->id)
+            ->reject(fn ($id) => ! $id || $id === $emisor->id)
             ->unique()
             ->values();
 
@@ -245,7 +245,7 @@ class MensajeController extends Controller
         if ($request->hasFile('adjunto')) {
             $archivo = $request->file('adjunto');
             $urlAdjunto = Storage::url(
-                $archivo->store('mensajes/' . $emisor->id, 'public')
+                $archivo->store('mensajes/'.$emisor->id, 'public')
             );
             $nombreAdjunto = $archivo->getClientOriginalName();
         }
@@ -280,7 +280,7 @@ class MensajeController extends Controller
         $retorno = $request->input('retorno', route('mensajes.index'));
 
         return redirect($retorno)
-            ->with('exito', "Mensaje enviado a {$total} destinatario" . ($total === 1 ? '' : 's') . '.');
+            ->with('exito', "Mensaje enviado a {$total} destinatario".($total === 1 ? '' : 's').'.');
     }
 
     /**
@@ -357,7 +357,7 @@ class MensajeController extends Controller
                         'nombre' => $paralelo->nombre,
                         'alumnos' => $alumnos->map(fn ($a) => [
                             'id' => $a->id,
-                            'label' => trim($a->apellidos . ' ' . $a->nombres),
+                            'label' => trim($a->apellidos.' '.$a->nombres),
                             'estudiante_user_id' => $a->user_id,
                             'representante_id' => $a->representante_user_id,
                             'representante_nombre' => $a->representante
@@ -389,7 +389,7 @@ class MensajeController extends Controller
     {
         $mensaje = Mensaje::with(['emisor', 'destinatario', 'contextoEstudiante'])->findOrFail($id);
 
-        if (!$this->participaEn($user, $mensaje)) {
+        if (! $this->participaEn($user, $mensaje)) {
             abort(403, 'No tienes acceso a este mensaje.');
         }
 
@@ -452,18 +452,18 @@ class MensajeController extends Controller
 
                     return [
                         'id' => $alumno->id,
-                        'label' => trim($alumno->apellidos . ' ' . $alumno->nombres),
+                        'label' => trim($alumno->apellidos.' '.$alumno->nombres),
                         'estudiante_user_id' => $alumno->usuarioEstudiante?->id,
                         'representante_id' => $alumno->representante?->id,
                         'representante_nombre' => $alumno->representante
-                            ? trim($alumno->representante->name . ' ' . $alumno->representante->apellidos)
+                            ? trim($alumno->representante->name.' '.$alumno->representante->apellidos)
                             : null,
                     ];
                 })->sortBy('label')->values();
 
                 return [
                     'id' => $clase->id,
-                    'label' => trim(($clase->curso->nombre ?? '') . ' ' . ($clase->paralelo->nombre ?? '') . ' - ' . ($clase->materia->nombre ?? '')),
+                    'label' => trim(($clase->curso->nombre ?? '').' '.($clase->paralelo->nombre ?? '').' - '.($clase->materia->nombre ?? '')),
                     'estudiantes' => $estudiantes,
                 ];
             })->values();
@@ -471,51 +471,84 @@ class MensajeController extends Controller
             return collect(['rol' => 'DOCENTE', 'clases' => $clasesData]);
         }
 
-        $alumnos = $user->rol === 'ESTUDIANTE'
-            ? $user->estudiantes()->with('matriculas')->get()
-            : $user->representados()->with('matriculas')->get();
-
-        $docentes = collect();
-
-        foreach ($alumnos as $alumno) {
-            $pares = $alumno->matriculas->map(fn ($m) => [$m->curso_id, $m->paralelo_id])->unique();
-
-            foreach ($pares as [$cursoId, $paraleloId]) {
-                $clases = ClaseDocente::with(['docente', 'materia'])
-                    ->where('curso_id', $cursoId)
-                    ->where('paralelo_id', $paraleloId)
-                    ->get();
-
-                foreach ($clases as $clase) {
-                    $docentes->push([
-                        'materia_id' => $clase->materia_id,
-                        'materia_nombre' => $clase->materia?->nombre,
-                        'docente_id' => $clase->user_id,
-                        'docente_nombre' => $clase->docente
-                            ? trim($clase->docente->name . ' ' . $clase->docente->apellidos)
-                            : 'Docente',
-                        'contexto_estudiante_id' => $alumno->id,
-                    ]);
-                }
-            }
-        }
-
-        $materiasData = $docentes->groupBy('materia_id')->map(function ($items, $materiaId) {
-            return [
-                'id' => $materiaId,
-                'nombre' => $items->first()['materia_nombre'] ?? 'Materia',
-                'docentes' => $items->unique('docente_id')->map(fn ($d) => [
-                    'id' => $d['docente_id'],
-                    'nombre' => $d['docente_nombre'],
-                    'contexto_estudiante_id' => $d['contexto_estudiante_id'],
-                ])->values(),
-            ];
-        })->values();
-
         if ($user->rol === 'INSPECCION') {
             return collect(['rol' => 'INSPECCION', 'cursos' => $this->cursosParaDifusion()]);
         }
 
-        return collect(['rol' => $user->rol, 'materias' => $materiasData]);
+        // Representantes y estudiantes: un curso por cada hijo/matrícula, con
+        // las materias y los docentes que dictan en ese curso y paralelo.
+        $alumnos = $user->rol === 'ESTUDIANTE'
+            ? $user->estudiantes()->with(['matriculas.curso', 'matriculas.paralelo'])->get()
+            : $user->representados()->with(['matriculas.curso', 'matriculas.paralelo'])->get();
+
+        $cursos = collect();
+
+        foreach ($alumnos as $alumno) {
+            foreach ($alumno->matriculas as $matricula) {
+                $clases = ClaseDocente::with(['docente', 'materia'])
+                    ->where('curso_id', $matricula->curso_id)
+                    ->where('paralelo_id', $matricula->paralelo_id)
+                    ->get();
+
+                $materias = $clases->groupBy('materia_id')->map(function ($items, $materiaId) {
+                    return [
+                        'id' => $materiaId,
+                        'nombre' => $items->first()->materia?->nombre ?? 'Materia',
+                        'docentes' => $items->unique('user_id')->map(fn ($clase) => [
+                            'id' => $clase->user_id,
+                            'nombre' => $clase->docente
+                                ? trim($clase->docente->name.' '.$clase->docente->apellidos)
+                                : 'Docente',
+                        ])->values(),
+                    ];
+                })->values();
+
+                $cursoNombre = trim(
+                    ($matricula->curso?->nombre ?? '').' '.($matricula->paralelo?->nombre ?? '')
+                );
+                $alumnoNombre = trim($alumno->apellidos.' '.$alumno->nombres);
+
+                $cursos->push([
+                    'id' => $alumno->id.'-'.$matricula->id,
+                    'alumno_id' => $alumno->id,
+                    'alumno_nombre' => $alumnoNombre,
+                    'curso_nombre' => $cursoNombre,
+                    'label' => trim($cursoNombre.' — '.$alumnoNombre),
+                    'materias' => $materias,
+                ]);
+            }
+        }
+
+        // Áreas de autoridad a las que el representante puede escribir. Se
+        // muestran siempre (aunque hoy no tengan usuarios registrados) para
+        // que la separación Inspección / DECE / Vicerrectorado sea visible.
+        $autoridades = collect();
+
+        if ($user->rol === 'REPRESENTANTE') {
+            $porRol = User::whereIn('rol', ['INSPECCION', 'DECE', 'VICERRECTORA'])
+                ->orderBy('apellidos')
+                ->orderBy('name')
+                ->get()
+                ->groupBy('rol');
+
+            $autoridades = collect([
+                'INSPECCION' => 'Inspección',
+                'DECE' => 'DECE',
+                'VICERRECTORA' => 'Vicerrectorado',
+            ])->map(fn (string $area, string $rol) => [
+                'rol' => $rol,
+                'area' => $area,
+                'usuarios' => ($porRol[$rol] ?? collect())->map(fn (User $u) => [
+                    'id' => $u->id,
+                    'nombre' => trim($u->name.' '.$u->apellidos),
+                ])->values(),
+            ])->values();
+        }
+
+        return collect([
+            'rol' => $user->rol,
+            'cursos' => $cursos,
+            'autoridades' => $autoridades,
+        ]);
     }
 }

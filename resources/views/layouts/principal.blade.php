@@ -118,7 +118,7 @@
             </div>
         </li>
         @endif
-        @if($rol === 'INSPECCION')
+        @if(in_array($rol, ['INSPECCION', 'ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA', 'DECE']))
         @php
             $citasInspeccion = request()->is('inspeccion/citas*');
         @endphp
@@ -206,24 +206,25 @@
             </div>
         </li>
         @endif
-        @if(in_array($rol, ['ADMIN', 'SECRETARIA', 'RECTORA']))
+        @if(in_array($rol, ['ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA']))
         <li class="nav-item mt-2">
+            <a href="{{ route('admin.pre-registros.index') }}"
+               class="nav-link text-white {{ request()->is('admin/pre-registros*') ? 'active' : '' }}">
+                <i class="bi bi-clipboard-check me-2"></i> Solicitudes de matrícula
+            </a>
+        </li>
+        @endif
+        @if(in_array($rol, ['ADMIN', 'SECRETARIA', 'RECTORA']))
+        <li class="nav-item">
             <a href="{{ route('actualizacion.index') }}"
                class="nav-link text-white {{ request()->is('actualizacion*') ? 'active' : '' }}">
                 <i class="bi bi-pencil-square me-2"></i> Actualización de datos
             </a>
         </li>
         @endif
-        @if(in_array($rol, ['ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA', 'DECE']))
-        <li class="nav-item mt-2">
-            <a href="{{ route('directivo.citas.historial') }}" class="nav-link text-white {{ request()->is('directivo/citas*') ? 'active' : '' }}">
-                <i class="bi bi-clipboard2-data me-2"></i> Historial de citas
-            </a>
-        </li>
-        @endif
         @if($rol === 'ADMIN')
         <li class="nav-item mt-2">
-            <a href="{{ route('admin.configuracion.index') }}" class="nav-link text-white {{ request()->is('admin/*') ? 'active' : '' }}">
+            <a href="{{ route('admin.configuracion.index') }}" class="nav-link text-white {{ request()->is('admin/configuracion*') || request()->is('admin/hero-slides*') ? 'active' : '' }}">
                 <i class="bi bi-gear me-2"></i> Configuración
             </a>
         </li>

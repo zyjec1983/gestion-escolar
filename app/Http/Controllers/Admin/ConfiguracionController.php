@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\HeroSlide;
 use App\Models\Institucion;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,6 +15,7 @@ class ConfiguracionController extends Controller
         return view('admin.configuracion.index', [
             'institucion' => Institucion::firstOrFail(),
             'desfases' => desfasesHorariosDisponibles(),
+            'slides' => HeroSlide::orderBy('orden')->orderBy('id')->get(),
         ]);
     }
 

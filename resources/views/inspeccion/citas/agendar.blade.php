@@ -8,7 +8,10 @@
     <div class="row mb-4 align-items-center">
         <div class="col">
             <h4 class="mb-0"><i class="bi bi-calendar-plus me-2"></i>Agendar cita a representante</h4>
-            <small class="text-muted">Puede citar a cualquier estudiante del centro. La cita queda registrada a nombre de inspección.</small>
+            <small class="text-muted">
+                Puede citar a cualquier estudiante del centro. La cita queda registrada a nombre de
+                <strong>{{ trim((auth()->user()->name ?? '') . ' ' . (auth()->user()->apellidos ?? '')) }}</strong>.
+            </small>
         </div>
     </div>
 

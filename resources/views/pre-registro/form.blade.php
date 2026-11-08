@@ -71,7 +71,7 @@
                         <div class="row g-3 mb-4">
                             <div class="col-md-4">
                                 <label class="form-label small">Tipo de Documento</label>
-                                <div class="d-flex gap-3">
+                                <div class="d-flex gap-3 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="rep_tipo_documento" value="cedula" id="rep_cedula" checked><label class="form-check-label" for="rep_cedula">Cédula</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="rep_tipo_documento" value="pasaporte" id="rep_pasaporte"><label class="form-check-label" for="rep_pasaporte">Pasaporte</label></div>
                                 </div>
@@ -114,7 +114,7 @@
                         <div class="row g-3 mb-4">
                             <div class="col-md-4">
                                 <label class="form-label small">Tipo de Documento</label>
-                                <div class="d-flex gap-3">
+                                <div class="d-flex gap-3 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_tipo_documento" value="cedula" id="al_cedula" checked><label class="form-check-label" for="al_cedula">Cédula</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_tipo_documento" value="pasaporte" id="al_pasaporte"><label class="form-check-label" for="al_pasaporte">Pasaporte</label></div>
                                 </div>
@@ -202,7 +202,7 @@
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
                                 <label class="form-label small">¿Padece alguna enfermedad?</label>
-                                <div class="d-flex gap-4">
+                                <div class="d-flex gap-4 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_padece_enfermedad" value="1" {{ old('alumno_padece_enfermedad') ? 'checked' : '' }}><label class="form-check-label">Sí</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_padece_enfermedad" value="0" {{ !old('alumno_padece_enfermedad') ? 'checked' : '' }}><label class="form-check-label">No</label></div>
                                 </div>
@@ -213,7 +213,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small">¿Tiene un tratamiento a seguir por esa condición?</label>
-                                <div class="d-flex gap-4">
+                                <div class="d-flex gap-4 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_tiene_tratamiento" value="1" {{ old('alumno_tiene_tratamiento') ? 'checked' : '' }}><label class="form-check-label">Sí</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_tiene_tratamiento" value="0" {{ !old('alumno_tiene_tratamiento') ? 'checked' : '' }}><label class="form-check-label">No</label></div>
                                     <small class="text-muted align-self-center">adjunte documento físico</small>
@@ -221,7 +221,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small">¿Toma alguna medicina?</label>
-                                <div class="d-flex gap-4">
+                                <div class="d-flex gap-4 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_toma_medicina" value="1" {{ old('alumno_toma_medicina') ? 'checked' : '' }}><label class="form-check-label">Sí</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_toma_medicina" value="0" {{ !old('alumno_toma_medicina') ? 'checked' : '' }}><label class="form-check-label">No</label></div>
                                 </div>
@@ -232,7 +232,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small">¿Tiene Necesidades Educativas Específicas?</label>
-                                <div class="d-flex gap-4">
+                                <div class="d-flex gap-4 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_tiene_nee" value="1" {{ old('alumno_tiene_nee') ? 'checked' : '' }}><label class="form-check-label">Sí</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_tiene_nee" value="0" {{ !old('alumno_tiene_nee') ? 'checked' : '' }}><label class="form-check-label">No</label></div>
                                 </div>
@@ -248,7 +248,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small">¿Tiene carnet de discapacidad?</label>
-                                <div class="d-flex gap-4">
+                                <div class="d-flex gap-4 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_tiene_carnet_discapacidad" value="1" {{ old('alumno_tiene_carnet_discapacidad') ? 'checked' : '' }}><label class="form-check-label">Sí</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_tiene_carnet_discapacidad" value="0" {{ !old('alumno_tiene_carnet_discapacidad') ? 'checked' : '' }}><label class="form-check-label">No</label></div>
                                 </div>
@@ -259,7 +259,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small">¿Tiene informe psicopedagógico actualizado?</label>
-                                <div class="d-flex gap-4">
+                                <div class="d-flex gap-4 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_tiene_informe_psicopedagogico" value="1" {{ old('alumno_tiene_informe_psicopedagogico') ? 'checked' : '' }}><label class="form-check-label">Sí</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="alumno_tiene_informe_psicopedagogico" value="0" {{ !old('alumno_tiene_informe_psicopedagogico') ? 'checked' : '' }}><label class="form-check-label">No</label></div>
                                     <small class="text-muted align-self-center">adjunte documento físico</small>
@@ -303,30 +303,30 @@
                                 <input type="text" name="vivienda_parroquia" class="form-control" value="{{ old('vivienda_parroquia') }}">
                             </div>
                             <div class="col-12"><hr></div>
-                            <div class="col-3">
+                            <div class="col-6 col-md-3">
                                 <label class="form-label small d-block">Casa Propia</label>
-                                <div class="d-flex gap-3">
+                                <div class="d-flex gap-3 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="vivienda_casa_propia" value="1" {{ old('vivienda_casa_propia') ? 'checked' : '' }}><label class="form-check-label">Sí</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="vivienda_casa_propia" value="0" {{ !old('vivienda_casa_propia') ? 'checked' : '' }}><label class="form-check-label">No</label></div>
                                 </div>
                             </div>
-                            <div class="col-3">
+                            <div class="col-6 col-md-3">
                                 <label class="form-label small d-block">Agua</label>
-                                <div class="d-flex gap-3">
+                                <div class="d-flex gap-3 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="vivienda_tiene_agua" value="1" {{ old('vivienda_tiene_agua') ? 'checked' : '' }}><label class="form-check-label">Sí</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="vivienda_tiene_agua" value="0" {{ !old('vivienda_tiene_agua') ? 'checked' : '' }}><label class="form-check-label">No</label></div>
                                 </div>
                             </div>
-                            <div class="col-3">
+                            <div class="col-6 col-md-3">
                                 <label class="form-label small d-block">SS.HH.</label>
-                                <div class="d-flex gap-3">
+                                <div class="d-flex gap-3 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="vivienda_tiene_sshh" value="1" {{ old('vivienda_tiene_sshh') ? 'checked' : '' }}><label class="form-check-label">Sí</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="vivienda_tiene_sshh" value="0" {{ !old('vivienda_tiene_sshh') ? 'checked' : '' }}><label class="form-check-label">No</label></div>
                                 </div>
                             </div>
-                            <div class="col-3">
+                            <div class="col-6 col-md-3">
                                 <label class="form-label small d-block">Luz</label>
-                                <div class="d-flex gap-3">
+                                <div class="d-flex gap-3 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="vivienda_tiene_luz" value="1" {{ old('vivienda_tiene_luz') ? 'checked' : '' }}><label class="form-check-label">Sí</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="vivienda_tiene_luz" value="0" {{ !old('vivienda_tiene_luz') ? 'checked' : '' }}><label class="form-check-label">No</label></div>
                                 </div>
@@ -346,7 +346,7 @@
                             <div class="col-md-3"><label class="form-label small">Teléf. Vigente</label><input type="text" name="padre_telefono" class="form-control" value="{{ old('padre_telefono') }}" maxlength="20" inputmode="tel"></div>
                             <div class="col-md-2">
                                 <label class="form-label small">Facturador</label>
-                                <div class="d-flex gap-3">
+                                <div class="d-flex gap-3 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="padre_es_facturador" value="1" {{ old('padre_es_facturador') ? 'checked' : '' }}><label class="form-check-label">Sí</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="padre_es_facturador" value="0" {{ !old('padre_es_facturador') ? 'checked' : '' }}><label class="form-check-label">No</label></div>
                                 </div>
@@ -362,7 +362,7 @@
                             <div class="col-md-3"><label class="form-label small">Teléf. Vigente</label><input type="text" name="madre_telefono" class="form-control" value="{{ old('madre_telefono') }}" maxlength="20" inputmode="tel"></div>
                             <div class="col-md-2">
                                 <label class="form-label small">Facturador</label>
-                                <div class="d-flex gap-3">
+                                <div class="d-flex gap-3 flex-wrap">
                                     <div class="form-check"><input class="form-check-input" type="radio" name="madre_es_facturador" value="1" {{ old('madre_es_facturador') ? 'checked' : '' }}><label class="form-check-label">Sí</label></div>
                                     <div class="form-check"><input class="form-check-input" type="radio" name="madre_es_facturador" value="0" {{ !old('madre_es_facturador') ? 'checked' : '' }}><label class="form-check-label">No</label></div>
                                 </div>

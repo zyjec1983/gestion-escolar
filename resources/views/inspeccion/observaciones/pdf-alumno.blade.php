@@ -27,6 +27,22 @@
         @endif
         <div>Total registros: {{ $observaciones->count() }}</div>
     </div>
+    @if ($alumno && $resumenAlumno)
+        @php $pc = $resumenAlumno['por_clasificacion']; @endphp
+        <div class="meta">
+            <strong>Resumen:</strong>
+            Positivas: {{ $pc['positiva'] }} |
+            Leves: {{ $pc['leve'] }} |
+            Graves: {{ $pc['grave'] }} |
+            Muy Graves: {{ $pc['muy_grave'] }}
+            @if ($hojaVida->isNotEmpty())
+                <br><strong>Por tipo:</strong>
+                @foreach ($hojaVida as $hv)
+                    {{ $hv->tipo_nombre }}: {{ $hv->total }}{{ $loop->last ? '' : ' | ' }}
+                @endforeach
+            @endif
+        </div>
+    @endif
     <table>
         <thead>
             <tr>

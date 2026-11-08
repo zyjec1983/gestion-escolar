@@ -15,6 +15,14 @@ use Illuminate\Routing\Controllers\Middleware;
 
 class ObservacionReporteController extends Controller implements HasMiddleware
 {
+    /** Colores por clasificación (consistente con estadísticas). */
+    private const COLORES = [
+        'positiva' => '#198754',
+        'leve' => '#ffc107',
+        'grave' => '#fd7e14',
+        'muy_grave' => '#dc3545',
+    ];
+
     public static function middleware(): array
     {
         return [
@@ -72,11 +80,15 @@ class ObservacionReporteController extends Controller implements HasMiddleware
                 ->get();
         }
 
-        return view('inspeccion.observaciones.reporte-alumno', compact(
+        // Resumen y hoja de vida del alumno buscado (desde la colección ya cargada).
+        [$resumenAlumno, $hojaVida] = $this->resumenAlumno($observaciones, $alumnoSel);
+
+        return view('inspeccion.observaciones.reporte-alumno', array_merge(compact(
             'niveles', 'paralelos', 'alumnos',
             'nivelId', 'paraleloId', 'alumnoId', 'alumnoSel',
-            'fechaDesde', 'fechaHasta', 'observaciones', 'filtroActivo'
-        ));
+            'fechaDesde', 'fechaHasta', 'observaciones', 'filtroActivo',
+            'resumenAlumno', 'hojaVida'
+        ), ['colores' => self::COLORES]));
     }
 
     public function pdfPorAlumno(Request $request)
@@ -109,9 +121,13 @@ class ObservacionReporteController extends Controller implements HasMiddleware
                 ->get();
         }
 
+        [$resumen, $hojaVidaAlumno] = $this->resumenAlumno($observaciones, $alumno);
+
         $pdf = Pdf::loadView('inspeccion.observaciones.pdf-alumno', [
             'alumno' => $alumno,
             'observaciones' => $observaciones,
+            'resumenAlumno' => $resumen,
+            'hojaVida' => $hojaVidaAlumno,
             'nivelId' => $nivelId,
             'paraleloId' => $paraleloId,
             'fechaDesde' => $fechaDesde,
@@ -123,6 +139,42 @@ class ObservacionReporteController extends Controller implements HasMiddleware
             : 'Observaciones-por-nivel-paralelo.pdf';
 
         return $pdf->download($nombre);
+    }
+
+    /**
+     * Resumen de un alumno: total, desglose por clasificación y por tipo.
+     * Devuelve [$resumen, $hojaVida]. Si no hay alumno, [$null, colección vacía].
+     */
+    private function resumenAlumno($observaciones, ?Alumno $alumno): array
+    {
+        if (! $alumno) {
+            return [null, collect()];
+        }
+
+        $porClasificacion = ['positiva' => 0, 'leve' => 0, 'grave' => 0, 'muy_grave' => 0];
+        foreach ($observaciones as $obs) {
+            $c = $obs->tipoObservacion?->clasificacion ?? 'leve';
+            $porClasificacion[$c] = ($porClasificacion[$c] ?? 0) + 1;
+        }
+
+        $hojaVida = $observaciones
+            ->groupBy(fn ($o) => $o->tipoObservacion?->id ?? 0)
+            ->map(function ($grupo) {
+                $tipo = $grupo->first()->tipoObservacion;
+
+                return (object) [
+                    'tipo_nombre' => $tipo?->nombre ?? 'Sin tipo',
+                    'clasificacion' => $tipo?->clasificacion ?? 'leve',
+                    'total' => $grupo->count(),
+                ];
+            })->sortByDesc('total')->values();
+
+        $resumen = [
+            'total' => $observaciones->count(),
+            'por_clasificacion' => $porClasificacion,
+        ];
+
+        return [$resumen, $hojaVida];
     }
 
     private function parseFecha($valor): ?Carbon

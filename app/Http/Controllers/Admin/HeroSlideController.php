@@ -12,14 +12,14 @@ class HeroSlideController extends Controller
 {
     public function index()
     {
-        $slides = HeroSlide::orderBy('orden')->orderBy('id')->get();
-        $institucion = Institucion::first();
-        return view('admin.hero-slides.index', compact('slides', 'institucion'));
+        // La gestión del carrusel vive ahora dentro de Configuración.
+        return redirect()->route('admin.configuracion.index');
     }
 
     public function create()
     {
         $ultimoOrden = HeroSlide::max('orden') ?? 0;
+
         return view('admin.hero-slides.form', [
             'slide' => null,
             'ultimoOrden' => $ultimoOrden + 1,
@@ -48,13 +48,14 @@ class HeroSlideController extends Controller
             'link' => $validated['link'] ?? null,
         ]);
 
-        return redirect()->route('admin.hero-slides.index')
+        return redirect()->to('/admin/configuracion#panel-carrusel')
             ->with('success', 'Slide creado correctamente.');
     }
 
     public function edit($id)
     {
         $slide = HeroSlide::findOrFail($id);
+
         return view('admin.hero-slides.form', compact('slide'));
     }
 
@@ -88,7 +89,7 @@ class HeroSlideController extends Controller
 
         $slide->update($data);
 
-        return redirect()->route('admin.hero-slides.index')
+        return redirect()->to('/admin/configuracion#panel-carrusel')
             ->with('success', 'Slide actualizado correctamente.');
     }
 
@@ -100,7 +101,7 @@ class HeroSlideController extends Controller
         }
         $slide->delete();
 
-        return redirect()->route('admin.hero-slides.index')
+        return redirect()->to('/admin/configuracion#panel-carrusel')
             ->with('success', 'Slide eliminado correctamente.');
     }
 

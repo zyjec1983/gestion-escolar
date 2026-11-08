@@ -82,7 +82,7 @@ class RepresentanteController extends Controller
                         'created_at' => $m->created_at,
                         'materia' => $clase->materia?->nombre ?? 'Sin materia',
                         'clase_id' => $clase->id,
-                        'subidor' => $m->subidor ? trim($m->subidor->name . ' ' . $m->subidor->apellidos) : 'Docente',
+                        'subidor' => $m->subidor ? trim($m->subidor->name.' '.$m->subidor->apellidos) : 'Docente',
                     ]);
             })
             ->sortByDesc('created_at')
@@ -104,7 +104,7 @@ class RepresentanteController extends Controller
                 'id' => $materiaId,
                 'nombre' => $clase->materia->nombre,
                 'color' => $clase->materia->color_tarjeta ?? '#E63946',
-                'docente' => $clase->docente ? trim($clase->docente->name . ' ' . $clase->docente->apellidos) : null,
+                'docente' => $clase->docente ? trim($clase->docente->name.' '.$clase->docente->apellidos) : null,
                 'agendas_activas' => $activas->count(),
                 'total_agendas' => $agendas->count(),
                 'hay_actividad' => $activas->isNotEmpty(),
@@ -118,12 +118,13 @@ class RepresentanteController extends Controller
 
         return $clases->groupBy('materia_id')->map(function ($items, $materiaId) {
             $primera = $items->first();
+
             return [
                 'id' => $materiaId,
                 'nombre' => $primera->materia->nombre,
                 'docentes' => $items->map(fn ($c) => [
                     'id' => $c->docente?->id,
-                    'nombre' => $c->docente ? trim($c->docente->name . ' ' . $c->docente->apellidos) : null,
+                    'nombre' => $c->docente ? trim($c->docente->name.' '.$c->docente->apellidos) : null,
                 ])->filter(fn ($d) => $d['id'] !== null)->values()->all(),
             ];
         })->values();
@@ -157,9 +158,19 @@ class RepresentanteController extends Controller
             $materias = $this->materiasParaFormulario($alumno);
         }
 
+        // El representante ve tanto las citas que él solicitó como las citas
+        // agendadas por cualquier autoridad (rector, inspección, docente) sobre
+        // sus representados, para que el comunicado le llegue con el nombre de
+        // quien lo citó.
+        $representadoIds = $representados->pluck('id');
+
         $citas = Cita::with(['alumno', 'docente'])
-            ->where('solicitante_type', User::class)
-            ->where('solicitante_id', $user->id)
+            ->where(function ($q) use ($user, $representadoIds) {
+                $q->where(function ($q2) use ($user) {
+                    $q2->where('solicitante_type', User::class)
+                        ->where('solicitante_id', $user->id);
+                })->orWhereIn('alumno_id', $representadoIds);
+            })
             ->orderByDesc('fecha_inicio')
             ->get();
 
@@ -233,7 +244,7 @@ class RepresentanteController extends Controller
         $validated = $request->validate([
             'alumno_id' => ['required', 'exists:alumnos,id', function ($attr, $value, $fail) use ($user) {
                 $alumno = Alumno::find($value);
-                if (!$alumno || $alumno->representante_user_id !== $user->id) {
+                if (! $alumno || $alumno->representante_user_id !== $user->id) {
                     $fail('El estudiante seleccionado no corresponde a su representación.');
                 }
             }],
@@ -246,7 +257,7 @@ class RepresentanteController extends Controller
                             ->where('paralelo_id', $m->paralelo_id)
                             ->exists();
                     });
-                    if (!$pertenece) {
+                    if (! $pertenece) {
                         $fail('El docente seleccionado no dicta clases en el curso de su representado.');
                     }
                 }
@@ -259,10 +270,10 @@ class RepresentanteController extends Controller
         ]);
 
         $motivo = $validated['motivo'] === 'Otro' && $validated['motivo_otro']
-            ? 'Otro: ' . $validated['motivo_otro']
+            ? 'Otro: '.$validated['motivo_otro']
             : $validated['motivo'];
 
-        $fechaHora = Carbon::parse($validated['fecha'] . ' ' . sprintf('%02d:%02d', $validated['hora'], $validated['minuto']));
+        $fechaHora = Carbon::parse($validated['fecha'].' '.sprintf('%02d:%02d', $validated['hora'], $validated['minuto']));
 
         Cita::create([
             'solicitante_type' => User::class,

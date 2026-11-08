@@ -21,7 +21,29 @@
 @endpush
 
 @section('contenido')
+@php
+    $citasJson = $citas_hoy->map(function ($c) {
+        return [
+            'id' => $c->id,
+            'fecha_hora' => $c->fecha_inicio->format('d/m/Y H:i'),
+            'hora_fin' => $c->fecha_fin->format('H:i'),
+            'estado' => $c->estado,
+            'motivo' => (string) $c->motivo,
+            'alumno' => $c->alumno ? trim($c->alumno->apellidos . ' ' . $c->alumno->nombres) : '—',
+            'representante' => $c->alumno?->representante ? trim($c->alumno->representante->name . ' ' . $c->alumno->representante->apellidos) : '—',
+            'vencida' => $c->fecha_inicio->lte(now()),
+            'registrada' => $c->registrada(),
+            'propia' => $c->docente_id === auth()->id(),
+            'resultado' => $c->resultado,
+            'dudas' => (bool) $c->dudas_aclaradas,
+            'evidencia' => (string) $c->evidencia,
+        ];
+    })->values();
+@endphp
 <div class="container-fluid">
+    @if(session('success'))
+        <div id="swal-success" data-message="{{ session('success') }}" hidden></div>
+    @endif
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-0"><i class="bi bi-person-badge me-2"></i>Panel de Inspección</h4>
@@ -85,7 +107,8 @@
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush">
                         @forelse($citas_hoy as $cita)
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="list-group-item list-group-item-action cita-clickable d-flex justify-content-between align-items-center"
+                             role="button" data-cita-id="{{ $cita->id }}" title="Clic para ver el detalle de la cita" style="cursor: pointer;">
                             <div>
                                 <strong>{{ $cita->fecha_inicio?->format('H:i') }}</strong>
                                 · {{ trim(($cita->alumno?->apellidos ?? '') . ' ' . ($cita->alumno?->nombres ?? '')) ?: 'Sin estudiante' }}
@@ -134,4 +157,6 @@
         </div>
     </div>
 </div>
+
+@include('citas._modal', ['citasJson' => $citasJson, 'registrarUrlBase' => url('inspeccion/citas')])
 @endsection

@@ -164,20 +164,72 @@ class MensajeTest extends TestCase
     public function test_representante_ve_compositor_por_materia_con_docente(): void
     {
         $ctx = $this->crearCtx();
+        User::factory()->create(['rol' => 'INSPECCION', 'name' => 'MARIA', 'apellidos' => 'INSPECTORA']);
 
         $respuesta = $this->actingAs($ctx['representante'])
             ->get(route('mensajes.index'))
             ->assertOk()
-            ->assertSee('Materia')
-            ->assertSee('Docente');
+            ->assertSee('Estudiante / Curso')
+            ->assertSee('Materia o área')
+            ->assertSee('Inspección / DECE / Vicerrectorado');
 
         $compositor = $respuesta->viewData('compositor');
         $this->assertNotEquals('DOCENTE', $compositor['rol']);
-        $this->assertCount(1, $compositor['materias']);
-        $this->assertEquals('Lengua', $compositor['materias'][0]['nombre']);
-        $this->assertCount(1, $compositor['materias'][0]['docentes']);
-        $this->assertEquals($ctx['docente']->id, $compositor['materias'][0]['docentes'][0]['id']);
-        $this->assertEquals($ctx['alumno']->id, $compositor['materias'][0]['docentes'][0]['contexto_estudiante_id']);
+        $this->assertCount(1, $compositor['cursos']);
+
+        $curso = $compositor['cursos'][0];
+        $this->assertEquals($ctx['alumno']->id, $curso['alumno_id']);
+        $this->assertCount(1, $curso['materias']);
+        $this->assertEquals('Lengua', $curso['materias'][0]['nombre']);
+        $this->assertCount(1, $curso['materias'][0]['docentes']);
+        $this->assertEquals($ctx['docente']->id, $curso['materias'][0]['docentes'][0]['id']);
+
+        // Las tres áreas siempre están presentes, aunque DECE y Vicerrectorado
+        // todavía no tengan cuentas registradas.
+        $areas = collect($compositor['autoridades'])->keyBy('rol');
+        $this->assertCount(3, $areas);
+        $this->assertEquals('Inspección', $areas['INSPECCION']['area']);
+        $this->assertCount(1, $areas['INSPECCION']['usuarios']);
+        $this->assertEquals('MARIA INSPECTORA', $areas['INSPECCION']['usuarios'][0]['nombre']);
+        $this->assertCount(0, $areas['DECE']['usuarios']);
+        $this->assertCount(0, $areas['VICERRECTORA']['usuarios']);
+    }
+
+    public function test_representante_con_dos_hijos_ve_un_curso_por_matricula(): void
+    {
+        $ctx = $this->crearCtx();
+
+        $otroCurso = Curso::factory()->create(['nombre' => 'DÉCIMO GRADO']);
+        $otroParalelo = Paralelo::factory()->create(['nombre' => 'B']);
+        $otraMateria = Materia::create(['nombre' => 'Matemáticas', 'codigo' => 'MAT', 'color_tarjeta' => '#111111']);
+        $otroDocente = User::factory()->docente()->create();
+
+        ClaseDocente::create([
+            'user_id' => $otroDocente->id,
+            'materia_id' => $otraMateria->id,
+            'curso_id' => $otroCurso->id,
+            'paralelo_id' => $otroParalelo->id,
+        ]);
+
+        $segundoHijo = Alumno::factory()->create(['representante_user_id' => $ctx['representante']->id]);
+        Matricula::factory()->create([
+            'alumno_id' => $segundoHijo->id,
+            'curso_id' => $otroCurso->id,
+            'paralelo_id' => $otroParalelo->id,
+            'periodo_id' => PeriodoLectivo::factory()->create(['activo' => true])->id,
+        ]);
+
+        $compositor = $this->actingAs($ctx['representante'])
+            ->get(route('mensajes.index'))
+            ->assertOk()
+            ->viewData('compositor');
+
+        $this->assertCount(2, $compositor['cursos']);
+
+        $porAlumno = collect($compositor['cursos'])->keyBy('alumno_id');
+        $this->assertEquals('Lengua', $porAlumno[$ctx['alumno']->id]['materias'][0]['nombre']);
+        $this->assertEquals('Matemáticas', $porAlumno[$segundoHijo->id]['materias'][0]['nombre']);
+        $this->assertStringContainsString('DÉCIMO GRADO', $porAlumno[$segundoHijo->id]['label']);
     }
 
     public function test_docente_elimina_hilo_de_su_bandeja_y_el_representante_conserva_el_envio(): void

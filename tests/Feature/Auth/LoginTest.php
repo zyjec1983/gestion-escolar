@@ -17,7 +17,7 @@ class LoginTest extends TestCase
     }
 
     /** @test */
-    public function admin_redirects_to_pre_registros()
+    public function admin_redirects_to_dashboard()
     {
         $admin = User::factory()->admin()->create([
             'email' => 'admin@test.com',
@@ -29,7 +29,7 @@ class LoginTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect('/admin/pre-registros');
+        $response->assertRedirect('/dashboard');
         $this->assertAuthenticated();
     }
 

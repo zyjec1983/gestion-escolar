@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Resources\DashboardResource;
 use App\Models\Alumno;
 use App\Models\Cita;
-use App\Models\ClaseDocente;
-use App\Models\Observacion;
+use App\Models\Curso;
+use App\Models\Matricula;
+use App\Models\PeriodoLectivo;
+use App\Models\PreRegistro;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -18,11 +19,40 @@ class DashboardController extends Controller
         $user = $request->user();
 
         return match ($user->rol) {
+            'ADMIN' => $this->rector($request),
             'REPRESENTANTE' => $this->representante($request),
             'ESTUDIANTE' => $this->estudiante($request),
             'INSPECCION' => $this->inspector($request),
             default => $this->general($request),
         };
+    }
+
+    /**
+     * Panel de Rectorado / Vicerrectorado / Administracion.
+     * Tarjetas de resumen institucional + circulares publicadas.
+     */
+    private function rector(Request $request)
+    {
+        $user = $request->user();
+        $data = (new DashboardResource($user))->resolve($request);
+
+        $periodoActivo = PeriodoLectivo::where('activo', true)->first();
+
+        $data['kpis'] = [
+            'estudiantes' => $periodoActivo
+                ? Matricula::where('periodo_id', $periodoActivo->id)->count()
+                : Alumno::count(),
+            'docentes' => User::where('rol', 'DOCENTE')->count(),
+            'pendientes' => PreRegistro::pendiente()->count(),
+            'cursos' => Curso::count(),
+        ];
+
+        $data['pendientes_recientes'] = PreRegistro::pendiente()
+            ->latest('created_at')
+            ->take(6)
+            ->get();
+
+        return view('dashboard.rector', $data);
     }
 
     private function general(Request $request)
@@ -44,7 +74,7 @@ class DashboardController extends Controller
             ->count();
 
         // Citas del dia donde el inspector es quien cita o quien las solicito.
-        $data['citas_hoy'] = Cita::with(['alumno', 'docente'])
+        $data['citas_hoy'] = Cita::with(['alumno.representante', 'docente'])
             ->whereDate('fecha_inicio', now()->toDateString())
             ->where(function ($q) use ($user) {
                 $q->where('docente_id', $user->id)

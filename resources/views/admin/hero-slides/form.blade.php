@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.principal')
 
 @section('titulo', $slide ? 'Editar Slide' : 'Nuevo Slide')
 
@@ -6,7 +6,7 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">{{ $slide ? 'Editar Slide' : 'Nuevo Slide' }}</h1>
-        <a href="{{ route('admin.hero-slides.index') }}" class="btn btn-outline-secondary">
+        <a href="{{ route('admin.configuracion.index') }}#panel-carrusel" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i>Volver
         </a>
     </div>
@@ -81,7 +81,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i>{{ $slide ? 'Actualizar' : 'Crear' }} Slide
                     </button>
-                    <a href="{{ route('admin.hero-slides.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+                    <a href="{{ route('admin.configuracion.index') }}#panel-carrusel" class="btn btn-outline-secondary">Cancelar</a>
                 </div>
             </form>
         </div>

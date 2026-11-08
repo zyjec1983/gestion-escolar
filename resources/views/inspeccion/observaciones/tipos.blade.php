@@ -48,7 +48,7 @@
                     </div>
                 </form>
             @else
-                <span class="badge bg-{{ $edicionGlobal ? 'success' : 'warning' }} text-dark py-2 px-3">
+                <span class="badge bg-{{ $edicionGlobal ? 'success' : 'warning' }} text-dark py-2 px-3 text-wrap text-start mw-100">
                     <i class="bi bi-{{ $edicionGlobal ? 'unlock' : 'lock' }} me-1"></i>
                     {{ $edicionGlobal ? 'Edición habilitada temporalmente' : 'Edición bloqueada por Rectorado/Vicerrectorado' }}
                 </span>

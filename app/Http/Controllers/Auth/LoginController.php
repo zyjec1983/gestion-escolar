@@ -22,6 +22,7 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
+
             return redirect()->intended($this->redirectTo());
         }
 
@@ -35,14 +36,16 @@ class LoginController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect('/');
     }
 
     protected function redirectTo(): string
     {
         $rol = Auth::user()->rol;
+
         return match ($rol) {
-            'ADMIN' => '/admin/pre-registros',
+            'ADMIN' => '/dashboard',
             'DOCENTE' => '/dashboard',
             'REPRESENTANTE' => '/dashboard',
             'ESTUDIANTE' => '/mensajes',

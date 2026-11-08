@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\Alumno;
 use App\Models\Agenda;
+use App\Models\Alumno;
 use App\Models\AsignacionGrupo;
 use App\Models\ClaseDocente;
 use App\Models\Curso;
-use App\Models\Material;
 use App\Models\Materia;
+use App\Models\Material;
 use App\Models\Matricula;
 use App\Models\Paralelo;
 use App\Models\PeriodoLectivo;
@@ -63,7 +63,7 @@ class AulaVirtualTest extends TestCase
             ->assertSee($ctx['clase']->materia->nombre);
 
         $this->actingAs($ctx['docente'])
-            ->get('/clases/' . $ctx['clase']->id)
+            ->get('/clases/'.$ctx['clase']->id)
             ->assertOk()
             ->assertSee($ctx['alumno']->apellidos);
     }
@@ -75,7 +75,7 @@ class AulaVirtualTest extends TestCase
         $docente = User::factory()->docente()->create();
 
         $this->actingAs($docente)
-            ->get('/clases/' . $ctx['clase']->id)
+            ->get('/clases/'.$ctx['clase']->id)
             ->assertForbidden();
     }
 
@@ -89,9 +89,9 @@ class AulaVirtualTest extends TestCase
             ->assertSee($ctx['clase']->materia->nombre);
 
         $this->actingAs($ctx['estudiante'])
-            ->get('/clases/' . $ctx['clase']->id)
+            ->get('/clases/'.$ctx['clase']->id)
             ->assertOk()
-            ->assertSee($ctx['alumno']->apellidos);
+            ->assertSee($ctx['clase']->materia->nombre);
     }
 
     public function test_estudiante_no_accede_a_clase_de_otro_paralelo(): void
@@ -110,7 +110,7 @@ class AulaVirtualTest extends TestCase
         ]);
 
         $this->actingAs($ctx['estudiante'])
-            ->get('/clases/' . $claseOtro->id)
+            ->get('/clases/'.$claseOtro->id)
             ->assertForbidden();
     }
 
@@ -123,7 +123,7 @@ class AulaVirtualTest extends TestCase
             ->assertForbidden();
 
         $this->actingAs($ctx['representante'])
-            ->get('/clases/' . $ctx['clase']->id)
+            ->get('/clases/'.$ctx['clase']->id)
             ->assertForbidden();
     }
 

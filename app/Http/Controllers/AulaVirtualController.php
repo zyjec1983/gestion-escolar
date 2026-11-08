@@ -10,7 +10,6 @@ use App\Models\ArchivoAdjunto;
 use App\Models\AsignacionGrupo;
 use App\Models\AsignacionGrupoAlumno;
 use App\Models\ClaseDocente;
-use App\Models\InsumoEvaluacion;
 use App\Models\Material;
 use App\Models\TipoActividad;
 use App\Models\User;
@@ -25,9 +24,10 @@ class AulaVirtualController extends Controller
         '#9BF6FF', '#A0C4FF', '#BDB2FF', '#FFC6FF', '#FFD97D', '#FAD2E1',
         '#CDB4DB', '#A8DADC', '#DDBEA9', '#C9ADA7',
     ];
+
     public function index(Request $request)
     {
-        abort_if($request->user()->rol === 'REPRESENTANTE', 403, 'No tienes acceso a esta sección.');
+        $this->verificarRolAula($request->user());
 
         $clases = $this->clasesParaUsuario($request->user());
 
@@ -36,7 +36,7 @@ class AulaVirtualController extends Controller
 
     public function show($id, Request $request)
     {
-        abort_if($request->user()->rol === 'REPRESENTANTE', 403, 'No tienes acceso a esta sección.');
+        $this->verificarRolAula($request->user());
 
         $clase = ClaseDocente::with(['curso', 'paralelo', 'materia.unidades'])->findOrFail($id);
 
@@ -49,7 +49,7 @@ class AulaVirtualController extends Controller
 
     public function agenda($id, Request $request)
     {
-        abort_if($request->user()->rol === 'REPRESENTANTE', 403, 'No tienes acceso a esta sección.');
+        $this->verificarRolAula($request->user());
 
         $clase = ClaseDocente::with(['curso', 'paralelo', 'materia'])->findOrFail($id);
 
@@ -94,7 +94,7 @@ class AulaVirtualController extends Controller
             'agenda_id' => 'nullable|integer',
         ]);
 
-        if (($validated['unidad_id'] ?? null) && !InicioClaseResource::unidadesDeClase($clase)->contains('id', (int) $validated['unidad_id'])) {
+        if (($validated['unidad_id'] ?? null) && ! InicioClaseResource::unidadesDeClase($clase)->contains('id', (int) $validated['unidad_id'])) {
             abort(403, 'Unidad de planificación inválida para esta clase.');
         }
 
@@ -132,7 +132,7 @@ class AulaVirtualController extends Controller
             }
 
             $archivo = $request->file('adjunto');
-            $ruta = $archivo->store('agendas/' . $clase->id, 'public');
+            $ruta = $archivo->store('agendas/'.$clase->id, 'public');
 
             ArchivoAdjunto::create([
                 'attachable_type' => Agenda::class,
@@ -217,7 +217,7 @@ class AulaVirtualController extends Controller
         ]);
 
         $archivo = $request->file('archivo');
-        $ruta = $archivo->store('materiales/' . $clase->id, 'public');
+        $ruta = $archivo->store('materiales/'.$clase->id, 'public');
 
         Material::create([
             'clase_docente_id' => $clase->id,
@@ -262,9 +262,10 @@ class AulaVirtualController extends Controller
 
         if ($data['asignacion']) {
             $integrantes = $data['asignacion']->integrantes->sortBy(
-                fn ($i) => [$i->grupo, mb_strtolower(trim((string) $i->alumno->apellidos . ' ' . $i->alumno->nombres))]
+                fn ($i) => [$i->grupo, mb_strtolower(trim((string) $i->alumno->apellidos.' '.$i->alumno->nombres))]
             )->map(function ($integrante) {
                 $integrante->nombre_corto = $this->nombreCorto($integrante->alumno->apellidos, $integrante->alumno->nombres);
+
                 return $integrante;
             });
             $data['grupos'] = $integrantes->groupBy('grupo')->sortKeys();
@@ -338,10 +339,10 @@ class AulaVirtualController extends Controller
         $primerNombre = trim((string) (explode(' ', trim($nombres))[0] ?? ''));
 
         if ($primerApellido === '' || $primerNombre === '') {
-            return trim($primerApellido . ' ' . $primerNombre);
+            return trim($primerApellido.' '.$primerNombre);
         }
 
-        return $primerApellido . ' ' . $primerNombre;
+        return $primerApellido.' '.$primerNombre;
     }
 
     private function repartirEnGrupos(array $estudiantes, int $numeroGrupos): array
@@ -399,6 +400,11 @@ class AulaVirtualController extends Controller
             ->values();
     }
 
+    private function verificarRolAula(User $user): void
+    {
+        abort_unless(in_array($user->rol, ['ADMIN', 'DOCENTE', 'ESTUDIANTE'], true), 403, 'No tienes acceso a esta sección.');
+    }
+
     private function verificarDocente(User $user, ClaseDocente $clase): void
     {
         abort_if($user->rol !== 'DOCENTE', 403, 'Solo el docente puede realizar esta acción.');
@@ -442,6 +448,7 @@ class AulaVirtualController extends Controller
     {
         if ($user->rol === 'DOCENTE') {
             abort_if($clase->user_id !== $user->id, 403, 'No tienes acceso a esta clase.');
+
             return;
         }
         if ($user->rol === 'ADMIN') {

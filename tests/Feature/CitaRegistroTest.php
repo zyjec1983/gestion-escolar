@@ -4,6 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Alumno;
 use App\Models\Cita;
+use App\Models\Curso;
+use App\Models\Matricula;
+use App\Models\Paralelo;
+use App\Models\PeriodoLectivo;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,6 +25,16 @@ class CitaRegistroTest extends TestCase
             'representante_user_id' => $representante->id,
         ]);
 
+        $periodo = PeriodoLectivo::factory()->create();
+        $curso = Curso::factory()->create();
+        $paralelo = Paralelo::factory()->create();
+        Matricula::factory()->create([
+            'alumno_id' => $alumno->id,
+            'curso_id' => $curso->id,
+            'paralelo_id' => $paralelo->id,
+            'periodo_id' => $periodo->id,
+        ]);
+
         $cita = Cita::create([
             'solicitante_type' => User::class,
             'solicitante_id' => $representante->id,
@@ -32,7 +46,7 @@ class CitaRegistroTest extends TestCase
             'motivo' => 'Bajo rendimiento académico',
         ]);
 
-        return compact('docente', 'representante', 'alumno', 'cita');
+        return compact('docente', 'representante', 'alumno', 'cita', 'curso', 'paralelo');
     }
 
     public function test_cita_vencida_no_cuenta_como_pendiente_y_aparece_por_registrar(): void
@@ -205,12 +219,19 @@ class CitaRegistroTest extends TestCase
 
         $directivo = User::factory()->create(['rol' => 'SECRETARIA']);
 
+        // La URL histórica /directivo/citas redirige al módulo compartido.
+        $this->actingAs($directivo)
+            ->get(route('directivo.citas.historial'))
+            ->assertRedirect(route('inspeccion.citas.historial'));
+
         $response = $this->actingAs($directivo)
-            ->get(route('directivo.citas.historial'));
+            ->get(route('inspeccion.citas.historial', [
+                'nivel' => $ctx['curso']->id,
+            ]));
 
         $response->assertOk()
-            ->assertSee('Historial estadístico de citas')
-            ->assertSee(trim($ctx['alumno']->apellidos . ' ' . $ctx['alumno']->nombres))
+            ->assertSee('Historial de citas')
+            ->assertSee(trim($ctx['alumno']->apellidos.' '.$ctx['alumno']->nombres))
             ->assertSee('Reincidente');
     }
 
@@ -219,7 +240,10 @@ class CitaRegistroTest extends TestCase
         $docente = User::factory()->docente()->create();
         $representante = User::factory()->representante()->create();
 
-        $this->actingAs($docente)->get(route('directivo.citas.historial'))->assertForbidden();
-        $this->actingAs($representante)->get(route('directivo.citas.historial'))->assertForbidden();
+        foreach ([$docente, $representante] as $user) {
+            $this->actingAs($user)->get(route('directivo.citas.historial'))->assertForbidden();
+            $this->actingAs($user)->get(route('inspeccion.citas.historial'))->assertForbidden();
+            $this->actingAs($user)->get(route('inspeccion.citas.agendar'))->assertForbidden();
+        }
     }
 }

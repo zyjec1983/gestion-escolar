@@ -1,30 +1,33 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\Admin\ConfiguracionController;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\MatriculaController;
 use App\Http\Controllers\Admin\PreRegistroController as AdminPreRegistroController;
-use App\Http\Controllers\AulaVirtualController;
-use App\Http\Controllers\ForoController;
-use App\Http\Controllers\Inspeccion\InspectorCitaController;
-use App\Http\Controllers\Inspeccion\InspectorObservacionController;
-use App\Http\Controllers\Inspeccion\InspectorAsistenciaController;
-use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Api\DashboardController as ApiDashboardController;
+use App\Http\Controllers\AulaVirtualController;
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\EstudianteController;
-use App\Http\Controllers\Directivo\HistorialCitaController;
 use App\Http\Controllers\Docente\ActaController;
-use App\Http\Controllers\MensajeController;
 use App\Http\Controllers\Docente\AsistenciaController;
 use App\Http\Controllers\Docente\CitaController;
 use App\Http\Controllers\Docente\NotaController;
 use App\Http\Controllers\Docente\ObservacionController;
-use App\Http\Controllers\PreRegistroController;
-use App\Http\Controllers\Secretaria\ActualizacionDatosController;
+use App\Http\Controllers\EstudianteController;
+use App\Http\Controllers\ForoController;
+use App\Http\Controllers\Inspeccion\InspectorAsistenciaController;
+use App\Http\Controllers\Inspeccion\InspectorAsistenciaEstadisticasController;
+use App\Http\Controllers\Inspeccion\InspectorCitaController;
+use App\Http\Controllers\Inspeccion\InspectorObservacionController;
+use App\Http\Controllers\Inspeccion\ObservacionEstadisticasController;
+use App\Http\Controllers\Inspeccion\ObservacionReporteController;
+use App\Http\Controllers\Inspeccion\TipoObservacionController;
+use App\Http\Controllers\MensajeController;
 use App\Http\Controllers\PlanificacionController;
+use App\Http\Controllers\PreRegistroController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RepresentanteController;
+use App\Http\Controllers\Secretaria\ActualizacionDatosController;
 use App\Models\HeroSlide;
 use App\Models\Institucion;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +35,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     $slides = HeroSlide::where('activo', true)->orderBy('orden')->get();
     $institucion = Institucion::first();
+
     return view('welcome', compact('slides', 'institucion'));
 });
 
@@ -45,29 +49,36 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/clases', [AulaVirtualController::class, 'index'])->name('clases.index');
-    Route::get('/clases/{id}', [AulaVirtualController::class, 'show'])->name('clases.show');
+    Route::middleware(['role:ADMIN,DOCENTE,ESTUDIANTE'])->group(function () {
+        Route::get('/clases', [AulaVirtualController::class, 'index'])->name('clases.index');
+        Route::get('/clases/{id}', [AulaVirtualController::class, 'show'])->name('clases.show');
 
-    Route::get('/clases/{clase}/agenda', [AulaVirtualController::class, 'agenda'])->name('clases.agenda');
-    Route::post('/clases/{clase}/agenda', [AulaVirtualController::class, 'storeAgenda'])->name('clases.agenda.store');
-    Route::get('/clases/{clase}/agenda/{agenda}/editar', [AulaVirtualController::class, 'editAgenda'])->name('clases.agenda.edit');
-    Route::delete('/clases/{clase}/agenda/{agenda}', [AulaVirtualController::class, 'destroyAgenda'])->name('clases.agenda.destroy');
+        Route::get('/clases/{clase}/agenda', [AulaVirtualController::class, 'agenda'])->name('clases.agenda');
+        Route::post('/clases/{clase}/agenda', [AulaVirtualController::class, 'storeAgenda'])->name('clases.agenda.store');
+        Route::get('/clases/{clase}/agenda/{agenda}/editar', [AulaVirtualController::class, 'editAgenda'])->name('clases.agenda.edit');
+        Route::delete('/clases/{clase}/agenda/{agenda}', [AulaVirtualController::class, 'destroyAgenda'])->name('clases.agenda.destroy');
 
-    Route::get('/clases/{clase}/materiales', [AulaVirtualController::class, 'materiales'])->name('clases.materiales');
-    Route::post('/clases/{clase}/materiales', [AulaVirtualController::class, 'storeMaterial'])->name('clases.materiales.store');
-    Route::delete('/clases/{clase}/materiales/{material}', [AulaVirtualController::class, 'destroyMaterial'])->name('clases.materiales.destroy');
+        Route::get('/clases/{clase}/foros', [ForoController::class, 'index'])->name('clases.foros');
+        Route::get('/clases/{clase}/foros/contadores', [ForoController::class, 'contadores'])->name('clases.foros.contadores');
+        Route::get('/clases/{clase}/foros/crear', [ForoController::class, 'create'])->name('clases.foros.create');
+        Route::post('/clases/{clase}/foros', [ForoController::class, 'store'])->name('clases.foros.store');
+        Route::get('/foros/{foro}', [ForoController::class, 'show'])->name('foros.show');
+        Route::post('/foros/{foro}/intervenciones', [ForoController::class, 'storeIntervencion'])->name('foros.intervenciones.store');
+        Route::delete('/foros/{foro}', [ForoController::class, 'destroy'])->name('foros.destroy');
+    });
 
-    Route::get('/clases/{clase}/grupos', [AulaVirtualController::class, 'grupos'])->name('clases.grupos');
-    Route::post('/clases/{clase}/grupos', [AulaVirtualController::class, 'storeGrupos'])->name('clases.grupos.store');
-    Route::delete('/clases/{clase}/grupos', [AulaVirtualController::class, 'destroyGrupos'])->name('clases.grupos.destroy');
+    // Materiales y grupos del aula: el representante puede consultarlos en
+    // modo lectura para la clase de su representado. El controlador verifica
+    // el acceso a la clase y que solo el docente pueda crear/eliminar.
+    Route::middleware(['role:ADMIN,DOCENTE,ESTUDIANTE,REPRESENTANTE'])->group(function () {
+        Route::get('/clases/{clase}/materiales', [AulaVirtualController::class, 'materiales'])->name('clases.materiales');
+        Route::post('/clases/{clase}/materiales', [AulaVirtualController::class, 'storeMaterial'])->name('clases.materiales.store');
+        Route::delete('/clases/{clase}/materiales/{material}', [AulaVirtualController::class, 'destroyMaterial'])->name('clases.materiales.destroy');
 
-    Route::get('/clases/{clase}/foros', [ForoController::class, 'index'])->name('clases.foros');
-    Route::get('/clases/{clase}/foros/contadores', [ForoController::class, 'contadores'])->name('clases.foros.contadores');
-    Route::get('/clases/{clase}/foros/crear', [ForoController::class, 'create'])->name('clases.foros.create');
-    Route::post('/clases/{clase}/foros', [ForoController::class, 'store'])->name('clases.foros.store');
-    Route::get('/foros/{foro}', [ForoController::class, 'show'])->name('foros.show');
-    Route::post('/foros/{foro}/intervenciones', [ForoController::class, 'storeIntervencion'])->name('foros.intervenciones.store');
-    Route::delete('/foros/{foro}', [ForoController::class, 'destroy'])->name('foros.destroy');
+        Route::get('/clases/{clase}/grupos', [AulaVirtualController::class, 'grupos'])->name('clases.grupos');
+        Route::post('/clases/{clase}/grupos', [AulaVirtualController::class, 'storeGrupos'])->name('clases.grupos.store');
+        Route::delete('/clases/{clase}/grupos', [AulaVirtualController::class, 'destroyGrupos'])->name('clases.grupos.destroy');
+    });
 
     Route::get('/mensajes', [MensajeController::class, 'index'])->name('mensajes.index');
     Route::post('/mensajes', [MensajeController::class, 'store'])->name('mensajes.store');
@@ -160,39 +171,44 @@ Route::middleware(['auth', 'role:DOCENTE'])->prefix('docente')->name('docente.')
     Route::get('/actas/excel', [ActaController::class, 'exportarExcel'])->name('actas.excel');
 });
 
+// URL histórica: redirige al módulo de citas compartido con inspección.
 Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA,VICERRECTORA,INSPECCION,DECE'])->prefix('directivo')->name('directivo.')->group(function () {
-    Route::get('/citas', [HistorialCitaController::class, 'index'])->name('citas.historial');
+    Route::get('/citas', fn () => redirect()->route('inspeccion.citas.historial'))->name('citas.historial');
 });
 
-Route::middleware(['auth', 'role:INSPECCION,RECTORA,VICERRECTORA,DECE'])
+// Módulo de citas (agendar + historial + registro): inspección y autoridades.
+// El rector/vicerrector/dece/secretaría usan exactamente el mismo módulo.
+Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA,VICERRECTORA,INSPECCION,DECE'])
     ->prefix('inspeccion')->name('inspeccion.')->group(function () {
         Route::get('/citas/agendar', [InspectorCitaController::class, 'agendar'])->name('citas.agendar');
         Route::post('/citas/agendar', [InspectorCitaController::class, 'store'])->name('citas.store');
         Route::get('/citas/historial', [InspectorCitaController::class, 'historial'])->name('citas.historial');
         Route::post('/citas/{cita}/registrar', [InspectorCitaController::class, 'registrar'])->name('citas.registrar');
+    });
 
+Route::middleware(['auth', 'role:INSPECCION,RECTORA,VICERRECTORA,DECE'])
+    ->prefix('inspeccion')->name('inspeccion.')->group(function () {
         Route::get('/observaciones', [InspectorObservacionController::class, 'index'])->name('observaciones.index');
         Route::post('/observaciones', [InspectorObservacionController::class, 'store'])->name('observaciones.store');
         Route::get('/observaciones/{alumno}/print', [InspectorObservacionController::class, 'print'])->name('observaciones.print');
 
         // Catálogo de tipos de observación (configuración)
-        Route::get('/observaciones/tipos', [\App\Http\Controllers\Inspeccion\TipoObservacionController::class, 'index'])->name('observaciones.tipos.index');
-        Route::post('/observaciones/tipos', [\App\Http\Controllers\Inspeccion\TipoObservacionController::class, 'store'])->name('observaciones.tipos.store');
-        Route::patch('/observaciones/tipos/{tipo}/toggle', [\App\Http\Controllers\Inspeccion\TipoObservacionController::class, 'toggleActivo'])->name('observaciones.tipos.toggle');
-        Route::post('/observaciones/tipos/edicion', [\App\Http\Controllers\Inspeccion\TipoObservacionController::class, 'alternarEdicionGlobal'])->name('observaciones.tipos.alternar');
+        Route::get('/observaciones/tipos', [TipoObservacionController::class, 'index'])->name('observaciones.tipos.index');
+        Route::post('/observaciones/tipos', [TipoObservacionController::class, 'store'])->name('observaciones.tipos.store');
+        Route::patch('/observaciones/tipos/{tipo}/toggle', [TipoObservacionController::class, 'toggleActivo'])->name('observaciones.tipos.toggle');
+        Route::post('/observaciones/tipos/edicion', [TipoObservacionController::class, 'alternarEdicionGlobal'])->name('observaciones.tipos.alternar');
 
         // Reportes de observaciones
-        Route::get('/observaciones/reporte/alumno', [\App\Http\Controllers\Inspeccion\ObservacionReporteController::class, 'reportePorAlumno'])->name('observaciones.reporte.alumno');
-        Route::get('/observaciones/reporte/alumno/pdf', [\App\Http\Controllers\Inspeccion\ObservacionReporteController::class, 'pdfPorAlumno'])->name('observaciones.reporte.alumno.pdf');
-        Route::get('/observaciones/estadisticas', [\App\Http\Controllers\Inspeccion\ObservacionEstadisticasController::class, 'index'])->name('observaciones.estadisticas');
+        Route::get('/observaciones/reporte/alumno', [ObservacionReporteController::class, 'reportePorAlumno'])->name('observaciones.reporte.alumno');
+        Route::get('/observaciones/reporte/alumno/pdf', [ObservacionReporteController::class, 'pdfPorAlumno'])->name('observaciones.reporte.alumno.pdf');
+        Route::get('/observaciones/estadisticas', [ObservacionEstadisticasController::class, 'index'])->name('observaciones.estadisticas');
         Route::get('/asistencia', [InspectorAsistenciaController::class, 'index'])->name('asistencia.index');
         Route::post('/asistencia', [InspectorAsistenciaController::class, 'store'])->name('asistencia.store');
-        Route::get('/asistencia/estadisticas', [\App\Http\Controllers\Inspeccion\InspectorAsistenciaEstadisticasController::class, 'index'])->name('asistencia.estadisticas');
+        Route::get('/asistencia/estadisticas', [InspectorAsistenciaEstadisticasController::class, 'index'])->name('asistencia.estadisticas');
     });
 
 Route::get('/debug-data', function () {
     $dashboard = app(ApiDashboardController::class)->index(request());
+
     return $dashboard->toArray(request());
 });
-
-

@@ -51,6 +51,37 @@
         #sidebarOffcanvas .dropdown .dropdown-toggle:hover {
             background: rgba(255, 255, 255, 0.12);
         }
+        /* La columna de contenido debe poder encogerse dentro del flex; sin
+           esto los textos con text-nowrap/truncate estiran toda la pagina. */
+        .app-content-column {
+            min-width: 0;
+        }
+        .app-content-column > main {
+            min-width: 0;
+        }
+        main img,
+        main video,
+        main iframe {
+            max-width: 100%;
+        }
+        main .card,
+        main .modal-content,
+        main .list-group-item,
+        main .alert {
+            overflow-wrap: anywhere;
+        }
+        @media (max-width: 575.98px) {
+            main.p-4 {
+                padding: 1rem !important;
+            }
+            .navbar.px-4 {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+            main h4 {
+                font-size: 1.15rem;
+            }
+        }
     </style>
     @stack('styles')
 </head>
@@ -60,7 +91,7 @@
             @yield('sidebar')
         </div>
 
-        <div class="flex-grow-1 d-flex flex-column min-vh-100">
+        <div class="flex-grow-1 d-flex flex-column min-vh-100 app-content-column">
             <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4">
                 <div class="container-fluid">
                     <button class="btn btn-outline-secondary d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">

@@ -77,14 +77,62 @@
     @if ($alumnoSel)
         <div class="card shadow-sm mb-3">
             <div class="card-body">
-                <h6 class="mb-1">{{ $alumnoSel->apellidos }} {{ $alumnoSel->nombres }}</h6>
-                <small class="text-muted">
-                    @if ($alumnoSel->representante)
-                        Representante: {{ nombreCorto($alumnoSel->representante->name) ?? '' }}
-                    @else
-                        Sin representante
-                    @endif
-                </small>
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                    <div>
+                        <h6 class="mb-1">{{ $alumnoSel->apellidos }} {{ $alumnoSel->nombres }}</h6>
+                        <small class="text-muted">
+                            @if ($alumnoSel->representante)
+                                Representante: {{ nombreCorto($alumnoSel->representante->name) ?? '' }}
+                            @else
+                                Sin representante
+                            @endif
+                        </small>
+                    </div>
+                    <span class="badge bg-primary fs-6">
+                        Total: {{ $resumenAlumno['total'] ?? 0 }}
+                    </span>
+                </div>
+
+                @php
+                    $pc = $resumenAlumno['por_clasificacion'] ?? ['positiva' => 0, 'leve' => 0, 'grave' => 0, 'muy_grave' => 0];
+                @endphp
+                <div class="row g-2 mt-2 text-center">
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded p-2">
+                            <div class="fw-bold fs-5" style="color: {{ $colores['positiva'] }}">{{ $pc['positiva'] }}</div>
+                            <small class="text-muted">Positivas</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded p-2">
+                            <div class="fw-bold fs-5" style="color: #b58900">{{ $pc['leve'] }}</div>
+                            <small class="text-muted">Leves</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded p-2">
+                            <div class="fw-bold fs-5" style="color: {{ $colores['grave'] }}">{{ $pc['grave'] }}</div>
+                            <small class="text-muted">Graves</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded p-2">
+                            <div class="fw-bold fs-5" style="color: {{ $colores['muy_grave'] }}">{{ $pc['muy_grave'] }}</div>
+                            <small class="text-muted">Muy Graves</small>
+                        </div>
+                    </div>
+                </div>
+
+                @if ($hojaVida->isNotEmpty())
+                    <div class="mt-3">
+                        <small class="text-muted d-block mb-1">Por tipo:</small>
+                        @foreach ($hojaVida as $hv)
+                            <span class="badge me-1 mb-1" style="background-color: {{ $colores[$hv->clasificacion] ?? '#6c757d' }};">
+                                {{ $hv->tipo_nombre }}: {{ $hv->total }}
+                            </span>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </div>
     @endif
@@ -133,5 +181,56 @@
             </table>
         </div>
     </div>
+
+    @if ($alumnoSel)
+        <div class="card shadow-sm mt-3">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-graph-up me-2"></i>Hoja de vida — {{ $alumnoSel->apellidos }} {{ $alumnoSel->nombres }}
+                </h6>
+            </div>
+            <div class="card-body">
+                @if ($hojaVida->isEmpty())
+                    <div class="alert alert-info mb-0">
+                        No existen registros de observaciones para este estudiante.
+                    </div>
+                @else
+                    <canvas id="chartHojaVida" style="max-height: 340px;"></canvas>
+                @endif
+            </div>
+        </div>
+    @endif
 </div>
+
+@push('scripts')
+@once
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+@endonce
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const colores = @json($colores);
+
+    @if ($alumnoSel && $hojaVida->isNotEmpty())
+    new Chart(document.getElementById('chartHojaVida'), {
+        type: 'bar',
+        data: {
+            labels: @json($hojaVida->pluck('tipo_nombre')),
+            datasets: [{
+                label: 'Observaciones',
+                data: @json($hojaVida->pluck('total')),
+                backgroundColor: @json($hojaVida->map(fn ($hv) => $colores[$hv->clasificacion] ?? '#6c757d')),
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+    });
+    @endif
+});
+</script>
+@endpush
 @endsection

@@ -38,7 +38,7 @@
         @foreach($observaciones as $obs)
             <div class="card shadow-sm mb-3">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                         <span class="badge bg-{{ in_array(strtolower($obs->tipoObservacion?->nombre ?? ''), ['observación de conducta', 'observacion de conducta']) ? 'danger' : 'info' }}">
                             {{ $obs->tipoObservacion?->nombre }}
                         </span>

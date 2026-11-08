@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.principal')
 
 @section('titulo', "Solicitud {$preRegistro->codigo_solicitud}")
 

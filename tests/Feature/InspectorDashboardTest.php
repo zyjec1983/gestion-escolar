@@ -129,4 +129,34 @@ class InspectorDashboardTest extends TestCase
             ->assertViewHas('citas_hoy', fn ($citas) => $citas->count() === 2)
             ->assertSee('Reunión de padres');
     }
+
+    public function test_las_citas_de_hoy_se_pueden_abrir_en_el_modal_de_detalle(): void
+    {
+        PeriodoLectivo::factory()->create(['activo' => true]);
+        $inspector = $this->inspector();
+        $representante = User::factory()->representante()->create();
+        $alumno = Alumno::factory()->create(['representante_user_id' => $representante->id]);
+
+        $cita = Cita::create([
+            'solicitante_type' => User::class,
+            'solicitante_id' => $inspector->id,
+            'docente_id' => $inspector->id,
+            'alumno_id' => $alumno->id,
+            'fecha_inicio' => now()->setTime(9, 0),
+            'fecha_fin' => now()->setTime(10, 0),
+            'estado' => 'pendiente',
+            'motivo' => 'Reunión con la familia',
+        ]);
+
+        $response = $this->actingAs($inspector)->get('/dashboard');
+
+        $response->assertOk()
+            ->assertSee('data-cita-id="'.$cita->id.'"', false)
+            ->assertSee('cita-clickable', false)
+            ->assertSee('Detalle y registro de la cita')
+            ->assertSee($representante->name);
+
+        $citas = $response->viewData('citas_hoy');
+        $this->assertTrue($citas->first()->alumno->relationLoaded('representante'));
+    }
 }

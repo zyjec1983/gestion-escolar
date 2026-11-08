@@ -42,13 +42,13 @@
 <div class="card shadow-sm">
     <div class="row g-0">
         <div class="col-12 col-lg-5 col-xl-4 border-end" id="colLista">
-            <div class="lista-hilos" style="max-height: 72vh; overflow-y: auto; display: grid; grid-template-columns: 40px 1fr; align-content: start;">
+            <div class="lista-hilos" style="max-height: 72vh; overflow-y: auto; display: grid; grid-template-columns: 40px minmax(0, 1fr); align-content: start;">
                 @forelse($hilos as $hilo)
                     <div class="thread-cell text-center py-3 {{ $hilo['no_leidos'] > 0 ? 'bg-light' : '' }} {{ request()->query('hilo') == $hilo['id'] ? 'thread-active' : '' }}" style="grid-column: 1;">
                         <input type="checkbox" class="form-check-input sel-hilo" value="{{ $hilo['id'] }}" onclick="event.stopPropagation()">
                     </div>
                     <div class="thread-cell py-2 thread-click {{ request()->query('hilo') == $hilo['id'] ? 'thread-active' : '' }} {{ $hilo['no_leidos'] > 0 ? 'bg-light' : '' }}"
-                         data-id="{{ $hilo['id'] }}" data-url="{{ route('mensajes.conversacion', $hilo['id']) }}" style="grid-column: 2; cursor: pointer;">
+                         data-id="{{ $hilo['id'] }}" data-url="{{ route('mensajes.conversacion', $hilo['id']) }}" style="grid-column: 2; cursor: pointer; min-width: 0;">
                         <div class="d-flex align-items-center">
                             <i class="bi bi-person-circle fs-4 me-2 text-secondary"></i>
                             <div class="flex-grow-1 overflow-hidden">
@@ -205,19 +205,33 @@
                         </div>
                     @else
                         <div class="row g-2 mb-2">
-                            <div class="col-md-5">
-                                <label class="form-label">Materia</label>
-                                <select id="compMateria" class="form-select">
-                                    <option value="">Seleccione materia...</option>
-                                    @foreach($compositor['materias'] as $materia)
-                                        <option value="{{ $materia['id'] }}">{{ $materia['nombre'] }}</option>
+                            <div class="col-md-6">
+                                <label class="form-label">Estudiante / Curso</label>
+                                <select id="compCurso" class="form-select">
+                                    <option value="">Seleccione estudiante...</option>
+                                    @foreach($compositor['cursos'] as $curso)
+                                        <option value="{{ $curso['id'] }}">{{ $curso['label'] }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Docente</label>
-                                <select id="compDocente" class="form-select" disabled>
-                                    <option value="">Seleccione docente...</option>
+                            <div class="col-md-6">
+                                <label class="form-label">Materia o área</label>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary w-100 text-start text-truncate dropdown-toggle"
+                                            type="button" id="compDestinoBtn"
+                                            data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false">
+                                        Seleccione materia o área...
+                                    </button>
+                                    <ul class="dropdown-menu w-100 shadow" id="compDestinoMenu"
+                                        style="max-height: 320px; overflow-y: auto;"></ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Nombre</label>
+                                <select id="compNombre" class="form-select" disabled>
+                                    <option value="">Seleccione materia o área...</option>
                                 </select>
                             </div>
                         </div>
@@ -528,37 +542,151 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    var selMateria = document.getElementById('compMateria');
-    if (selMateria) {
-        var selDocente = document.getElementById('compDocente');
+    var selCursoComp = document.getElementById('compCurso');
+    if (selCursoComp) {
+        var btnDestino = document.getElementById('compDestinoBtn');
+        var menuDestino = document.getElementById('compDestinoMenu');
+        var selNombre = document.getElementById('compNombre');
+        var cursoActual = null;
 
-        selMateria.addEventListener('change', function () {
-            selDocente.innerHTML = '<option value="">Seleccione docente...</option>';
-            selDocente.disabled = true;
-            selDocente.value = '';
+        function cursoCompPorId(id) {
+            return (comp.cursos || []).find(function (c) { return String(c.id) === String(id); }) || null;
+        }
+
+        function crearItemMenu(texto, deshabilitado, alElegir) {
+            var li = document.createElement('li');
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'dropdown-item' + (deshabilitado ? ' disabled' : '');
+            btn.textContent = texto;
+            if (deshabilitado) {
+                btn.disabled = true;
+            } else {
+                btn.addEventListener('click', alElegir);
+            }
+            li.appendChild(btn);
+            return li;
+        }
+
+        function crearEncabezadoMenu(texto) {
+            var li = document.createElement('li');
+            var h = document.createElement('h6');
+            h.className = 'dropdown-header';
+            h.textContent = texto;
+            li.appendChild(h);
+            return li;
+        }
+
+        function crearDivisorMenu() {
+            var li = document.createElement('li');
+            var hr = document.createElement('hr');
+            hr.className = 'dropdown-divider';
+            li.appendChild(hr);
+            return li;
+        }
+
+        function reiniciarNombre() {
+            selNombre.innerHTML = '<option value="">Seleccione materia o área...</option>';
+            selNombre.disabled = true;
             reiniciarDestinatario();
-            if (!selMateria.value) return;
-            var materia = (comp.materias || []).find(function (m) { return String(m.id) === selMateria.value; });
+        }
+
+        function pintarMenuDestino() {
+            menuDestino.innerHTML = '';
+
+            if (!cursoActual) {
+                menuDestino.appendChild(crearItemMenu('Seleccione primero estudiante / curso.', true));
+            } else if (!(cursoActual.materias || []).length) {
+                menuDestino.appendChild(crearItemMenu('Este curso no tiene materias registradas.', true));
+            } else {
+                menuDestino.appendChild(crearEncabezadoMenu('Materias'));
+                cursoActual.materias.forEach(function (m) {
+                    menuDestino.appendChild(crearItemMenu(m.nombre, false, function () { elegirMateriaComp(m); }));
+                });
+            }
+
+            var areas = comp.autoridades || [];
+            if (areas.length) {
+                menuDestino.appendChild(crearDivisorMenu());
+                menuDestino.appendChild(crearEncabezadoMenu('Inspección / DECE / Vicerrectorado'));
+                areas.forEach(function (a) {
+                    var vacia = !(a.usuarios || []).length;
+                    menuDestino.appendChild(crearItemMenu(
+                        a.area + (vacia ? ' (sin usuarios registrados)' : ''),
+                        vacia,
+                        function () { elegirAreaComp(a); }
+                    ));
+                });
+            }
+        }
+
+        function elegirMateriaComp(materia) {
+            btnDestino.textContent = materia.nombre;
+            selNombre.innerHTML = '<option value="">Seleccione docente...</option>';
             (materia.docentes || []).forEach(function (d) {
                 var opt = document.createElement('option');
                 opt.value = d.id;
-                opt.dataset.contexto = d.contexto_estudiante_id || '';
                 opt.textContent = d.nombre;
-                selDocente.appendChild(opt);
+                opt.dataset.contexto = cursoActual ? cursoActual.alumno_id : '';
+                selNombre.appendChild(opt);
             });
-            selDocente.disabled = false;
+            selNombre.disabled = !(materia.docentes || []).length;
+            if ((materia.docentes || []).length === 1) {
+                selNombre.value = materia.docentes[0].id;
+            }
+            actualizarNombreComp();
+        }
+
+        function elegirAreaComp(area) {
+            btnDestino.textContent = area.area;
+            selNombre.innerHTML = '<option value="">Seleccione ' + area.area.toLowerCase() + '...</option>';
+            (area.usuarios || []).forEach(function (u) {
+                var opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = u.nombre;
+                opt.dataset.contexto = cursoActual ? cursoActual.alumno_id : '';
+                selNombre.appendChild(opt);
+            });
+            selNombre.disabled = !(area.usuarios || []).length;
+            if ((area.usuarios || []).length === 1) {
+                selNombre.value = area.usuarios[0].id;
+            }
+            actualizarNombreComp();
+        }
+
+        function actualizarNombreComp() {
             var ayuda = document.getElementById('compAyuda');
-            if (ayuda) ayuda.textContent = 'Seleccione el docente de la materia.';
+            if (!selNombre.value) {
+                reiniciarDestinatario();
+                if (ayuda) ayuda.textContent = '';
+                return;
+            }
+            var opt = selNombre.options[selNombre.selectedIndex];
+            document.getElementById('composerDestinatario').value = selNombre.value;
+            document.getElementById('composerContexto').value = opt.dataset.contexto || '';
+            if (ayuda) {
+                ayuda.textContent = 'Se enviará a: ' + opt.textContent
+                    + (cursoActual ? ' · sobre ' + cursoActual.alumno_nombre : '');
+            }
+        }
+
+        selCursoComp.addEventListener('change', function () {
+            cursoActual = cursoCompPorId(selCursoComp.value);
+            btnDestino.textContent = 'Seleccione materia o área...';
+            reiniciarNombre();
+            pintarMenuDestino();
+            var ayuda = document.getElementById('compAyuda');
+            if (ayuda) ayuda.textContent = cursoActual ? 'Seleccione la materia o el área.' : '';
         });
 
-        selDocente.addEventListener('change', function () {
-            if (!selDocente.value) return reiniciarDestinatario();
-            document.getElementById('composerDestinatario').value = selDocente.value;
-            var opt = selDocente.options[selDocente.selectedIndex];
-            document.getElementById('composerContexto').value = opt.dataset.contexto || '';
-            var ayuda = document.getElementById('compAyuda');
-            if (ayuda) ayuda.textContent = 'Se enviará a: ' + opt.textContent;
-        });
+        selNombre.addEventListener('change', actualizarNombreComp);
+
+        // Con un solo hijo/curso se deja elegido para ahorrar un clic.
+        if ((comp.cursos || []).length === 1) {
+            selCursoComp.value = comp.cursos[0].id;
+            cursoActual = comp.cursos[0];
+        }
+        pintarMenuDestino();
     }
 
     window.abrirConversacion = abrirConversacion;

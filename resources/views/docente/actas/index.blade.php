@@ -4,7 +4,7 @@
 
 @push('styles')
 <style>
-    .acta-documento { font-size: 12px; }
+    .acta-documento { font-size: 12px; overflow-x: auto; max-width: 100%; }
     .acta-documento table { font-size: 11px; }
     .acta-documento h5 { font-size: 15px; }
     .acta-documento h4 { font-size: 17px; }
@@ -37,7 +37,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Tipo de Acta</label>
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2">
                     <a href="{{ route('docente.actas.index', ['clase_docente_id' => $clase?->id, 'tipo' => 'parcial']) }}" class="btn {{ $tipo === 'parcial' ? 'btn-primary' : 'btn-outline-primary' }}">
                         <i class="bi bi-journal-text me-1"></i>Acta Parcial
                     </a>

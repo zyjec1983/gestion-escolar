@@ -110,13 +110,13 @@
     @forelse($agendas as $agenda)
     <div class="list-group-item">
         <div class="d-flex justify-content-between align-items-start gap-2">
-            <div class="flex-grow-1">
+            <div class="flex-grow-1" style="min-width: 0;">
                 <span class="badge bg-primary mb-1">{{ $agenda->tipoActividad?->nombre ?? 'Actividad' }}</span>
                 @if($agenda->unidad)
-                    <span class="badge bg-light text-dark border">Unidad: {{ $agenda->unidad->titulo }}</span>
+                    <span class="badge bg-light text-dark border text-wrap text-start">Unidad: {{ $agenda->unidad->titulo }}</span>
                 @endif
                 @if($agenda->insumoEvaluacion)
-                    <span class="badge bg-light text-dark border">Insumo: {{ $agenda->insumoEvaluacion->nombre }}</span>
+                    <span class="badge bg-light text-dark border text-wrap text-start">Insumo: {{ $agenda->insumoEvaluacion->nombre }}</span>
                 @endif
                 <strong class="d-block mt-1">{{ $agenda->titulo_agenda }}</strong>
                 <small class="text-muted">

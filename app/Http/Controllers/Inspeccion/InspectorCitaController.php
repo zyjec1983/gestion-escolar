@@ -67,6 +67,8 @@ class InspectorCitaController extends Controller
         $nivelId = (int) $request->query('nivel') ?: null;
         $paraleloId = (int) $request->query('paralelo') ?: null;
         $alumnoId = (int) $request->query('alumno') ?: null;
+        $fechaDesde = $this->parseFecha($request->query('fecha_desde'));
+        $fechaHasta = $this->parseFecha($request->query('fecha_hasta'));
 
         $paralelos = $nivelId
             ? Paralelo::whereHas('matriculas', fn ($q) => $q->where('curso_id', $nivelId))
@@ -95,6 +97,8 @@ class InspectorCitaController extends Controller
                 ->when($nivelId, fn ($q3) => $q3->where('curso_id', $nivelId))
                 ->when($paraleloId, fn ($q3) => $q3->where('paralelo_id', $paraleloId))))
             ->when($alumnoSel, fn ($q) => $q->where('alumno_id', $alumnoSel->id))
+            ->when($fechaDesde, fn ($q) => $q->whereDate('fecha_inicio', '>=', $fechaDesde))
+            ->when($fechaHasta, fn ($q) => $q->whereDate('fecha_inicio', '<=', $fechaHasta))
             ->orderByDesc('fecha_inicio')
             ->get();
 
@@ -136,6 +140,7 @@ class InspectorCitaController extends Controller
         return view('inspeccion.citas.historial', compact(
             'niveles', 'paralelos', 'alumnos',
             'nivelId', 'paraleloId', 'alumnoSel', 'citas', 'stats', 'porAlumno', 'filtroActivo',
+            'fechaDesde', 'fechaHasta'
         ));
     }
 
@@ -151,7 +156,7 @@ class InspectorCitaController extends Controller
         ]);
 
         $fechaHora = Carbon::parse($validated['fecha']
-            . ' ' . sprintf('%02d:%02d', $validated['hora'], $validated['minuto']));
+            .' '.sprintf('%02d:%02d', $validated['hora'], $validated['minuto']));
 
         Cita::create([
             'solicitante_type' => 'App\\Models\\User',
@@ -161,7 +166,7 @@ class InspectorCitaController extends Controller
             'fecha_inicio' => $fechaHora,
             'fecha_fin' => $fechaHora->copy()->addHour(),
             'estado' => 'pendiente',
-            'motivo' => $validated['motivo'] . ($validated['mensaje'] ? "\n\n" . $validated['mensaje'] : ''),
+            'motivo' => $validated['motivo'].(($validated['mensaje'] ?? null) ? "\n\n".$validated['mensaje'] : ''),
         ]);
 
         return redirect()->route('inspeccion.citas.agendar', [
@@ -199,5 +204,18 @@ class InspectorCitaController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Resultado de la cita registrado y evidencia guardada.');
+    }
+
+    private function parseFecha($valor): ?Carbon
+    {
+        if (! $valor) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($valor);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

@@ -90,7 +90,7 @@
                                         <li class="list-group-item">
                                             <strong>{{ $cita->fecha_inicio->format('H:i') }}</strong>
                                             @if($cita->docente)
-                                                <span class="text-muted">con {{ $cita->docente->name }} {{ $cita->docente->apellidos }}</span>
+                                                <span class="text-muted">Citado por <strong>{{ $cita->docente->name }} {{ $cita->docente->apellidos }}</strong></span>
                                             @endif
                                             <span class="badge bg-{{ $cita->estado == 'confirmada' ? 'success' : ($cita->estado == 'cancelada' ? 'danger' : 'warning') }}">
                                                 {{ ucfirst($cita->estado) }}
@@ -206,7 +206,7 @@
                                 <li class="list-group-item">
                                     <strong>{{ $cita->fecha_inicio->format('d/m/Y H:i') }}</strong>
                                     @if($cita->docente)
-                                        <span class="text-muted"> · {{ $cita->docente->name }} {{ $cita->docente->apellidos }}</span>
+                                        <span class="text-muted"> · Citado por <strong>{{ $cita->docente->name }} {{ $cita->docente->apellidos }}</strong></span>
                                     @endif
                                     <br>
                                     <span class="badge bg-{{ $cita->estado == 'confirmada' ? 'success' : ($cita->estado == 'cancelada' ? 'danger' : 'warning') }}">
