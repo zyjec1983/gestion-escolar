@@ -9,8 +9,14 @@
         <div class="col">
             <h4 class="mb-0"><i class="bi bi-calendar-plus me-2"></i>Agendar cita a representante</h4>
             <small class="text-muted">
-                Puede citar a cualquier estudiante del centro. La cita queda registrada a nombre de
-                <strong>{{ trim((auth()->user()->name ?? '') . ' ' . (auth()->user()->apellidos ?? '')) }}</strong>.
+                @if(in_array(auth()->user()->rol, ['SECRETARIA', 'ADMIN'], true))
+                    Seleccione al estudiante y, si la cita es de un padre de familia, la autoridad que la atenderá.
+                    Registrada por
+                    <strong>{{ trim((auth()->user()->name ?? '') . ' ' . (auth()->user()->apellidos ?? '')) }}</strong>.
+                @else
+                    Puede citar a cualquier estudiante del centro. La cita queda registrada a nombre de
+                    <strong>{{ trim((auth()->user()->name ?? '') . ' ' . (auth()->user()->apellidos ?? '')) }}</strong>.
+                @endif
             </small>
         </div>
     </div>
@@ -129,6 +135,23 @@
                             <input type="hidden" name="alumno_id" value="{{ $alumno->id }}">
 
                             <div class="row g-3">
+                                @if($autoridades->isNotEmpty())
+                                <div class="col-md-12">
+                                    <label for="dirigido_a_id" class="form-label">Dirigida a</label>
+                                    <select name="dirigido_a_id" id="dirigido_a_id" class="form-select @error('dirigido_a_id') is-invalid @enderror">
+                                        <option value="">Yo mismo ({{ nombreCorto(auth()->user()->name ?? '') }})</option>
+                                        @foreach($autoridades as $autoridad)
+                                            <option value="{{ $autoridad->id }}" @selected((string) old('dirigido_a_id') === (string) $autoridad->id)>
+                                                {{ $autoridad->name }} {{ $autoridad->apellidos }} — {{ $autoridad->rol }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <div class="form-text">
+                                        Elija Rectorado, Vicerrectorado o DECE cuando la cita sea de un padre de familia.
+                                    </div>
+                                    @error('dirigido_a_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                @endif
                                 <div class="col-md-6">
                                     <label for="fecha" class="form-label">Fecha</label>
                                     <input type="date" name="fecha" id="fecha" class="form-control @error('fecha') is-invalid @enderror"

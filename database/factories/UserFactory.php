@@ -50,6 +50,13 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function secretaria(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rol' => 'SECRETARIA',
+        ]);
+    }
+
     public function representante(): static
     {
         return $this->state(fn (array $attributes) => [

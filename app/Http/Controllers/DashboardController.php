@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\DashboardResource;
 use App\Models\Alumno;
+use App\Models\Circular;
 use App\Models\Cita;
 use App\Models\Curso;
 use App\Models\Matricula;
+use App\Models\Observacion;
 use App\Models\PeriodoLectivo;
 use App\Models\PreRegistro;
 use App\Models\User;
@@ -20,6 +22,7 @@ class DashboardController extends Controller
 
         return match ($user->rol) {
             'ADMIN' => $this->rector($request),
+            'SECRETARIA' => $this->secretaria($request),
             'REPRESENTANTE' => $this->representante($request),
             'ESTUDIANTE' => $this->estudiante($request),
             'INSPECCION' => $this->inspector($request),
@@ -53,6 +56,48 @@ class DashboardController extends Controller
             ->get();
 
         return view('dashboard.rector', $data);
+    }
+
+    /**
+     * Panel operativo de Secretaria: admisiones, fichas por regularizar, citas
+     * y observaciones en modo lectura. Es distinto del panel de Rectorado.
+     */
+    private function secretaria(Request $request)
+    {
+        $user = $request->user();
+        $data = (new DashboardResource($user))->resolve($request);
+
+        $periodoActivo = PeriodoLectivo::where('activo', true)->first();
+
+        $data['kpis'] = [
+            'matriculados' => $periodoActivo
+                ? Matricula::where('periodo_id', $periodoActivo->id)->count()
+                : Matricula::count(),
+            'solicitudes' => PreRegistro::pendiente()->count(),
+            'fichas' => Alumno::representantePorRegularizar()->count(),
+            'citas' => Cita::pendientes()->count(),
+            'docentes' => User::where('rol', 'DOCENTE')->count(),
+            'circulares' => Circular::count(),
+        ];
+
+        $data['solicitudes_recientes'] = PreRegistro::with(['curso', 'paralelo'])
+            ->pendiente()
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $data['citas_proximas'] = Cita::with(['alumno', 'docente'])
+            ->pendientes()
+            ->orderBy('fecha_inicio')
+            ->take(5)
+            ->get();
+
+        $data['observaciones_recientes'] = Observacion::with(['alumno', 'tipoObservacion'])
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return view('dashboard.secretaria', $data);
     }
 
     private function general(Request $request)

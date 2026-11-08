@@ -27,7 +27,7 @@ class ObservacionReporteController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('auth'),
-            new Middleware('role:INSPECCION,RECTORA,VICERRECTORA,DECE'),
+            new Middleware('role:INSPECCION,RECTORA,VICERRECTORA,DECE,SECRETARIA'),
         ];
     }
 

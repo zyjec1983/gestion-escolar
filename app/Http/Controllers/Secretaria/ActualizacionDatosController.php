@@ -60,12 +60,7 @@ class ActualizacionDatosController extends Controller
      */
     protected function consultaPendientes()
     {
-        $mayor = now()->subYears(18)->toDateString();
-
-        return Alumno::where(function ($q) use ($mayor) {
-            $q->whereHas('representante', fn ($r) => $r->whereNull('fecha_nacimiento'))
-                ->orWhereHas('representante', fn ($r) => $r->where('fecha_nacimiento', '>', $mayor));
-        });
+        return Alumno::representantePorRegularizar();
     }
 
     protected function consultaAlumnos(string $cedula, string $apellidos, bool $pendientes)
@@ -76,7 +71,7 @@ class ActualizacionDatosController extends Controller
 
         return Alumno::when($cedula !== '', fn ($q) => $q->where(function ($q) use ($cedula) {
             $q->where('numero_cedula', $cedula)->orWhere('codigo', $cedula);
-        }))->when($apellidos !== '', fn ($q) => $q->where('apellidos', 'like', '%' . $apellidos . '%'));
+        }))->when($apellidos !== '', fn ($q) => $q->where('apellidos', 'like', '%'.$apellidos.'%'));
     }
 
     /** Ficha completa del alumno, editable. */
@@ -130,7 +125,7 @@ class ActualizacionDatosController extends Controller
         // No se puede asignar como legal a alguien menor de edad o sin fecha de
         // nacimiento registrada. Si se deja al mismo de antes, se puede corregir
         // su fecha en este mismo formulario.
-        if ($representanteId && $representanteId !== $anteriorId && !User::find($representanteId)?->esAdulto()) {
+        if ($representanteId && $representanteId !== $anteriorId && ! User::find($representanteId)?->esAdulto()) {
             return back()->withInput()->withErrors([
                 'representante_user_id' => 'El representante legal debe ser una persona mayor de edad, con fecha de nacimiento registrada.',
             ]);

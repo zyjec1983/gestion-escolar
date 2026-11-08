@@ -18,7 +18,7 @@ class ObservacionEstadisticasController extends Controller implements HasMiddlew
     {
         return [
             new Middleware('auth'),
-            new Middleware('role:INSPECCION,RECTORA,VICERRECTORA,DECE'),
+            new Middleware('role:INSPECCION,RECTORA,VICERRECTORA,DECE,SECRETARIA'),
         ];
     }
 

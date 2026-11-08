@@ -113,7 +113,7 @@ Route::middleware(['auth', 'role:ESTUDIANTE'])->group(function () {
     Route::post('/estudiante/agendas/{agenda}/entregar', [EstudianteController::class, 'marcarEntregada'])->name('estudiante.agendas.marcar-entregada');
 });
 
-Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:ADMIN,SECRETARIA'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/pre-registros', [AdminPreRegistroController::class, 'index'])->name('pre-registros.index');
     Route::post('/pre-registros/toggle', [AdminPreRegistroController::class, 'toggle'])->name('pre-registros.toggle');
     Route::get('/pre-registros/nueva', [AdminPreRegistroController::class, 'createForm'])->name('pre-registros.create');
@@ -125,7 +125,10 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
 
     Route::get('/matriculas/{id}/editar', [MatriculaController::class, 'edit'])->name('matriculas.edit');
     Route::put('/matriculas/{id}', [MatriculaController::class, 'update'])->name('matriculas.update');
+});
 
+// Configuracion institucional: solo Rectorado/Administracion.
+Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->group(function () {
     Route::prefix('hero-slides')->name('hero-slides.')->group(function () {
         Route::get('/', [HeroSlideController::class, 'index'])->name('index');
         Route::get('/crear', [HeroSlideController::class, 'create'])->name('create');
@@ -198,12 +201,17 @@ Route::middleware(['auth', 'role:INSPECCION,RECTORA,VICERRECTORA,DECE'])
         Route::patch('/observaciones/tipos/{tipo}/toggle', [TipoObservacionController::class, 'toggleActivo'])->name('observaciones.tipos.toggle');
         Route::post('/observaciones/tipos/edicion', [TipoObservacionController::class, 'alternarEdicionGlobal'])->name('observaciones.tipos.alternar');
 
+        Route::get('/asistencia', [InspectorAsistenciaController::class, 'index'])->name('asistencia.index');
+        Route::post('/asistencia', [InspectorAsistenciaController::class, 'store'])->name('asistencia.store');
+    });
+
+// Consultas y reportes en modo lectura: Inspección, autoridades y Secretaría.
+Route::middleware(['auth', 'role:INSPECCION,RECTORA,VICERRECTORA,DECE,SECRETARIA'])
+    ->prefix('inspeccion')->name('inspeccion.')->group(function () {
         // Reportes de observaciones
         Route::get('/observaciones/reporte/alumno', [ObservacionReporteController::class, 'reportePorAlumno'])->name('observaciones.reporte.alumno');
         Route::get('/observaciones/reporte/alumno/pdf', [ObservacionReporteController::class, 'pdfPorAlumno'])->name('observaciones.reporte.alumno.pdf');
         Route::get('/observaciones/estadisticas', [ObservacionEstadisticasController::class, 'index'])->name('observaciones.estadisticas');
-        Route::get('/asistencia', [InspectorAsistenciaController::class, 'index'])->name('asistencia.index');
-        Route::post('/asistencia', [InspectorAsistenciaController::class, 'store'])->name('asistencia.store');
         Route::get('/asistencia/estadisticas', [InspectorAsistenciaEstadisticasController::class, 'index'])->name('asistencia.estadisticas');
     });
 

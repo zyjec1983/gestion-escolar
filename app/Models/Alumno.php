@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -93,5 +94,19 @@ class Alumno extends Model
     public function agendas()
     {
         return $this->belongsToMany(Agenda::class, 'agenda_alumnos');
+    }
+
+    /**
+     * Fichas cuyo representante legal todavia no cumple la regla de mayoria de
+     * edad: sin fecha de nacimiento, o con fecha que no llega a los 18 anos.
+     */
+    public function scopeRepresentantePorRegularizar(Builder $query): Builder
+    {
+        $mayor = now()->subYears(18)->toDateString();
+
+        return $query->where(function ($q) use ($mayor) {
+            $q->whereHas('representante', fn ($r) => $r->whereNull('fecha_nacimiento'))
+                ->orWhereHas('representante', fn ($r) => $r->where('fecha_nacimiento', '>', $mayor));
+        });
     }
 }

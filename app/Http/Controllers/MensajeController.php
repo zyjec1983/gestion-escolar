@@ -133,25 +133,25 @@ class MensajeController extends Controller
 
     public function store(Request $request)
     {
-        $esInspeccion = $request->user()->rol === 'INSPECCION';
+        $puedeDifundir = in_array($request->user()->rol, ['INSPECCION', 'SECRETARIA'], true);
         $esRespuesta = $request->filled('hilo_id');
         $alcance = $request->input('alcance');
 
         $validated = $request->validate([
             'asunto' => 'required|string|max:255',
             'cuerpo_contenido' => 'nullable|string',
-            'destinatario_id' => $esInspeccion ? 'nullable|exists:users,id' : 'required|exists:users,id',
+            'destinatario_id' => $puedeDifundir ? 'nullable|exists:users,id' : 'required|exists:users,id',
             'contexto_estudiante_id' => 'nullable|exists:alumnos,id',
             'hilo_id' => 'nullable|exists:mensajes,id',
             'adjunto' => 'nullable|file|max:5120',
-            // El inspector difunde por alcance, salvo que esté respondiendo.
-            'alcance' => $esInspeccion && ! $esRespuesta ? 'required|in:estudiante,nivel,curso,comunidad' : 'nullable|in:estudiante,nivel,curso,comunidad',
+            // Inspección y Secretaría difunden por alcance, salvo que respondan.
+            'alcance' => $puedeDifundir && ! $esRespuesta ? 'required|in:estudiante,nivel,curso,comunidad' : 'nullable|in:estudiante,nivel,curso,comunidad',
             'alumno_id' => Rule::requiredIf($alcance === 'estudiante').'|nullable|exists:alumnos,id',
             'nivel_educativo' => Rule::requiredIf($alcance === 'nivel').'|nullable|in:basica,bachillerato',
             'curso_id' => Rule::requiredIf($alcance === 'curso').'|nullable|exists:cursos,id',
         ]);
 
-        if ($esInspeccion && ! empty($validated['alcance'])) {
+        if ($puedeDifundir && ! empty($validated['alcance'])) {
             return $this->enviarDifusion($request, $validated);
         }
 
@@ -471,8 +471,8 @@ class MensajeController extends Controller
             return collect(['rol' => 'DOCENTE', 'clases' => $clasesData]);
         }
 
-        if ($user->rol === 'INSPECCION') {
-            return collect(['rol' => 'INSPECCION', 'cursos' => $this->cursosParaDifusion()]);
+        if (in_array($user->rol, ['INSPECCION', 'SECRETARIA'], true)) {
+            return collect(['rol' => $user->rol, 'cursos' => $this->cursosParaDifusion()]);
         }
 
         // Representantes y estudiantes: un curso por cada hijo/matrícula, con

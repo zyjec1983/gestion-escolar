@@ -7,6 +7,7 @@ use App\Models\Alumno;
 use App\Models\Cita;
 use App\Models\Curso;
 use App\Models\Paralelo;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -20,6 +21,9 @@ class InspectorCitaController extends Controller
         'Seguimiento académico',
         'Otro',
     ];
+
+    /** Autoridades que pueden recibir una cita de un padre de familia. */
+    public const ROLES_AUTORIDAD = ['ADMIN', 'RECTORA', 'VICERRECTORA', 'DECE'];
 
     public function agendar(Request $request)
     {
@@ -54,9 +58,16 @@ class InspectorCitaController extends Controller
                 ->get()
             : collect();
 
+        // Secretaria y Rectorado pueden dirigir la cita a una autoridad.
+        $autoridades = in_array($request->user()->rol, ['SECRETARIA', 'ADMIN'], true)
+            ? User::whereIn('rol', self::ROLES_AUTORIDAD)
+                ->orderBy('apellidos')->orderBy('name')
+                ->get(['id', 'name', 'apellidos', 'rol'])
+            : collect();
+
         return view('inspeccion.citas.agendar', compact(
             'cursos', 'paralelos', 'alumnos',
-            'cursoId', 'paraleloId', 'alumno', 'citasPrevias',
+            'cursoId', 'paraleloId', 'alumno', 'citasPrevias', 'autoridades',
         ));
     }
 
@@ -153,7 +164,21 @@ class InspectorCitaController extends Controller
             'minuto' => 'required|in:0,15,30,45',
             'motivo' => 'required|string|max:255',
             'mensaje' => 'nullable|string|max:500',
+            'dirigido_a_id' => 'nullable|exists:users,id',
         ]);
+
+        $dirigidoA = null;
+
+        if (! empty($validated['dirigido_a_id'])) {
+            $dirigidoA = User::whereIn('rol', self::ROLES_AUTORIDAD)
+                ->find($validated['dirigido_a_id']);
+
+            if (! $dirigidoA) {
+                return back()->withErrors([
+                    'dirigido_a_id' => 'Seleccione Rectorado, Vicerrectorado o DECE.',
+                ])->withInput();
+            }
+        }
 
         $fechaHora = Carbon::parse($validated['fecha']
             .' '.sprintf('%02d:%02d', $validated['hora'], $validated['minuto']));
@@ -161,7 +186,7 @@ class InspectorCitaController extends Controller
         Cita::create([
             'solicitante_type' => 'App\\Models\\User',
             'solicitante_id' => $request->user()->id,
-            'docente_id' => $request->user()->id,
+            'docente_id' => $dirigidoA?->id ?? $request->user()->id,
             'alumno_id' => $validated['alumno_id'],
             'fecha_inicio' => $fechaHora,
             'fecha_fin' => $fechaHora->copy()->addHour(),

@@ -13,7 +13,7 @@ class AdminSeeder extends Seeder
             'name' => 'ADMIN SECRETARIA',
             'email' => 'secretaria@fake.edu.ec',
             'password' => bcrypt('admin123'),
-            'rol' => 'ADMIN',
+            'rol' => 'SECRETARIA',
             'institucion_id' => 1,
         ]);
 

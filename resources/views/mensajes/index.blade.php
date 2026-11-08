@@ -151,7 +151,7 @@
                                 </div>
                             </div>
                         </div>
-                    @elseif($compositor['rol'] === 'INSPECCION')
+                    @elseif(in_array($compositor['rol'], ['INSPECCION', 'SECRETARIA']))
                         <div class="mb-2">
                             <label for="compAlcance" class="form-label fw-semibold">Alcance de envío</label>
                             <select name="alcance" id="compAlcance" class="form-select">

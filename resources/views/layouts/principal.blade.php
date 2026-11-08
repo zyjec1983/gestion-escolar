@@ -92,6 +92,94 @@
                 @endif
             </a>
         </li>
+        @if($rol === 'SECRETARIA')
+        @php
+            $matriculasActivas = request()->is('admin/pre-registros*') || request()->is('actualizacion*');
+            $academicoActivo = request()->is('inspeccion/asistencia*') || request()->is('inspeccion/observaciones*') || request()->is('planificaciones*');
+            $citasSecretariaActivas = request()->is('inspeccion/citas*');
+        @endphp
+        <li class="nav-item mt-3">
+            <span class="text-uppercase text-white-50 small fw-semibold px-2">Secretaría</span>
+        </li>
+        <li class="nav-item mt-1">
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $matriculasActivas ? 'active' : '' }}"
+               data-bs-toggle="collapse" href="#submenuSecretariaMatriculas" aria-expanded="{{ $matriculasActivas ? 'true' : 'false' }}" aria-controls="submenuSecretariaMatriculas">
+                <span><i class="bi bi-clipboard-check me-2"></i> Matrículas y admisiones</span>
+                <i class="bi bi-chevron-down chevron-icon"></i>
+            </a>
+            <div class="collapse {{ $matriculasActivas ? 'show' : '' }}" id="submenuSecretariaMatriculas">
+                <ul class="nav nav-pills flex-column ms-3 mt-1">
+                    <li class="nav-item">
+                        <a href="{{ route('admin.pre-registros.index') }}" class="nav-link text-white small py-1 {{ request()->is('admin/pre-registros*') ? 'active' : '' }}">
+                            <i class="bi bi-inbox me-2"></i> Solicitudes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('actualizacion.index', ['pendientes' => 1]) }}" class="nav-link text-white small py-1 {{ request()->is('actualizacion*') && request()->boolean('pendientes') ? 'active' : '' }}">
+                            <i class="bi bi-person-exclamation me-2"></i> Fichas por regularizar
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('actualizacion.index') }}" class="nav-link text-white small py-1 {{ request()->is('actualizacion*') && !request()->boolean('pendientes') ? 'active' : '' }}">
+                            <i class="bi bi-pencil-square me-2"></i> Actualización de datos
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        <li class="nav-item mt-1">
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $academicoActivo ? 'active' : '' }}"
+               data-bs-toggle="collapse" href="#submenuSecretariaAcademico" aria-expanded="{{ $academicoActivo ? 'true' : 'false' }}" aria-controls="submenuSecretariaAcademico">
+                <span><i class="bi bi-journal-check me-2"></i> Académico y auditoría</span>
+                <i class="bi bi-chevron-down chevron-icon"></i>
+            </a>
+            <div class="collapse {{ $academicoActivo ? 'show' : '' }}" id="submenuSecretariaAcademico">
+                <ul class="nav nav-pills flex-column ms-3 mt-1">
+                    <li class="nav-item">
+                        <a href="{{ route('inspeccion.asistencia.estadisticas') }}" class="nav-link text-white small py-1 {{ request()->is('inspeccion/asistencia/estadisticas*') ? 'active' : '' }}">
+                            <i class="bi bi-bar-chart-line me-2"></i> Reportes de asistencia
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('inspeccion.observaciones.reporte.alumno') }}" class="nav-link text-white small py-1 {{ request()->is('inspeccion/observaciones/reporte*') ? 'active' : '' }}">
+                            <i class="bi bi-person-lines-fill me-2"></i> Observaciones por alumno
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('inspeccion.observaciones.estadisticas') }}" class="nav-link text-white small py-1 {{ request()->is('inspeccion/observaciones/estadisticas*') ? 'active' : '' }}">
+                            <i class="bi bi-graph-up me-2"></i> Estadísticas de observaciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('planificaciones.index') }}" class="nav-link text-white small py-1 {{ request()->is('planificaciones*') ? 'active' : '' }}">
+                            <i class="bi bi-journal-bookmark me-2"></i> Planificación
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        <li class="nav-item mt-1">
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $citasSecretariaActivas ? 'active' : '' }}"
+               data-bs-toggle="collapse" href="#submenuSecretariaCitas" aria-expanded="{{ $citasSecretariaActivas ? 'true' : 'false' }}" aria-controls="submenuSecretariaCitas">
+                <span><i class="bi bi-calendar-event me-2"></i> Citas</span>
+                <i class="bi bi-chevron-down chevron-icon"></i>
+            </a>
+            <div class="collapse {{ $citasSecretariaActivas ? 'show' : '' }}" id="submenuSecretariaCitas">
+                <ul class="nav nav-pills flex-column ms-3 mt-1">
+                    <li class="nav-item">
+                        <a href="{{ route('inspeccion.citas.agendar') }}" class="nav-link text-white small py-1 {{ request()->is('inspeccion/citas/agendar') ? 'active' : '' }}">
+                            <i class="bi bi-calendar-plus me-2"></i> Agendar cita
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('inspeccion.citas.historial') }}" class="nav-link text-white small py-1 {{ request()->is('inspeccion/citas/historial*') ? 'active' : '' }}">
+                            <i class="bi bi-clipboard2-data me-2"></i> Historial de citas
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        @endif
         @if($esDocente)
         @php
             $notasActivo = request()->is('docente/notas*') || request()->is('docente/actas*');
@@ -118,7 +206,7 @@
             </div>
         </li>
         @endif
-        @if(in_array($rol, ['INSPECCION', 'ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA', 'DECE']))
+        @if(in_array($rol, ['INSPECCION', 'ADMIN', 'RECTORA', 'VICERRECTORA', 'DECE']))
         @php
             $citasInspeccion = request()->is('inspeccion/citas*');
         @endphp
@@ -206,7 +294,7 @@
             </div>
         </li>
         @endif
-        @if(in_array($rol, ['ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA']))
+        @if(in_array($rol, ['ADMIN', 'RECTORA', 'VICERRECTORA']))
         <li class="nav-item mt-2">
             <a href="{{ route('admin.pre-registros.index') }}"
                class="nav-link text-white {{ request()->is('admin/pre-registros*') ? 'active' : '' }}">
@@ -214,7 +302,7 @@
             </a>
         </li>
         @endif
-        @if(in_array($rol, ['ADMIN', 'SECRETARIA', 'RECTORA']))
+        @if(in_array($rol, ['ADMIN', 'RECTORA']))
         <li class="nav-item">
             <a href="{{ route('actualizacion.index') }}"
                class="nav-link text-white {{ request()->is('actualizacion*') ? 'active' : '' }}">
@@ -229,7 +317,7 @@
             </a>
         </li>
         @endif
-        @if(in_array($rol, ['DOCENTE', 'ADMIN', 'SECRETARIA', 'RECTORA', 'VICERRECTORA']))
+        @if(in_array($rol, ['DOCENTE', 'ADMIN', 'RECTORA', 'VICERRECTORA']))
         <li class="nav-item mt-2">
             <a href="{{ route('planificaciones.index') }}" class="nav-link text-white {{ request()->is('planificaciones*') ? 'active' : '' }}">
                 <i class="bi bi-journal-bookmark me-2"></i> Planificación
