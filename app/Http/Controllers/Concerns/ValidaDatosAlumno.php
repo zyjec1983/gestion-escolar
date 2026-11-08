@@ -162,8 +162,10 @@ trait ValidaDatosAlumno
     protected function reglasRepresentanteLegal(): array
     {
         return [
+            'representante_busqueda' => 'nullable|string|max:255',
             'representante_user_id' => [
                 'nullable',
+                'integer',
                 Rule::exists('users', 'id')->where(fn ($q) => $q->where('rol', 'REPRESENTANTE')),
             ],
             'representante_nombres' => 'nullable|string|max:255',

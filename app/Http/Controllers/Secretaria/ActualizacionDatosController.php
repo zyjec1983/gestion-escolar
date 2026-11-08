@@ -95,14 +95,23 @@ class ActualizacionDatosController extends Controller
             'etiqueta' => $this->etiquetaRepresentante($r),
         ]);
 
+        // old() puede traer un arreglo si la peticion fue manipulada; se ignora.
+        $busquedaPrevia = old('representante_busqueda');
+        $idPrevio = old('representante_user_id');
+
+        $busqueda = is_string($busquedaPrevia)
+            ? $busquedaPrevia
+            : ($representante ? $this->etiquetaRepresentante($representante) : '');
+
+        $idMostrado = is_scalar($idPrevio) && $idPrevio !== ''
+            ? $idPrevio
+            : ($seleccionado?->id ?? $alumno->representante_user_id);
+
         return view('secretaria.actualizacion.edit', [
             'alumno' => $alumno,
             'representante' => $representante,
-            'representanteActualId' => $seleccionado?->id ?? $alumno->representante_user_id,
-            'representanteBusqueda' => old(
-                'representante_busqueda',
-                $representante ? $this->etiquetaRepresentante($representante) : ''
-            ),
+            'representanteActualId' => $idMostrado,
+            'representanteBusqueda' => $busqueda,
             'representantesLista' => $lista,
             'cambios' => $alumno->cambiosRepresentante()
                 ->with(['anterior', 'nuevo', 'registradoPor'])->latest()->get(),
@@ -115,7 +124,8 @@ class ActualizacionDatosController extends Controller
         $this->normalizarMayusculasRequest($request);
 
         $crearNuevo = $request->boolean('crear_representante');
-        $busqueda = trim((string) $request->input('representante_busqueda', ''));
+        $busqueda = $request->input('representante_busqueda', '');
+        $busqueda = is_string($busqueda) ? trim($busqueda) : '';
 
         $reglas = array_merge($this->reglasAlumno(), $this->reglasRepresentanteLegal());
 

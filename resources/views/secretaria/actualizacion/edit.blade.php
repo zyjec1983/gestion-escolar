@@ -145,7 +145,7 @@
                             @endforeach
                         </datalist>
                         <input type="hidden" name="representante_user_id" id="representante_user_id"
-                               value="{{ old('representante_user_id', $representanteActualId) }}">
+                               value="{{ $representanteActualId }}">
                         <div class="form-text">
                             Escriba y elija de la lista. Al cambiar de persona se recarga la ficha con sus datos.
                         </div>
