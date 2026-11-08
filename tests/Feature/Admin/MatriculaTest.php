@@ -13,9 +13,13 @@ use Tests\TestCase;
 class MatriculaTest extends TestCase
 {
     private User $admin;
+
     private Matricula $matricula;
+
     private Curso $curso;
+
     private Paralelo $paralelo;
+
     private PeriodoLectivo $periodo;
 
     protected function setUp(): void
@@ -80,8 +84,8 @@ class MatriculaTest extends TestCase
 
         $this->assertDatabaseHas('alumnos', [
             'id' => $this->matricula->alumno->id,
-            'nombres' => 'NombreActualizado',
-            'apellidos' => 'ApellidoActualizado',
+            'nombres' => 'NOMBREACTUALIZADO',
+            'apellidos' => 'APELLIDOACTUALIZADO',
         ]);
     }
 
@@ -123,14 +127,14 @@ class MatriculaTest extends TestCase
         $this->assertDatabaseHas('alumnos', [
             'id' => $this->matricula->alumno->id,
             'padece_enfermedad' => 1,
-            'nombre_enfermedad' => 'Diabetes',
+            'nombre_enfermedad' => 'DIABETES',
             'necesidades_educativas_especificas_nee' => 1,
-            'nombre_nee' => 'Dislexia',
+            'nombre_nee' => 'DISLEXIA',
             'casa_propia' => 1,
             'tiene_agua' => 1,
-            'padre_nombres_apellidos' => 'Padre Test',
+            'padre_nombres_apellidos' => 'PADRE TEST',
             'padre_es_facturador' => 1,
-            'madre_nombres_apellidos' => 'Madre Test',
+            'madre_nombres_apellidos' => 'MADRE TEST',
             'madre_es_facturador' => 0,
         ]);
     }
@@ -186,8 +190,8 @@ class MatriculaTest extends TestCase
 
         $this->assertDatabaseHas('alumnos', [
             'id' => $this->matricula->alumno->id,
-            'representante_alterno_nombre' => 'Tía María',
-            'representante_alterno_parentesco' => 'Tía',
+            'representante_alterno_nombre' => 'TÍA MARÍA',
+            'representante_alterno_parentesco' => 'TÍA',
         ]);
     }
 

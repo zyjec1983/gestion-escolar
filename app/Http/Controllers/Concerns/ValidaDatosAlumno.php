@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Concerns;
 
 use App\Models\Alumno;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
@@ -91,10 +92,65 @@ trait ValidaDatosAlumno
         ];
     }
 
+    /**
+     * Campos de texto que se guardan siempre en mayusculas. Se excluyen correos,
+     * fechas, numeros y opciones de catalogo. mb_strtoupper conserva las tildes.
+     *
+     * @return array<int, string>
+     */
+    protected function camposMayusculas(): array
+    {
+        return [
+            'nombres', 'apellidos', 'numero_cedula', 'etnia', 'nacionalidad',
+            'telefono_convencional', 'celular',
+            'con_quien_vive', 'parentesco_convivencia', 'institucion_procedencia',
+            'observaciones_generales',
+            'nombre_enfermedad', 'nombre_medicina', 'nombre_nee', 'tipo_discapacidad', 'numero_carnet',
+            'direccion_domiciliaria', 'sector', 'referencia_domicilio', 'provincia', 'canton',
+            'parroquia', 'numero_casa',
+            'padre_nombres_apellidos', 'padre_cedula', 'padre_telefono', 'padre_profesion', 'padre_direccion',
+            'madre_nombres_apellidos', 'madre_cedula', 'madre_telefono', 'madre_profesion', 'madre_direccion',
+            'representante_alterno_nombre', 'representante_alterno_parentesco',
+            'representante_alterno_parentesco_otro', 'representante_alterno_cedula',
+            'representante_alterno_telefono', 'representante_alterno_direccion',
+            'facturador_nombre', 'facturador_cedula', 'facturador_telefono', 'facturador_direccion',
+            'representante_nombres', 'representante_apellidos', 'representante_cedula',
+            'representante_telefono',
+        ];
+    }
+
+    /**
+     * Normaliza a mayusculas los campos de texto sin tocar correos ni catalogos.
+     *
+     * @param  array<string, mixed>  $datos
+     * @return array<string, mixed>
+     */
+    protected function normalizarMayusculas(array $datos): array
+    {
+        foreach ($this->camposMayusculas() as $campo) {
+            if (isset($datos[$campo]) && is_string($datos[$campo])) {
+                $datos[$campo] = trim(mb_strtoupper($datos[$campo], 'UTF-8'));
+            }
+        }
+
+        return $datos;
+    }
+
+    /**
+     * Aplica la normalizacion sobre la peticion antes de validar, para que las
+     * reglas, los valores guardados y old() trabajen con el mismo texto.
+     */
+    protected function normalizarMayusculasRequest(Request $request): void
+    {
+        $request->merge($this->normalizarMayusculas($request->all()));
+    }
+
     /** Solo los campos del alumno, para no guardar de mas. */
     protected function datosAlumno(array $validated): array
     {
-        return collect($validated)->only(array_keys($this->reglasAlumno()))->toArray();
+        $datos = collect($validated)->only(array_keys($this->reglasAlumno()))->toArray();
+
+        return $this->normalizarMayusculas($datos);
     }
 
     /**
@@ -129,7 +185,7 @@ trait ValidaDatosAlumno
     {
         $errores = [];
 
-        if (!empty($validated['representante_fecha_nacimiento'])) {
+        if (! empty($validated['representante_fecha_nacimiento'])) {
             $mayor = Carbon::parse($validated['representante_fecha_nacimiento'])->age;
             if ($mayor < 18) {
                 $errores['representante_fecha_nacimiento'] = 'El representante legal debe ser mayor de edad (18 o mas anos).';
@@ -139,12 +195,12 @@ trait ValidaDatosAlumno
         $yaUsado = User::where('numero_cedula', $validated['representante_cedula'] ?? null)
             ->where('rol', 'REPRESENTANTE')
             ->when(
-                !empty($validated['representante_user_id']),
+                ! empty($validated['representante_user_id']),
                 fn ($q) => $q->where('id', '!=', $validated['representante_user_id'])
             )
             ->exists();
 
-        if (!empty($validated['representante_cedula']) && $yaUsado) {
+        if (! empty($validated['representante_cedula']) && $yaUsado) {
             $errores['representante_cedula'] = 'Ya existe otra cuenta de representante con esa cedula.';
         }
 

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Concerns\ValidaDatosAlumno;
 use App\Http\Controllers\Controller;
-use App\Models\Alumno;
 use App\Models\Curso;
 use App\Models\Matricula;
 use App\Models\Paralelo;
@@ -29,6 +28,8 @@ class MatriculaController extends Controller
     {
         $matricula = Matricula::with('alumno')->findOrFail($id);
 
+        $this->normalizarMayusculasRequest($request);
+
         $validated = $request->validate(array_merge(
             $this->reglasAlumno(),
             [
@@ -44,7 +45,7 @@ class MatriculaController extends Controller
             ]
         ));
 
-        if (empty($validated['representante_alterno_parentesco']) && !empty($validated['representante_alterno_parentesco_otro'])) {
+        if (empty($validated['representante_alterno_parentesco']) && ! empty($validated['representante_alterno_parentesco_otro'])) {
             $validated['representante_alterno_parentesco'] = $validated['representante_alterno_parentesco_otro'];
         }
 

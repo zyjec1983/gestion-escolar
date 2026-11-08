@@ -96,8 +96,119 @@ class ActualizacionDatosTest extends TestCase
         $this->actingAs($this->secretaria)
             ->get(route('actualizacion.edit', $this->alumno->id))
             ->assertOk()
-            ->assertSee('Betancourt')
-            ->assertSee('Rosa');
+            ->assertSee('BETANCOURT')
+            ->assertSee('ROSA');
+    }
+
+    public function test_la_ficha_usa_un_buscador_para_el_representante_legal(): void
+    {
+        $this->actingAs($this->secretaria)
+            ->get(route('actualizacion.edit', $this->alumno->id))
+            ->assertOk()
+            ->assertSee('id="representante_busqueda"', false)
+            ->assertSee('list="representantesLista"', false)
+            ->assertSee('<datalist id="representantesLista">', false)
+            ->assertSee('name="representante_user_id"', false)
+            ->assertDontSee('<select name="representante_user_id"', false);
+    }
+
+    public function test_la_ficha_recarga_al_representante_elegido_y_lo_deja_listo_para_guardar(): void
+    {
+        $response = $this->actingAs($this->secretaria)
+            ->get(route('actualizacion.edit', [
+                'alumno' => $this->alumno->id,
+                'representante' => $this->otroRepresentante->id,
+            ]));
+
+        $response->assertOk()
+            ->assertSee('JUAN CRUZ')
+            ->assertSeeInOrder([
+                'name="representante_user_id" id="representante_user_id"',
+                'value="'.$this->otroRepresentante->id.'"',
+            ], false);
+    }
+
+    public function test_guarda_en_mayusculas_y_conserva_las_tildes(): void
+    {
+        $this->actingAs($this->secretaria)
+            ->put(route('actualizacion.update', $this->alumno->id), $this->payload([
+                'nombres' => 'José Ángel',
+                'apellidos' => 'Muñoz Peña',
+                'nombre_enfermedad' => 'Gripe',
+                'email_activo' => 'Jose.Angel@Correo.Test',
+                'representante_user_id' => $this->representante->id,
+                'representante_nombres' => 'María José',
+                'representante_apellidos' => 'Oña',
+                'representante_email' => 'Maria@Correo.Test',
+            ]))
+            ->assertSessionHas('success');
+
+        $this->alumno->refresh();
+        $this->representante->refresh();
+
+        $this->assertSame('JOSÉ ÁNGEL', $this->alumno->nombres);
+        $this->assertSame('MUÑOZ PEÑA', $this->alumno->apellidos);
+        $this->assertSame('GRIPE', $this->alumno->nombre_enfermedad);
+        $this->assertSame('Jose.Angel@Correo.Test', $this->alumno->email_activo);
+        $this->assertSame('MARÍA JOSÉ', $this->representante->name);
+        $this->assertSame('OÑA', $this->representante->apellidos);
+        $this->assertSame('Maria@Correo.Test', $this->representante->email);
+    }
+
+    public function test_rechaza_un_representante_escrito_fuera_de_la_lista(): void
+    {
+        $this->actingAs($this->secretaria)
+            ->put(route('actualizacion.update', $this->alumno->id), $this->payload([
+                'representante_busqueda' => 'PEDRO PEREZ',
+                'representante_user_id' => $this->representante->id,
+            ]))
+            ->assertSessionHasErrors('representante_busqueda');
+
+        $this->assertSame($this->representante->id, $this->alumno->fresh()->representante_user_id);
+        $this->assertSame(0, RepresentanteCambio::count());
+    }
+
+    public function test_no_cambia_de_representante_sin_recargar_la_ficha(): void
+    {
+        $this->actingAs($this->secretaria)
+            ->put(route('actualizacion.update', $this->alumno->id), $this->payload([
+                'representante_busqueda' => 'JUAN CRUZ',
+                'representante_user_id' => $this->representante->id,
+            ]))
+            ->assertSessionHasErrors('representante_busqueda');
+
+        $this->assertSame($this->representante->id, $this->alumno->fresh()->representante_user_id);
+    }
+
+    public function test_acepta_al_representante_elegido_en_el_buscador(): void
+    {
+        $this->actingAs($this->secretaria)
+            ->put(route('actualizacion.update', $this->alumno->id), $this->payload([
+                'representante_busqueda' => 'JUAN CRUZ',
+                'representante_user_id' => $this->otroRepresentante->id,
+                'representante_nombres' => 'Juan',
+                'representante_apellidos' => 'Cruz',
+                'representante_cedula' => '1722222222',
+                'representante_telefono' => '0966666666',
+                'representante_email' => 'juan@correo.test',
+                'representante_fecha_nacimiento' => '1980-09-30',
+            ]))
+            ->assertRedirect(route('actualizacion.edit', $this->alumno->id));
+
+        $this->assertSame($this->otroRepresentante->id, $this->alumno->fresh()->representante_user_id);
+        $this->assertSame(1, RepresentanteCambio::count());
+    }
+
+    public function test_el_buscador_tolera_tildes_y_mayusculas(): void
+    {
+        $this->representante->update(['name' => 'María José', 'apellidos' => 'Oña']);
+
+        $this->actingAs($this->secretaria)
+            ->put(route('actualizacion.update', $this->alumno->id), $this->payload([
+                'representante_busqueda' => 'maria jose ona',
+                'representante_user_id' => $this->representante->id,
+            ]))
+            ->assertSessionHas('success');
     }
 
     public function test_el_tipo_de_sangre_se_elige_de_una_lista(): void
@@ -110,7 +221,7 @@ class ActualizacionDatosTest extends TestCase
         $response->assertDontSee('<input type="text" name="tipo_sangre"', false);
 
         foreach (Alumno::TIPOS_SANGRE as $tipo) {
-            $response->assertSee('<option value="' . $tipo . '"', false);
+            $response->assertSee('<option value="'.$tipo.'"', false);
         }
     }
 
@@ -161,11 +272,11 @@ class ActualizacionDatosTest extends TestCase
 
         $this->alumno->refresh();
 
-        $this->assertSame('Ana Maria', $this->alumno->nombres);
-        $this->assertSame('Betancourt Vega', $this->alumno->apellidos);
+        $this->assertSame('ANA MARIA', $this->alumno->nombres);
+        $this->assertSame('BETANCOURT VEGA', $this->alumno->apellidos);
         $this->assertSame('0999999999', $this->alumno->celular);
         $this->assertTrue((bool) $this->alumno->padece_enfermedad);
-        $this->assertSame('Asma', $this->alumno->nombre_enfermedad);
+        $this->assertSame('ASMA', $this->alumno->nombre_enfermedad);
     }
 
     public function test_los_campos_no_enviados_se_dejan_como_estan(): void
@@ -197,7 +308,7 @@ class ActualizacionDatosTest extends TestCase
 
         $this->representante->refresh();
 
-        $this->assertSame('Rosa Elena', $this->representante->name);
+        $this->assertSame('ROSA ELENA', $this->representante->name);
         $this->assertSame('0988888888', $this->representante->telefono);
         $this->assertSame('rosa.elena@correo.test', $this->representante->email);
         $this->assertSame($this->representante->id, $this->alumno->fresh()->representante_user_id);
@@ -241,7 +352,7 @@ class ActualizacionDatosTest extends TestCase
 
         $this->assertNotNull($nuevo);
         $this->assertSame('REPRESENTANTE', $nuevo->rol);
-        $this->assertSame('Nunes', $nuevo->apellidos);
+        $this->assertSame('NUNES', $nuevo->apellidos);
         $this->assertSame($nuevo->id, $this->alumno->fresh()->representante_user_id);
         $this->assertSame($nuevo->id, RepresentanteCambio::first()->representante_nuevo_id);
     }
@@ -403,7 +514,7 @@ class ActualizacionDatosTest extends TestCase
             ->get(route('actualizacion.edit', $this->alumno->id))
             ->assertOk()
             ->assertSee('Cambios de representante legal')
-            ->assertSee('Juan');
+            ->assertSee('JUAN');
     }
 
     public function test_las_fichas_por_regularizar_no_exigen_cedula_ni_apellido(): void

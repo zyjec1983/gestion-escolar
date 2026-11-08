@@ -3,6 +3,10 @@
 @section('titulo', 'Actualizar datos del alumno')
 
 @php
+    // Los textos se muestran en mayusculas; los correos conservan su formato.
+    $mayus = fn ($valor) => mb_strtoupper((string) $valor, 'UTF-8');
+    $esCorreo = fn (string $campo) => $campo === 'email_activo' || str_ends_with($campo, '_email');
+
     // Campos de texto simples agrupados por seccion, para no repetir el mismo
     // input 40 veces. El orden es el mismo en que se pintan.
     $grupos = [
@@ -94,7 +98,7 @@
 <div class="container-fluid">
     <h4 class="mb-4">
         <i class="bi bi-pencil-square me-2"></i>
-        Actualizar datos: {{ $alumno->apellidos }} {{ $alumno->nombres }}
+        Actualizar datos: {{ $mayus($alumno->apellidos.' '.$alumno->nombres) }}
     </h4>
 
     @if(session('success'))
@@ -127,22 +131,30 @@
                     (divorcio, salida del pa&iacute;s, prisi&oacute;n, etc.) se puede cambiar por otra cuenta.
                 </p>
 
-                @php $representanteActualId = $alumno->representante_user_id; @endphp
-
                 <div class="row g-3">
                     <div class="col-12 col-lg-6">
-                        <label for="representante_user_id" class="form-label">Representante legal actual</label>
-                        <select name="representante_user_id" id="representante_user_id" class="form-select"
-                                onchange="window.location = '{{ route('actualizacion.edit', $alumno->id) }}?representante=' + this.value;">
-                            <option value="">— sin cambiar —</option>
-                            @foreach($representantes as $r)
-                                <option value="{{ $r->id }}"
-                                    @selected((string) $r->id === (string) old('representante_user_id', $representanteActualId))>
-                                    {{ $r->nombreCompleto() }}@if($r->numero_cedula) — {{ $r->numero_cedula }}@endif
-                                </option>
+                        <label for="representante_busqueda" class="form-label">Representante legal actual</label>
+                        <input type="text" name="representante_busqueda" id="representante_busqueda"
+                               class="form-control @error('representante_busqueda') is-invalid @enderror"
+                               list="representantesLista" autocomplete="off"
+                               placeholder="Escriba el nombre o la c&eacute;dula"
+                               value="{{ $representanteBusqueda }}">
+                        <datalist id="representantesLista">
+                            @foreach($representantesLista as $opcion)
+                                <option value="{{ $opcion['etiqueta'] }}" data-id="{{ $opcion['id'] }}"></option>
                             @endforeach
-                        </select>
-                        <div class="form-text">Al elegir a otra persona se recarga la ficha con sus datos.</div>
+                        </datalist>
+                        <input type="hidden" name="representante_user_id" id="representante_user_id"
+                               value="{{ old('representante_user_id', $representanteActualId) }}">
+                        <div class="form-text">
+                            Escriba y elija de la lista. Al cambiar de persona se recarga la ficha con sus datos.
+                        </div>
+                        @error('representante_busqueda')
+                            <div class="invalid-feedback d-block js-busqueda">{{ $message }}</div>
+                        @enderror
+                        @error('representante_user_id')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     <div class="col-12 col-lg-6">
@@ -160,7 +172,7 @@
 
                 @if($representante)
                     <div class="alert alert-light border">
-                        <strong>Datos de {{ $representante->nombreCompleto() }}</strong>
+                        <strong>Datos de {{ $mayus($representante->nombreCompleto()) }}</strong>
                         @if($representante->fecha_nacimiento)
                             <span class="badge bg-{{ $representante->esAdulto() ? 'success' : 'danger' }} ms-2">
                                 {{ $representante->edad() }} años
@@ -179,26 +191,27 @@
                     <div class="col-12 col-md-6">
                         <label class="form-label">Nombres *</label>
                         <input type="text" name="representante_nombres" class="form-control"
-                               value="{{ old('representante_nombres', $representante->name ?? '') }}">
+                               value="{{ $mayus(old('representante_nombres', $representante->name ?? '')) }}">
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="form-label">Apellidos</label>
                         <input type="text" name="representante_apellidos" class="form-control"
-                               value="{{ old('representante_apellidos', $representante->apellidos ?? '') }}">
+                               value="{{ $mayus(old('representante_apellidos', $representante->apellidos ?? '')) }}">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label">C&eacute;dula</label>
                         <input type="text" name="representante_cedula" class="form-control"
-                               value="{{ old('representante_cedula', $representante->numero_cedula ?? '') }}">
+                               value="{{ $mayus(old('representante_cedula', $representante->numero_cedula ?? '')) }}">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label">Tel&eacute;fono</label>
                         <input type="text" name="representante_telefono" class="form-control"
-                               value="{{ old('representante_telefono', $representante->telefono ?? '') }}">
+                               value="{{ $mayus(old('representante_telefono', $representante->telefono ?? '')) }}">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label">Correo</label>
                         <input type="email" name="representante_email" class="form-control"
+                               data-no-mayusculas
                                value="{{ old('representante_email', $representante->email ?? '') }}">
                     </div>
                     <div class="col-12 col-md-4">
@@ -221,17 +234,17 @@
                     <div class="col-12 col-md-6">
                         <label class="form-label">Nombres *</label>
                         <input type="text" name="nombres" class="form-control" required
-                               value="{{ old('nombres', $alumno->nombres) }}">
+                               value="{{ $mayus(old('nombres', $alumno->nombres)) }}">
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="form-label">Apellidos *</label>
                         <input type="text" name="apellidos" class="form-control" required
-                               value="{{ old('apellidos', $alumno->apellidos) }}">
+                               value="{{ $mayus(old('apellidos', $alumno->apellidos)) }}">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label">C&eacute;dula</label>
                         <input type="text" name="numero_cedula" class="form-control"
-                               value="{{ old('numero_cedula', $alumno->numero_cedula) }}">
+                               value="{{ $mayus(old('numero_cedula', $alumno->numero_cedula)) }}">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label">C&oacute;digo interno</label>
@@ -257,12 +270,12 @@
                     <div class="col-12 col-md-4">
                         <label class="form-label">Etnia</label>
                         <input type="text" name="etnia" class="form-control"
-                               value="{{ old('etnia', $alumno->etnia) }}">
+                               value="{{ $mayus(old('etnia', $alumno->etnia)) }}">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label">Nacionalidad</label>
                         <input type="text" name="nacionalidad" class="form-control"
-                               value="{{ old('nacionalidad', $alumno->nacionalidad) }}">
+                               value="{{ $mayus(old('nacionalidad', $alumno->nacionalidad)) }}">
                     </div>
                 </div>
             </div>
@@ -276,10 +289,12 @@
                 <div class="card-body">
                     <div class="row g-3">
                         @foreach($campos as $campo => $etiqueta)
+                            @php $correo = $esCorreo($campo); @endphp
                             <div class="col-12 col-md-4">
                                 <label class="form-label">{{ $etiqueta }}</label>
                                 <input type="text" name="{{ $campo }}" class="form-control"
-                                       value="{{ old($campo, $alumno->$campo) }}">
+                                       @if($correo) data-no-mayusculas @endif
+                                       value="{{ $correo ? old($campo, $alumno->$campo) : $mayus(old($campo, $alumno->$campo)) }}">
                             </div>
                         @endforeach
                     </div>
@@ -311,12 +326,12 @@
                     <div class="col-12 col-md-6">
                         <label class="form-label">Parentesco</label>
                         <input type="text" name="representante_alterno_parentesco" class="form-control"
-                               value="{{ old('representante_alterno_parentesco', $alumno->representante_alterno_parentesco) }}">
+                               value="{{ $mayus(old('representante_alterno_parentesco', $alumno->representante_alterno_parentesco)) }}">
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="form-label">Parentesco (si es otro)</label>
                         <input type="text" name="representante_alterno_parentesco_otro" class="form-control"
-                               value="{{ old('representante_alterno_parentesco_otro') }}">
+                               value="{{ $mayus(old('representante_alterno_parentesco_otro')) }}">
                     </div>
                 </div>
             </div>
@@ -350,9 +365,9 @@
                             @foreach($cambios as $cambio)
                                 <tr>
                                     <td>{{ $cambio->created_at->format('d/m/Y H:i') }}</td>
-                                    <td>{{ $cambio->anterior?->nombreCompleto() ?? '—' }}</td>
-                                    <td>{{ $cambio->nuevo?->nombreCompleto() ?? '—' }}</td>
-                                    <td>{{ $cambio->registradoPor?->nombreCompleto() ?? '—' }}</td>
+                                    <td>{{ $cambio->anterior ? $mayus($cambio->anterior->nombreCompleto()) : '—' }}</td>
+                                    <td>{{ $cambio->nuevo ? $mayus($cambio->nuevo->nombreCompleto()) : '—' }}</td>
+                                    <td>{{ $cambio->registradoPor ? $mayus($cambio->registradoPor->nombreCompleto()) : '—' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -363,3 +378,110 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(() => {
+    const busqueda = document.getElementById('representante_busqueda');
+    const oculto = document.getElementById('representante_user_id');
+    const opciones = () => Array.from(document.querySelectorAll('#representantesLista option'));
+
+    const normalizar = (texto) => (texto || '')
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLocaleUpperCase('es-EC');
+
+    const resolver = (texto) => {
+        const buscado = normalizar(texto);
+        if (!buscado) return null;
+
+        const lista = opciones();
+        const exactas = lista.filter((opcion) => normalizar(opcion.value) === buscado);
+        if (exactas.length === 1) return exactas[0];
+        if (exactas.length > 1) return null;
+
+        const parciales = lista.filter((opcion) => normalizar(opcion.value).includes(buscado));
+        return parciales.length === 1 ? parciales[0] : null;
+    };
+
+    const marcarError = (mensaje) => {
+        busqueda.classList.toggle('is-invalid', Boolean(mensaje));
+
+        let feedback = busqueda.parentElement.querySelector('.invalid-feedback.js-busqueda');
+        if (!feedback) {
+            feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback js-busqueda';
+            busqueda.parentElement.appendChild(feedback);
+        }
+
+        feedback.textContent = mensaje || '';
+        feedback.style.display = mensaje ? 'block' : 'none';
+    };
+
+    if (busqueda && oculto) {
+        busqueda.addEventListener('input', () => marcarError(''));
+
+        busqueda.addEventListener('change', () => {
+            const texto = busqueda.value.trim();
+            if (!texto) {
+                marcarError('');
+                return;
+            }
+
+            const opcion = resolver(texto);
+            if (!opcion) {
+                marcarError('Elija un representante de la lista.');
+                return;
+            }
+
+            const id = opcion.dataset.id || '';
+            if (id === oculto.value) {
+                marcarError('');
+                return;
+            }
+
+            if (!id) {
+                marcarError('Elija un representante de la lista.');
+                return;
+            }
+
+            // Otra persona: se recarga la ficha para que los campos coincidan
+            // con sus datos y no se sobrescriban al guardar.
+            const url = new URL(window.location.href);
+            url.searchParams.set('representante', id);
+            window.location.href = url.toString();
+        });
+    }
+
+    const pasarAMayusculas = (input) => {
+        const inicio = input.selectionStart;
+        const fin = input.selectionEnd;
+        const valor = input.value.toLocaleUpperCase('es-EC');
+
+        if (valor !== input.value) {
+            input.value = valor;
+
+            if (inicio !== null && fin !== null) {
+                try {
+                    input.setSelectionRange(inicio, fin);
+                } catch (error) {
+                    // Algunos navegadores no permiten seleccionar en ciertos tipos.
+                }
+            }
+        }
+    };
+
+    document.querySelectorAll('form input[type="text"]').forEach((input) => {
+        if (input === busqueda || input.dataset.noMayusculas !== undefined) {
+            return;
+        }
+
+        pasarAMayusculas(input);
+        input.addEventListener('input', () => pasarAMayusculas(input));
+    });
+})();
+</script>
+@endpush

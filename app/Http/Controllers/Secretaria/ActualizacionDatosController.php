@@ -9,6 +9,7 @@ use App\Models\RepresentanteCambio;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Modulo de actualizacion de datos. La secretaria busca al alumno por cedula o
@@ -21,7 +22,7 @@ class ActualizacionDatosController extends Controller
 
     /** Campos editables de una cuenta de representante. */
     private const CAMPOS_REPRESENTANTE = [
-        'name', 'apellidos', 'email', 'telefono', 'numero_cedula', 'fecha_nacimiento',
+        'id', 'name', 'apellidos', 'email', 'telefono', 'numero_cedula', 'fecha_nacimiento',
     ];
 
     /** Buscador: por cedula, por apellidos, o listado de fichas por regularizar. */
@@ -81,17 +82,28 @@ class ActualizacionDatosController extends Controller
 
         $representantes = $this->representantesDisponibles();
 
-        // Si la secretaria elige otro representante en el desplegable, la ficha
-        // se recarga para mostrar los datos de esa persona.
+        // Si la secretaria elige otro representante en el buscador, la ficha se
+        // recarga con ese id para mostrar los datos de esa persona.
         $elegido = (int) $request->query('representante', 0);
-        $representante = $representantes->firstWhere('id', $elegido)
+        $seleccionado = $representantes->firstWhere('id', $elegido);
+        $representante = $seleccionado
             ?? $alumno->representante
             ?? $representantes->first();
 
+        $lista = $representantes->map(fn (User $r) => [
+            'id' => $r->id,
+            'etiqueta' => $this->etiquetaRepresentante($r),
+        ]);
+
         return view('secretaria.actualizacion.edit', [
             'alumno' => $alumno,
-            'representantes' => $representantes,
             'representante' => $representante,
+            'representanteActualId' => $seleccionado?->id ?? $alumno->representante_user_id,
+            'representanteBusqueda' => old(
+                'representante_busqueda',
+                $representante ? $this->etiquetaRepresentante($representante) : ''
+            ),
+            'representantesLista' => $lista,
             'cambios' => $alumno->cambiosRepresentante()
                 ->with(['anterior', 'nuevo', 'registradoPor'])->latest()->get(),
         ]);
@@ -99,7 +111,11 @@ class ActualizacionDatosController extends Controller
 
     public function update(Request $request, Alumno $alumno)
     {
+        // Los textos se guardan en mayusculas y con sus tildes originales.
+        $this->normalizarMayusculasRequest($request);
+
         $crearNuevo = $request->boolean('crear_representante');
+        $busqueda = trim((string) $request->input('representante_busqueda', ''));
 
         $reglas = array_merge($this->reglasAlumno(), $this->reglasRepresentanteLegal());
 
@@ -117,10 +133,41 @@ class ActualizacionDatosController extends Controller
         }
 
         $anteriorId = $alumno->representante_user_id;
+        $solicitado = isset($validated['representante_user_id'])
+            ? (int) $validated['representante_user_id']
+            : null;
 
-        $representanteId = $crearNuevo
-            ? $this->crearRepresentante($validated)
-            : ($validated['representante_user_id'] ?? null);
+        if ($crearNuevo) {
+            $representanteId = $this->crearRepresentante($validated);
+        } elseif ($busqueda !== '') {
+            // El buscador es la fuente principal: lo escrito tiene que existir
+            // en la lista y coincidir con la persona que quedo seleccionada.
+            $encontrado = $this->resolverRepresentante($busqueda);
+
+            if (! $encontrado) {
+                return back()->withInput()->withErrors([
+                    'representante_busqueda' => 'Escriba un representante que aparezca en la lista.',
+                ]);
+            }
+
+            if ($solicitado && $solicitado !== $encontrado->id) {
+                return back()->withInput()->withErrors([
+                    'representante_busqueda' => 'El representante escrito no coincide con la persona seleccionada. Elijalo de la lista.',
+                ]);
+            }
+
+            // Si se trata de otra persona, primero debe recargarse la ficha
+            // para que los campos correspondan a ella y no se sobrescriban.
+            if ($encontrado->id !== $anteriorId && $solicitado !== $encontrado->id) {
+                return back()->withInput()->withErrors([
+                    'representante_busqueda' => 'Seleccione al representante de la lista para cargar sus datos antes de guardar.',
+                ]);
+            }
+
+            $representanteId = $encontrado->id;
+        } else {
+            $representanteId = $solicitado;
+        }
 
         // No se puede asignar como legal a alguien menor de edad o sin fecha de
         // nacimiento registrada. Si se deja al mismo de antes, se puede corregir
@@ -195,5 +242,77 @@ class ActualizacionDatosController extends Controller
         return User::where('rol', 'REPRESENTANTE')
             ->orderBy('apellidos')->orderBy('name')
             ->get(self::CAMPOS_REPRESENTANTE);
+    }
+
+    /** Etiqueta visible del buscador: nombre completo y cedula si la tiene. */
+    protected function etiquetaRepresentante(User $representante): string
+    {
+        $etiqueta = Str::upper($representante->nombreCompleto());
+
+        if ($representante->numero_cedula) {
+            $etiqueta .= ' — '.$representante->numero_cedula;
+        }
+
+        return $etiqueta;
+    }
+
+    /**
+     * Compara sin distinguir mayusculas ni tildes, para que la busqueda sea
+     * tolerante a como escriba la secretaria.
+     */
+    protected function normalizarBusqueda(string $texto): string
+    {
+        $texto = Str::upper(trim($texto));
+
+        $texto = str_replace(
+            ['Á', 'É', 'Í', 'Ó', 'Ú', 'Ü', 'Ñ', 'À', 'È', 'Ì', 'Ò', 'Ù'],
+            ['A', 'E', 'I', 'O', 'U', 'U', 'N', 'A', 'E', 'I', 'O', 'U'],
+            $texto
+        );
+
+        return preg_replace('/\s+/', ' ', $texto) ?? '';
+    }
+
+    /**
+     * Encuentra a la persona escrita en el buscador. Solo devuelve un resultado
+     * cuando es inequivoco: coincidencia exacta con nombre, etiqueta o cedula,
+     * o una unica coincidencia parcial.
+     */
+    protected function resolverRepresentante(string $busqueda): ?User
+    {
+        $buscado = $this->normalizarBusqueda($busqueda);
+
+        if ($buscado === '') {
+            return null;
+        }
+
+        $representantes = $this->representantesDisponibles();
+
+        $exactos = $representantes->filter(function (User $r) use ($buscado) {
+            $valores = array_filter([
+                $this->normalizarBusqueda($this->etiquetaRepresentante($r)),
+                $this->normalizarBusqueda($r->nombreCompleto()),
+                $r->numero_cedula ? $this->normalizarBusqueda($r->numero_cedula) : null,
+            ]);
+
+            return in_array($buscado, $valores, true);
+        });
+
+        if ($exactos->count() === 1) {
+            return $exactos->first();
+        }
+
+        if ($exactos->count() > 1) {
+            return null;
+        }
+
+        $parciales = $representantes->filter(
+            fn (User $r) => str_contains(
+                $this->normalizarBusqueda($this->etiquetaRepresentante($r)),
+                $buscado
+            )
+        );
+
+        return $parciales->count() === 1 ? $parciales->first() : null;
     }
 }
