@@ -357,6 +357,41 @@ class ActualizacionDatosTest extends TestCase
         $this->assertSame($nuevo->id, RepresentanteCambio::first()->representante_nuevo_id);
     }
 
+    public function test_al_crear_el_representante_no_importa_lo_escrito_en_el_buscador(): void
+    {
+        $this->actingAs($this->secretaria)
+            ->put(route('actualizacion.update', $this->alumno->id), $this->payload([
+                'crear_representante' => '1',
+                'representante_busqueda' => 'PERSONA QUE NO EXISTE',
+                'representante_user_id' => $this->representante->id,
+                'representante_nombres' => 'Lucía',
+                'representante_apellidos' => 'Mera',
+                'representante_cedula' => '1744444444',
+                'representante_telefono' => '0955555555',
+                'representante_email' => 'lucia@correo.test',
+                'representante_fecha_nacimiento' => '1982-07-15',
+            ]))
+            ->assertRedirect(route('actualizacion.edit', $this->alumno->id))
+            ->assertSessionHas('success', 'Datos actualizados. Se creó y asignó la cuenta del nuevo representante legal.');
+
+        $nuevo = User::where('email', 'lucia@correo.test')->first();
+
+        $this->assertNotNull($nuevo);
+        $this->assertSame('LUCÍA', $nuevo->name);
+        $this->assertSame('MERA', $nuevo->apellidos);
+        $this->assertSame($nuevo->id, $this->alumno->fresh()->representante_user_id);
+    }
+
+    public function test_la_ficha_explica_el_flujo_para_crear_un_representante(): void
+    {
+        $this->actingAs($this->secretaria)
+            ->get(route('actualizacion.edit', $this->alumno->id))
+            ->assertOk()
+            ->assertSee('id="crear_representante"', false)
+            ->assertSee('id="avisoNuevoRepresentante"', false)
+            ->assertSee('El buscador de arriba no se usa en este caso.', false);
+    }
+
     public function test_no_acepta_un_representante_nuevo_menor_de_edad(): void
     {
         $this->actingAs($this->secretaria)

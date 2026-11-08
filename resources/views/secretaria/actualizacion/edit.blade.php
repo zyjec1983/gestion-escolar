@@ -148,6 +148,7 @@
                                value="{{ $representanteActualId }}">
                         <div class="form-text">
                             Escriba y elija de la lista. Al cambiar de persona se recarga la ficha con sus datos.
+                            Si va a crear una cuenta nueva, marque la casilla de la derecha.
                         </div>
                         @error('representante_busqueda')
                             <div class="invalid-feedback d-block js-busqueda">{{ $message }}</div>
@@ -168,10 +169,17 @@
                     </div>
                 </div>
 
+                <div id="avisoNuevoRepresentante" class="alert alert-info d-none mt-3 mb-0">
+                    <i class="bi bi-person-plus me-1"></i>
+                    Se crear&aacute; una cuenta nueva de representante legal y se asignar&aacute; al alumno.
+                    Complete abajo <strong>nombres</strong>, <strong>correo</strong> y
+                    <strong>fecha de nacimiento</strong>. El buscador de arriba no se usa en este caso.
+                </div>
+
                 <hr>
 
                 @if($representante)
-                    <div class="alert alert-light border">
+                    <div class="alert alert-light border" id="datosRepresentanteActual">
                         <strong>Datos de {{ $mayus($representante->nombreCompleto()) }}</strong>
                         @if($representante->fecha_nacimiento)
                             <span class="badge bg-{{ $representante->esAdulto() ? 'success' : 'danger' }} ms-2">
@@ -191,32 +199,38 @@
                     <div class="col-12 col-md-6">
                         <label class="form-label">Nombres *</label>
                         <input type="text" name="representante_nombres" class="form-control"
+                               data-original="{{ $mayus($representante->name ?? '') }}"
                                value="{{ $mayus(old('representante_nombres', $representante->name ?? '')) }}">
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="form-label">Apellidos</label>
                         <input type="text" name="representante_apellidos" class="form-control"
+                               data-original="{{ $mayus($representante->apellidos ?? '') }}"
                                value="{{ $mayus(old('representante_apellidos', $representante->apellidos ?? '')) }}">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label">C&eacute;dula</label>
                         <input type="text" name="representante_cedula" class="form-control"
+                               data-original="{{ $mayus($representante->numero_cedula ?? '') }}"
                                value="{{ $mayus(old('representante_cedula', $representante->numero_cedula ?? '')) }}">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label">Tel&eacute;fono</label>
                         <input type="text" name="representante_telefono" class="form-control"
+                               data-original="{{ $mayus($representante->telefono ?? '') }}"
                                value="{{ $mayus(old('representante_telefono', $representante->telefono ?? '')) }}">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label">Correo</label>
                         <input type="email" name="representante_email" class="form-control"
                                data-no-mayusculas
+                               data-original="{{ $representante->email ?? '' }}"
                                value="{{ old('representante_email', $representante->email ?? '') }}">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label">Fecha de nacimiento</label>
                         <input type="date" name="representante_fecha_nacimiento" class="form-control"
+                               data-original="{{ $representante?->fecha_nacimiento?->format('Y-m-d') }}"
                                value="{{ old('representante_fecha_nacimiento', $representante?->fecha_nacimiento?->format('Y-m-d')) }}">
                         <div class="form-text">Debe ser mayor de edad.</div>
                     </div>
@@ -453,6 +467,83 @@
             const url = new URL(window.location.href);
             url.searchParams.set('representante', id);
             window.location.href = url.toString();
+        });
+    }
+
+    // Casilla "crear representante": se trabaja con una cuenta nueva, no con
+    // la persona que muestra el buscador.
+    const formulario = busqueda ? busqueda.closest('form') : null;
+    const crear = document.getElementById('crear_representante');
+    const avisoNuevo = document.getElementById('avisoNuevoRepresentante');
+    const datosActuales = document.getElementById('datosRepresentanteActual');
+    const nombresCamposRep = [
+        'representante_nombres', 'representante_apellidos', 'representante_cedula',
+        'representante_telefono', 'representante_email', 'representante_fecha_nacimiento',
+    ];
+    const camposRep = nombresCamposRep
+        .map((name) => formulario?.elements.namedItem(name))
+        .filter((input) => input && input.tagName === 'INPUT');
+    const camposObligatorios = new Set([
+        'representante_nombres', 'representante_email', 'representante_fecha_nacimiento',
+    ]);
+
+    let respaldo = null;
+
+    const aplicarModoNuevo = (activo, limpiar) => {
+        if (avisoNuevo) avisoNuevo.classList.toggle('d-none', !activo);
+        if (datosActuales) datosActuales.classList.toggle('d-none', activo);
+
+        if (busqueda) {
+            busqueda.disabled = activo;
+            if (activo) {
+                marcarError('');
+                busqueda.value = '';
+            }
+        }
+
+        camposRep.forEach((input) => {
+            if (camposObligatorios.has(input.name)) {
+                input.required = activo;
+            }
+
+            if (activo && limpiar) {
+                input.value = '';
+            }
+        });
+    };
+
+    const restaurarRepresentante = () => {
+        camposRep.forEach((input) => {
+            input.value = respaldo && respaldo.has(input.name)
+                ? respaldo.get(input.name)
+                : (input.dataset.original || '');
+        });
+
+        respaldo = null;
+
+        if (!busqueda) {
+            return;
+        }
+
+        busqueda.disabled = false;
+        const opcion = opciones().find((item) => item.dataset.id === oculto?.value);
+        busqueda.value = opcion ? opcion.value : '';
+        marcarError('');
+    };
+
+    if (crear) {
+        if (crear.checked) {
+            aplicarModoNuevo(true, false);
+        }
+
+        crear.addEventListener('change', () => {
+            if (crear.checked) {
+                respaldo = new Map(camposRep.map((input) => [input.name, input.value]));
+                aplicarModoNuevo(true, true);
+            } else {
+                aplicarModoNuevo(false, false);
+                restaurarRepresentante();
+            }
         });
     }
 

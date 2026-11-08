@@ -207,9 +207,13 @@ class ActualizacionDatosController extends Controller
             }
         });
 
+        $mensaje = $crearNuevo
+            ? 'Datos actualizados. Se creó y asignó la cuenta del nuevo representante legal.'
+            : 'Datos actualizados correctamente.';
+
         return redirect()
             ->route('actualizacion.edit', $alumno->id)
-            ->with('success', 'Datos actualizados correctamente.');
+            ->with('success', $mensaje);
     }
 
     /** Da de alta la cuenta del representante nuevo y devuelve su id. */
