@@ -11,6 +11,13 @@
         </div>
     </div>
 
+    @if($combos->isEmpty())
+        <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            No tienes clases asignadas. Solicita a Secretaría que registre tus materias, niveles y paralelos antes de crear una planificación.
+        </div>
+    @endif
+
     <div class="row">
         <div class="col-12 col-lg-9">
             <div class="card shadow-sm">
@@ -22,7 +29,7 @@
 
                         <div class="mb-3">
                             <label class="form-label">Materia y nivel origen *</label>
-                            <select id="comboSelect" class="form-select @error('materia_id') is-invalid @enderror" required>
+                            <select id="comboSelect" class="form-select @error('materia_id') is-invalid @enderror" required @disabled($combos->isEmpty())>
                                 <option value="">Seleccione la materia y nivel...</option>
                                 @foreach($combos as $combo)
                                     <optgroup label="{{ $combo['curso'] }}">
@@ -104,7 +111,7 @@
                             </div>
                         </div>
 
-                        <button type="submit" id="submitBtn" class="btn btn-primary w-100 mt-4">
+                        <button type="submit" id="submitBtn" class="btn btn-primary w-100 mt-4" @disabled($combos->isEmpty())>
                             <i class="bi bi-save me-1"></i>Guardar y Vincular Planificación
                         </button>
                     </form>

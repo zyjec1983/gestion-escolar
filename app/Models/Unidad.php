@@ -43,6 +43,34 @@ class Unidad extends Model
         return $this->belongsTo(User::class, 'creado_por');
     }
 
+    public function auditorias()
+    {
+        return $this->hasMany(PlanificacionAuditoria::class, 'unidad_id');
+    }
+
+    /**
+     * Docente titular de la clase. Si la unidad no tiene clase asociada se usa
+     * el usuario que la registro, para no perder la referencia de autoria.
+     */
+    public function docenteTitular(): ?User
+    {
+        return $this->claseDocente?->docente ?: $this->creador;
+    }
+
+    public function nivelParalelo(): string
+    {
+        if (! $this->claseDocente) {
+            return 'General';
+        }
+
+        $nivel = trim(implode(' ', array_filter([
+            $this->claseDocente->curso?->nombre,
+            $this->claseDocente->paralelo?->nombre,
+        ])));
+
+        return $nivel !== '' ? $nivel : 'General';
+    }
+
     public function permisosNotas()
     {
         return $this->hasMany(PermisoNota::class);
@@ -50,7 +78,7 @@ class Unidad extends Model
 
     public function duracionDias(): int
     {
-        if (!$this->fecha_inicio || !$this->fecha_fin) {
+        if (! $this->fecha_inicio || ! $this->fecha_fin) {
             return 0;
         }
 

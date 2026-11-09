@@ -93,12 +93,21 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/planificaciones', [PlanificacionController::class, 'index'])->name('planificaciones.index');
 });
 
-Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA,VICERRECTORA,DOCENTE'])->group(function () {
+Route::middleware(['auth', 'role:DOCENTE'])->group(function () {
     Route::get('/planificaciones/crear', [PlanificacionController::class, 'create'])->name('planificaciones.create');
     Route::post('/planificaciones', [PlanificacionController::class, 'store'])->name('planificaciones.store');
+    Route::delete('/planificaciones/{unidad}', [PlanificacionController::class, 'destroy'])->name('planificaciones.destroy');
+});
+
+Route::middleware(['auth', 'role:DOCENTE,ADMIN,SECRETARIA,RECTORA,VICERRECTORA'])->group(function () {
     Route::get('/planificaciones/{unidad}/editar', [PlanificacionController::class, 'edit'])->name('planificaciones.edit');
     Route::put('/planificaciones/{unidad}', [PlanificacionController::class, 'update'])->name('planificaciones.update');
-    Route::delete('/planificaciones/{unidad}', [PlanificacionController::class, 'destroy'])->name('planificaciones.destroy');
+    Route::get('/planificaciones/{unidad}/imprimir', [PlanificacionController::class, 'print'])->name('planificaciones.print');
+});
+
+Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA,VICERRECTORA'])->group(function () {
+    Route::get('/planificaciones/bitacora', [PlanificacionController::class, 'bitacora'])->name('planificaciones.bitacora');
+    Route::post('/planificaciones/{unidad}/intervencion', [PlanificacionController::class, 'intervencion'])->name('planificaciones.intervencion');
 });
 
 Route::middleware(['auth', 'role:REPRESENTANTE'])->group(function () {

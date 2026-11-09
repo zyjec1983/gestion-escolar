@@ -134,7 +134,10 @@ class InspectorDashboardTest extends TestCase
     {
         PeriodoLectivo::factory()->create(['activo' => true]);
         $inspector = $this->inspector();
-        $representante = User::factory()->representante()->create();
+        $representante = User::factory()->representante()->create([
+            'name' => 'Representante',
+            'apellidos' => 'Prueba',
+        ]);
         $alumno = Alumno::factory()->create(['representante_user_id' => $representante->id]);
 
         $cita = Cita::create([
@@ -154,7 +157,7 @@ class InspectorDashboardTest extends TestCase
             ->assertSee('data-cita-id="'.$cita->id.'"', false)
             ->assertSee('cita-clickable', false)
             ->assertSee('Detalle y registro de la cita')
-            ->assertSee($representante->name);
+            ->assertSee('Representante Prueba');
 
         $citas = $response->viewData('citas_hoy');
         $this->assertTrue($citas->first()->alumno->relationLoaded('representante'));

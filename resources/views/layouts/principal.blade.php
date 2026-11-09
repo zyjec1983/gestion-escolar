@@ -151,8 +151,13 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('planificaciones.index') }}" class="nav-link text-white small py-1 {{ request()->is('planificaciones*') ? 'active' : '' }}">
-                            <i class="bi bi-journal-bookmark me-2"></i> Planificación
+                        <a href="{{ route('planificaciones.index') }}" class="nav-link text-white small py-1 {{ request()->is('planificaciones') || request()->is('planificaciones/*') && !request()->is('planificaciones/bitacora*') ? 'active' : '' }}">
+                            <i class="bi bi-journal-bookmark me-2"></i> Planificación y auditoría
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('planificaciones.bitacora') }}" class="nav-link text-white small py-1 {{ request()->is('planificaciones/bitacora*') ? 'active' : '' }}">
+                            <i class="bi bi-file-earmark-text me-2"></i> Bitácora de planificaciones
                         </a>
                     </li>
                 </ul>
@@ -319,10 +324,17 @@
         @endif
         @if(in_array($rol, ['DOCENTE', 'ADMIN', 'RECTORA', 'VICERRECTORA']))
         <li class="nav-item mt-2">
-            <a href="{{ route('planificaciones.index') }}" class="nav-link text-white {{ request()->is('planificaciones*') ? 'active' : '' }}">
-                <i class="bi bi-journal-bookmark me-2"></i> Planificación
+            <a href="{{ route('planificaciones.index') }}" class="nav-link text-white {{ request()->is('planificaciones') || request()->is('planificaciones/*') && !request()->is('planificaciones/bitacora*') ? 'active' : '' }}">
+                <i class="bi bi-journal-bookmark me-2"></i> {{ $rol === 'DOCENTE' ? 'Planificación' : 'Planificación y auditoría' }}
             </a>
         </li>
+        @if($rol !== 'DOCENTE')
+        <li class="nav-item">
+            <a href="{{ route('planificaciones.bitacora') }}" class="nav-link text-white {{ request()->is('planificaciones/bitacora*') ? 'active' : '' }}">
+                <i class="bi bi-file-earmark-text me-2"></i> Bitácora de planificaciones
+            </a>
+        </li>
+        @endif
         @endif
     </ul>
     <hr>
