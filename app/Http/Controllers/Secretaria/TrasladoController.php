@@ -88,18 +88,18 @@ class TrasladoController extends Controller
         $periodo = PeriodoLectivo::where('activo', true)->first();
         $periodoVigente = $this->checklist->periodoVigente();
 
-        $alumnos = Alumno::select('id', 'nombres', 'apellidos', 'numero_cedula', 'codigo', 'representante_user_id')
-            ->with([
-                'representante:id,name,apellidos,numero_cedula',
-                'matriculas' => function ($query) use ($periodo) {
+        // El estudiante se elige con un buscador, no con un desplegable de todo
+        // el padrón. Solo se precarga la ficha cuando la validación devuelve un
+        // alumno_id ya seleccionado.
+        $alumnoSeleccionado = old('alumno_id')
+            ? Alumno::select('id', 'nombres', 'apellidos', 'numero_cedula', 'codigo')
+                ->with(['matriculas' => function ($query) use ($periodo) {
                     $query->when($periodo, fn ($sub) => $sub->where('periodo_id', $periodo->id))
                         ->with(['curso:id,nombre', 'paralelo:id,nombre'])
                         ->latest('id');
-                },
-            ])
-            ->orderBy('apellidos')
-            ->orderBy('nombres')
-            ->get();
+                }])
+                ->find(old('alumno_id'))
+            : null;
 
         $representantes = User::where('rol', 'REPRESENTANTE')
             ->orderBy('apellidos')
@@ -139,9 +139,87 @@ class TrasladoController extends Controller
         $cursosOctavo = $cursos->filter(fn (Curso $curso) => $curso->grado() === 'OCTAVO')->pluck('id')->values();
 
         return view('secretaria.traslados.create', compact(
-            'cursos', 'paralelos', 'periodo', 'periodoVigente', 'alumnos',
+            'cursos', 'paralelos', 'periodo', 'periodoVigente', 'alumnoSeleccionado',
             'representantes', 'checklists', 'cursosOctavo'
         ));
+    }
+
+    /**
+     * Buscador de estudiantes del formulario de alta. Devuelve coincidencias
+     * por apellidos, nombres, cedula o codigo para no cargar el padron completo
+     * en el navegador.
+     */
+    public function buscarAlumnos(Request $request)
+    {
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        // Se neutralizan los comodines de SQL para que el termino se trate
+        // siempre como texto literal y se compara sin acentos ni mayusculas.
+        $termino = trim(str_replace(['%', '_', '\\'], ' ', $validated['q'] ?? ''));
+
+        if (mb_strlen($termino) < 2) {
+            return response()->json(['data' => []]);
+        }
+
+        $like = '%'.mb_strtolower(Str::ascii($termino), 'UTF-8').'%';
+        $periodo = PeriodoLectivo::where('activo', true)->first();
+        $nombres = $this->columnaSinAcentos('nombres');
+        $apellidos = $this->columnaSinAcentos('apellidos');
+
+        $alumnos = Alumno::query()
+            ->select('id', 'nombres', 'apellidos', 'numero_cedula', 'codigo')
+            ->with(['matriculas' => function ($query) use ($periodo) {
+                $query->when($periodo, fn ($sub) => $sub->where('periodo_id', $periodo->id))
+                    ->with(['curso:id,nombre', 'paralelo:id,nombre'])
+                    ->latest('id');
+            }])
+            ->where(function ($query) use ($nombres, $apellidos, $like) {
+                $query->whereRaw("{$nombres} LIKE ?", [$like])
+                    ->orWhereRaw("{$apellidos} LIKE ?", [$like])
+                    ->orWhere('numero_cedula', 'like', $like)
+                    ->orWhere('codigo', 'like', $like);
+            })
+            ->orderBy('apellidos')
+            ->orderBy('nombres')
+            ->limit(15)
+            ->get()
+            ->map(function (Alumno $alumno) {
+                $matricula = $alumno->matriculas->first();
+
+                return [
+                    'id' => $alumno->id,
+                    'nombre' => $alumno->nombreCompleto(),
+                    'cedula' => $alumno->numero_cedula ?: $alumno->codigo,
+                    'curso_id' => $matricula?->curso_id,
+                    'paralelo_id' => $matricula?->paralelo_id,
+                    'curso' => trim(($matricula?->curso?->nombre ?? '').' '.($matricula?->paralelo?->nombre ?? '')),
+                ];
+            });
+
+        return response()->json(['data' => $alumnos]);
+    }
+
+    /**
+     * Expresion SQL portable (SQLite y MySQL) que reduce una columna a
+     * minusculas sin acentos, para que "veronica" encuentre "VERÓNICA".
+     * Se cubren los caracteres acentuados del espanol para no anidar mas
+     * funciones de las que admite el parser de SQLite.
+     */
+    private function columnaSinAcentos(string $columna): string
+    {
+        $reemplazos = [
+            'Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U', 'Ü' => 'U', 'Ñ' => 'N',
+            'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n',
+        ];
+
+        $expresion = $columna;
+        foreach ($reemplazos as $acento => $plano) {
+            $expresion = "REPLACE({$expresion}, '{$acento}', '{$plano}')";
+        }
+
+        return "LOWER({$expresion})";
     }
 
     public function store(Request $request)

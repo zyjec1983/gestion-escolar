@@ -91,24 +91,40 @@
                             </div>
 
                             <div id="bloqueExistente">
-                                <label for="alumno_id" class="form-label small fw-semibold">Estudiante</label>
-                                <select name="alumno_id" id="alumno_id" class="form-select">
-                                    <option value="">Seleccione un estudiante...</option>
-                                    @foreach($alumnos as $alumno)
-                                        @php($matriculaActiva = $alumno->matriculas->first())
-                                        <option value="{{ $alumno->id }}"
-                                                data-curso="{{ $matriculaActiva?->curso_id }}"
-                                                data-paralelo="{{ $matriculaActiva?->paralelo_id }}"
-                                                @selected((string) old('alumno_id') === (string) $alumno->id)>
-                                            {{ $alumno->apellidos }} {{ $alumno->nombres }}
-                                            — {{ $alumno->numero_cedula ?: $alumno->codigo }}
-                                            @if($matriculaActiva)
-                                                · {{ $matriculaActiva->curso?->nombre }} {{ $matriculaActiva->paralelo?->nombre }}
+                                @php($matriculaSeleccionada = $alumnoSeleccionado?->matriculas->first())
+                                <label for="buscarAlumno" class="form-label small fw-semibold">Buscar estudiante</label>
+                                <div class="position-relative">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                        <input type="search" class="form-control" id="buscarAlumno"
+                                               placeholder="Escriba apellidos, nombres, cédula o código..."
+                                               autocomplete="off" role="combobox" aria-expanded="false"
+                                               aria-controls="resultadosAlumno" aria-autocomplete="list"
+                                               aria-describedby="ayudaBuscarAlumno">
+                                    </div>
+                                    <input type="hidden" name="alumno_id" id="alumno_id" value="{{ $alumnoSeleccionado?->id }}">
+                                    <div id="resultadosAlumno" class="list-group position-absolute w-100 shadow-sm d-none"
+                                         role="listbox" aria-label="Estudiantes encontrados"
+                                         style="z-index: 1050; max-height: 260px; overflow-y: auto;"></div>
+                                </div>
+                                <div id="alumnoSeleccionado"
+                                     class="alert alert-success d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 px-3 mt-2 mb-0 {{ $alumnoSeleccionado ? '' : 'd-none' }}">
+                                    <div class="small">
+                                        <i class="bi bi-person-check me-1"></i>
+                                        <strong id="alumnoSeleccionadoNombre">{{ $alumnoSeleccionado?->nombreCompleto() }}</strong>
+                                        <span id="alumnoSeleccionadoDetalle" class="text-muted">
+                                            @if($alumnoSeleccionado)
+                                                — {{ $alumnoSeleccionado->numero_cedula ?: $alumnoSeleccionado->codigo }}{{ $matriculaSeleccionada ? ' · '.trim(($matriculaSeleccionada->curso?->nombre ?? '').' '.($matriculaSeleccionada->paralelo?->nombre ?? '')) : '' }}
                                             @endif
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <div class="form-text">Si el estudiante ya tiene matrícula activa, se usará esa matrícula.</div>
+                                        </span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-success" id="limpiarAlumno">
+                                        <i class="bi bi-arrow-repeat me-1"></i>Cambiar
+                                    </button>
+                                </div>
+                                <div class="form-text" id="ayudaBuscarAlumno">
+                                    Si el estudiante ya tiene matrícula activa, se usará esa matrícula.
+                                </div>
                             </div>
 
                             <div id="bloqueNuevo" class="d-none">
@@ -256,7 +272,21 @@
         const bloqueExistente = document.getElementById('bloqueExistente');
         const bloqueNuevo = document.getElementById('bloqueNuevo');
         const alumno = document.getElementById('alumno_id');
+        const formTraslado = document.getElementById('formTraslado');
+        const buscarAlumno = document.getElementById('buscarAlumno');
+        const resultadosAlumno = document.getElementById('resultadosAlumno');
+        const alumnoSeleccionado = document.getElementById('alumnoSeleccionado');
+        const alumnoSeleccionadoNombre = document.getElementById('alumnoSeleccionadoNombre');
+        const alumnoSeleccionadoDetalle = document.getElementById('alumnoSeleccionadoDetalle');
+        const limpiarAlumno = document.getElementById('limpiarAlumno');
+        const paralelo = document.getElementById('paralelo_id');
+        const urlBuscarAlumnos = @json(route('traslados.buscar-alumnos'));
         const camposNuevos = ['nombres', 'apellidos', 'numero_cedula', 'representante_user_id'];
+
+        let resultados = [];
+        let indiceActivo = -1;
+        let temporizador = null;
+        let peticion = null;
 
         function tipoSeleccionado() {
             return document.getElementById('tipoSalida').checked ? 'salida' : 'ingreso';
@@ -308,12 +338,192 @@
             bloqueExistente.classList.toggle('d-none', nuevo);
             bloqueNuevo.classList.toggle('d-none', !nuevo);
 
-            alumno.required = !nuevo;
+            if (nuevo) {
+                buscarAlumno.setCustomValidity('');
+                cerrarResultados();
+            }
+
             camposNuevos.forEach(function (id) {
                 const el = document.getElementById(id);
                 if (el) el.required = nuevo;
             });
         }
+
+        function escaparHtml(texto) {
+            const div = document.createElement('div');
+            div.textContent = texto == null ? '' : String(texto);
+            return div.innerHTML;
+        }
+
+        function cerrarResultados() {
+            resultadosAlumno.classList.add('d-none');
+            resultadosAlumno.innerHTML = '';
+            buscarAlumno.setAttribute('aria-expanded', 'false');
+            buscarAlumno.removeAttribute('aria-activedescendant');
+            resultados = [];
+            indiceActivo = -1;
+        }
+
+        function renderResultados() {
+            if (!resultados.length) {
+                resultadosAlumno.innerHTML = '<div class="list-group-item small text-muted">'
+                    + 'Sin coincidencias. Verifique el nombre o registre al estudiante como nuevo.</div>';
+                resultadosAlumno.classList.remove('d-none');
+                buscarAlumno.setAttribute('aria-expanded', 'true');
+                return;
+            }
+
+            resultadosAlumno.innerHTML = resultados.map(function (item, indice) {
+                const detalle = [item.cedula, item.curso].filter(Boolean).join(' · ');
+                return '<button type="button" class="list-group-item list-group-item-action py-2"'
+                    + ' role="option" id="resultadoAlumno' + indice + '" data-indice="' + indice + '"'
+                    + ' aria-selected="false">'
+                    + '<div class="fw-semibold small">' + escaparHtml(item.nombre) + '</div>'
+                    + '<div class="text-muted" style="font-size:.75rem;">'
+                    + escaparHtml(detalle || 'Sin matrícula en el período activo') + '</div>'
+                    + '</button>';
+            }).join('');
+
+            resultadosAlumno.classList.remove('d-none');
+            buscarAlumno.setAttribute('aria-expanded', 'true');
+        }
+
+        function moverActivo(delta) {
+            if (!resultados.length) return;
+
+            indiceActivo = (indiceActivo + delta + resultados.length) % resultados.length;
+
+            Array.from(resultadosAlumno.querySelectorAll('[data-indice]')).forEach(function (el) {
+                const activo = Number(el.dataset.indice) === indiceActivo;
+                el.classList.toggle('active', activo);
+                el.setAttribute('aria-selected', activo ? 'true' : 'false');
+
+                if (activo) {
+                    el.scrollIntoView({ block: 'nearest' });
+                    buscarAlumno.setAttribute('aria-activedescendant', el.id);
+                }
+            });
+        }
+
+        function seleccionarAlumno(datos) {
+            alumno.value = datos.id;
+            alumnoSeleccionadoNombre.textContent = datos.nombre;
+            const detalle = [datos.cedula, datos.curso].filter(Boolean).join(' · ');
+            alumnoSeleccionadoDetalle.textContent = detalle ? ' — ' + detalle : '';
+            alumnoSeleccionado.classList.remove('d-none');
+            buscarAlumno.value = '';
+            buscarAlumno.setCustomValidity('');
+            cerrarResultados();
+
+            if (datos.curso_id) {
+                curso.value = datos.curso_id;
+            }
+            if (datos.paralelo_id) {
+                paralelo.value = datos.paralelo_id;
+            }
+
+            renderChecklist();
+        }
+
+        function limpiarSeleccion() {
+            alumno.value = '';
+            alumnoSeleccionado.classList.add('d-none');
+            alumnoSeleccionadoNombre.textContent = '';
+            alumnoSeleccionadoDetalle.textContent = '';
+            buscarAlumno.focus();
+        }
+
+        async function consultarAlumnos(termino) {
+            if (peticion) {
+                peticion.abort();
+            }
+            peticion = new AbortController();
+
+            try {
+                const respuesta = await fetch(urlBuscarAlumnos + '?q=' + encodeURIComponent(termino), {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: peticion.signal,
+                });
+
+                if (!respuesta.ok) {
+                    throw new Error('No se pudo buscar estudiantes.');
+                }
+
+                const cuerpo = await respuesta.json();
+                resultados = Array.isArray(cuerpo.data) ? cuerpo.data : [];
+                indiceActivo = -1;
+                renderResultados();
+            } catch (error) {
+                if (error.name === 'AbortError') return;
+                cerrarResultados();
+            }
+        }
+
+        buscarAlumno.addEventListener('input', function () {
+            buscarAlumno.setCustomValidity('');
+            const termino = buscarAlumno.value.trim();
+            clearTimeout(temporizador);
+
+            if (termino.length < 2) {
+                cerrarResultados();
+                return;
+            }
+
+            temporizador = setTimeout(function () {
+                consultarAlumnos(termino);
+            }, 250);
+        });
+
+        buscarAlumno.addEventListener('keydown', function (evento) {
+            const abierto = !resultadosAlumno.classList.contains('d-none') && resultados.length > 0;
+
+            if (evento.key === 'ArrowDown' && abierto) {
+                evento.preventDefault();
+                moverActivo(1);
+            } else if (evento.key === 'ArrowUp' && abierto) {
+                evento.preventDefault();
+                moverActivo(-1);
+            } else if (evento.key === 'Enter' && abierto && indiceActivo >= 0) {
+                evento.preventDefault();
+                seleccionarAlumno(resultados[indiceActivo]);
+            } else if (evento.key === 'Escape') {
+                cerrarResultados();
+            }
+        });
+
+        // Evita que el blur del input cierre la lista antes del clic.
+        resultadosAlumno.addEventListener('mousedown', function (evento) {
+            evento.preventDefault();
+        });
+
+        resultadosAlumno.addEventListener('click', function (evento) {
+            const boton = evento.target.closest('[data-indice]');
+            if (!boton) return;
+
+            const datos = resultados[Number(boton.dataset.indice)];
+            if (datos) {
+                seleccionarAlumno(datos);
+            }
+        });
+
+        document.addEventListener('click', function (evento) {
+            if (!resultadosAlumno.contains(evento.target) && evento.target !== buscarAlumno) {
+                cerrarResultados();
+            }
+        });
+
+        limpiarAlumno.addEventListener('click', limpiarSeleccion);
+
+        formTraslado.addEventListener('submit', function (evento) {
+            if (modoNuevo.checked) return;
+
+            if (!alumno.value) {
+                evento.preventDefault();
+                buscarAlumno.setCustomValidity('Seleccione un estudiante de la lista.');
+                buscarAlumno.reportValidity();
+                buscarAlumno.focus();
+            }
+        });
 
         document.querySelectorAll('input[name="tipo"]').forEach(function (radio) {
             radio.addEventListener('change', toggleTipo);
@@ -322,16 +532,6 @@
         modoNuevo.addEventListener('change', toggleModo);
         momento.addEventListener('change', renderChecklist);
         curso.addEventListener('change', renderChecklist);
-
-        alumno.addEventListener('change', function () {
-            const opcion = alumno.options[alumno.selectedIndex];
-            const cursoId = opcion ? opcion.dataset.curso : '';
-            const paraleloId = opcion ? opcion.dataset.paralelo : '';
-
-            if (cursoId) curso.value = cursoId;
-            if (paraleloId) document.getElementById('paralelo_id').value = paraleloId;
-            renderChecklist();
-        });
 
         toggleTipo();
         toggleModo();

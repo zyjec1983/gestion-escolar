@@ -139,6 +139,75 @@ class TrasladoTest extends TestCase
     }
 
     /** @test */
+    public function el_formulario_usa_buscador_de_estudiantes_en_lugar_de_un_select(): void
+    {
+        $this->actingAs($this->secretaria)
+            ->get(route('traslados.create'))
+            ->assertOk()
+            ->assertSee('Buscar estudiante')
+            ->assertSee('id="buscarAlumno"', false)
+            ->assertDontSee('<select name="alumno_id"', false);
+    }
+
+    /** @test */
+    public function el_buscador_devuelve_coincidencias_y_exige_al_menos_dos_caracteres(): void
+    {
+        $otro = Alumno::factory()->create([
+            'nombres' => 'Ana Lucía',
+            'apellidos' => 'Paredes Molina',
+            'numero_cedula' => '0102030405',
+        ]);
+
+        $this->actingAs($this->secretaria)
+            ->getJson(route('traslados.buscar-alumnos', ['q' => 'paredes']))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $otro->id)
+            ->assertJsonPath('data.0.nombre', 'Paredes Molina Ana Lucía')
+            ->assertJsonPath('data.0.cedula', '0102030405');
+
+        $this->actingAs($this->secretaria)
+            ->getJson(route('traslados.buscar-alumnos', ['q' => '0102030405']))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $otro->id);
+
+        // La busqueda ignora tildes y mayusculas en ambos sentidos.
+        $acentuado = Alumno::factory()->create([
+            'nombres' => 'Verónica Alejandra',
+            'apellidos' => 'Muñoz Peña',
+            'numero_cedula' => '1717171717',
+        ]);
+
+        $this->actingAs($this->secretaria)
+            ->getJson(route('traslados.buscar-alumnos', ['q' => 'veronica']))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $acentuado->id);
+
+        $this->actingAs($this->secretaria)
+            ->getJson(route('traslados.buscar-alumnos', ['q' => 'MUNOZ']))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $acentuado->id);
+
+        $this->actingAs($this->secretaria)
+            ->getJson(route('traslados.buscar-alumnos', ['q' => 'Peña']))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $acentuado->id);
+
+        $this->actingAs($this->secretaria)
+            ->getJson(route('traslados.buscar-alumnos', ['q' => 'a']))
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->actingAs($this->secretaria)
+            ->getJson(route('traslados.buscar-alumnos', ['q' => '%_']))
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->actingAs(User::factory()->docente()->create())
+            ->getJson(route('traslados.buscar-alumnos', ['q' => 'paredes']))
+            ->assertForbidden();
+    }
+
+    /** @test */
     public function el_registro_crea_expediente_matricula_provisional_y_bitacora(): void
     {
         $response = $this->actingAs($this->secretaria)
