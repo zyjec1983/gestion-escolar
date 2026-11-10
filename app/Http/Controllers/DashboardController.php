@@ -7,6 +7,7 @@ use App\Models\Alumno;
 use App\Models\Circular;
 use App\Models\Cita;
 use App\Models\Curso;
+use App\Models\ExpedienteTraslado;
 use App\Models\Matricula;
 use App\Models\Observacion;
 use App\Models\PeriodoLectivo;
@@ -69,12 +70,24 @@ class DashboardController extends Controller
 
         $periodoActivo = PeriodoLectivo::where('activo', true)->first();
 
+        // Fichas por regularizar: estudiantes cuyo representante aun no cumple
+        // la regla de mayoria de edad y estudiantes con un expediente de
+        // traslado pendiente. Se unifican por alumno_id para no contar dos veces
+        // a quien aparece en ambos casos.
+        $fichasPorRepresentante = Alumno::representantePorRegularizar()->pluck('id');
+        $fichasPorTraslado = ExpedienteTraslado::porRegularizar()->pluck('alumno_id');
+        $fichasPorRegularizar = $fichasPorRepresentante
+            ->merge($fichasPorTraslado)
+            ->filter()
+            ->unique()
+            ->count();
+
         $data['kpis'] = [
             'matriculados' => $periodoActivo
                 ? Matricula::where('periodo_id', $periodoActivo->id)->count()
                 : Matricula::count(),
             'solicitudes' => PreRegistro::pendiente()->count(),
-            'fichas' => Alumno::representantePorRegularizar()->count(),
+            'fichas' => $fichasPorRegularizar,
             'citas' => Cita::pendientes()->count(),
             'docentes' => User::where('rol', 'DOCENTE')->count(),
             'circulares' => Circular::count(),

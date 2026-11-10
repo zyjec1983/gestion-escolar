@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Docente\NotaController;
 use App\Models\Alumno;
 use App\Models\ClaseDocente;
 use App\Models\Curso;
@@ -148,8 +149,11 @@ class NotasQuimestreTest extends TestCase
         $data = $this->crearClase($docente);
         $aid = $data['alumno']->id;
 
-        $fii = 10; $ffi = 10; $fig = 10; $ffg = 10;
-        $prom10 = fn() => [
+        $fii = 10;
+        $ffi = 10;
+        $fig = 10;
+        $ffg = 10;
+        $prom10 = fn () => [
             'alumno_id' => $aid,
             'fii' => $fii, 'ffi' => $ffi, 'fig' => $fig, 'ffg' => $ffg,
             'proyecto_integrador' => 10, 'evaluacion_parcial' => 10,
@@ -184,7 +188,7 @@ class NotasQuimestreTest extends TestCase
         $this->assertDatabaseHas('notas', ['matricula_id' => $data['matricula']->id, 'parcial' => 2]);
         $this->assertDatabaseHas('notas', ['matricula_id' => $data['matricula']->id, 'parcial' => 3, 'nota_examen' => '8.0000']);
 
-        $q1 = app(\App\Http\Controllers\Docente\NotaController::class);
+        $q1 = app(NotaController::class);
         $resumen = $this->invocarResumen($q1, $data, $docente);
 
         $this->assertNotNull($resumen[0]['p1']);
@@ -275,7 +279,7 @@ class NotasQuimestreTest extends TestCase
         // FII, FFI, FIG y FFG conservan el nombre pero pierden el "10%".
         foreach (['FII', 'FFI', 'FIG', 'FFG'] as $leyenda) {
             $this->assertMatchesRegularExpression(
-                '/<th class="text-center">' . $leyenda . '<\/th>/',
+                '/<th class="text-center">'.$leyenda.'<\/th>/',
                 $html,
                 "El encabezado de {$leyenda} debe quedar sin porcentaje."
             );
@@ -326,37 +330,42 @@ class NotasQuimestreTest extends TestCase
             'tipo_guardado' => 'final',
         ];
 
-        $notas = fn(array $campos) => [
+        $notas = fn (array $campos) => [
             $data['alumno']->id => array_merge(['alumno_id' => $data['alumno']->id], $campos),
         ];
 
         $validas = ['fii' => 10, 'ffi' => 10, 'fig' => 10, 'ffg' => 10, 'proyecto_integrador' => 10, 'evaluacion_parcial' => 10];
-        $clave = 'notas.' . $data['alumno']->id . '.';
+        $clave = 'notas.'.$data['alumno']->id.'.';
 
         // Fuera de rango por encima.
         $this->actingAs($docente)
             ->post(route('docente.notas.store'), $base + ['notas' => $notas(array_merge($validas, ['fii' => 12]))])
-            ->assertSessionHasErrors($clave . 'fii');
+            ->assertSessionHasErrors($clave.'fii');
 
         // Fuera de rango por debajo (0 no es una nota valida).
         $this->actingAs($docente)
             ->post(route('docente.notas.store'), $base + ['notas' => $notas(array_merge($validas, ['fii' => 0]))])
-            ->assertSessionHasErrors($clave . 'fii');
+            ->assertSessionHasErrors($clave.'fii');
 
         // Negativo.
         $this->actingAs($docente)
             ->post(route('docente.notas.store'), $base + ['notas' => $notas(array_merge($validas, ['ffi' => -1]))])
-            ->assertSessionHasErrors($clave . 'ffi');
+            ->assertSessionHasErrors($clave.'ffi');
 
         // Se admiten coma o punto: la coma se normaliza antes de validar.
+        // Se guarda como parcial para no chocar con el bloqueo intencional de
+        // notas finales; el punto se valida luego sobre la nota ya existente.
         $this->actingAs($docente)
-            ->post(route('docente.notas.store'), $base + ['notas' => $notas(array_merge($validas, ['fig' => '9,5']))])
+            ->post(route('docente.notas.store'), array_merge($base, [
+                'tipo_guardado' => 'parcial',
+                'notas' => $notas(array_merge($validas, ['fig' => '9,5'])),
+            ]))
             ->assertSessionHasNoErrors();
 
         // Mas de 2 decimales no cabe en decimal(5,2): se rechaza.
         $this->actingAs($docente)
             ->post(route('docente.notas.store'), $base + ['notas' => $notas(array_merge($validas, ['fii' => '9.555']))])
-            ->assertSessionHasErrors($clave . 'fii');
+            ->assertSessionHasErrors($clave.'fii');
 
         // Examen fuera de rango.
         $this->actingAs($docente)
@@ -366,7 +375,7 @@ class NotasQuimestreTest extends TestCase
                 'tipo_guardado' => 'final',
                 'notas' => $notas(['nota_examen' => 10.5]),
             ])
-            ->assertSessionHasErrors($clave . 'nota_examen');
+            ->assertSessionHasErrors($clave.'nota_examen');
 
         // Decimal con punto: se acepta y se guarda con punto.
         $this->actingAs($docente)
@@ -409,7 +418,7 @@ class NotasQuimestreTest extends TestCase
         $this->assertStringContainsString('deja el campo vacío', $html);
 
         // Con un valor invalido la fila no muestra un total calculado.
-        $this->assertStringContainsString("if (!filaEsValida(row)) {", $html);
+        $this->assertStringContainsString('if (!filaEsValida(row)) {', $html);
         $this->assertStringContainsString("celda.textContent = '—';", $html);
 
         // La coma se normaliza a punto en el navegador, no se rechaza.
@@ -418,7 +427,7 @@ class NotasQuimestreTest extends TestCase
         $this->assertStringContainsString('normalizarComa(this);', $html);
 
         // El formato se valida con una expresion regular estricta.
-        $this->assertStringContainsString("if (!/^-?\\d+(\\.\\d+)?$/.test(bruto))", $html);
+        $this->assertStringContainsString('if (!/^-?\\d+(\\.\\d+)?$/.test(bruto))', $html);
         $this->assertStringContainsString('if (decimales.length > 2) {', $html);
     }
 
@@ -455,7 +464,7 @@ class NotasQuimestreTest extends TestCase
 
         // 2) El calculo sale igual que si se hubiera escrito con punto.
         // Ojo: la app TRUNCA con floor, no redondea (ver $trunc en la vista).
-        $trunc = fn($v) => floor(($v * 100) + 1e-9) / 100;
+        $trunc = fn ($v) => floor(($v * 100) + 1e-9) / 100;
         $form70 = $trunc(((9.5 + 8 + 7.25 + 10) / 40) * 7);
         $eval30 = $trunc(((9.5 + 8) / 20) * 3);
         $this->assertSame(6.08, round($form70, 2));
@@ -527,17 +536,18 @@ class NotasQuimestreTest extends TestCase
                     'proyecto_integrador' => 10, 'evaluacion_parcial' => 10,
                 ],
             ],
-        ])->assertSessionHasErrors('notas.' . $data['alumno']->id . '.fii');
+        ])->assertSessionHasErrors('notas.'.$data['alumno']->id.'.fii');
     }
 
     private function invocarResumen($controller, array $data, User $docente): array
     {
         $alumnos = collect([$data['alumno']]);
-        $notasClase = \App\Models\Nota::where('clase_docente_id', $data['clase']->id)
+        $notasClase = Nota::where('clase_docente_id', $data['clase']->id)
             ->get()
             ->groupBy('alumno_id');
         $ref = new \ReflectionMethod($controller, 'resumenNotas');
         $ref->setAccessible(true);
+
         return $ref->invoke($controller, $alumnos, $notasClase, 'quimestre');
     }
 }

@@ -42,4 +42,9 @@ class Nota extends Model
     {
         return $this->belongsTo(ClaseDocente::class);
     }
+
+    public function auditorias()
+    {
+        return $this->hasMany(NotaAuditoria::class)->latest();
+    }
 }

@@ -28,6 +28,8 @@ use App\Http\Controllers\PreRegistroController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RepresentanteController;
 use App\Http\Controllers\Secretaria\ActualizacionDatosController;
+use App\Http\Controllers\Secretaria\NotaExtraordinariaController;
+use App\Http\Controllers\Secretaria\TrasladoController;
 use App\Models\HeroSlide;
 use App\Models\Institucion;
 use Illuminate\Support\Facades\Route;
@@ -161,6 +163,45 @@ Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA'])
         Route::get('/', [ActualizacionDatosController::class, 'index'])->name('index');
         Route::get('/{alumno}', [ActualizacionDatosController::class, 'edit'])->name('edit');
         Route::put('/{alumno}', [ActualizacionDatosController::class, 'update'])->name('update');
+    });
+
+// Correccion extraordinaria de notas: ADMIN y Secretaria. Cada cambio exige
+// motivo y deja una bitacora inalterable.
+Route::middleware(['auth', 'role:ADMIN,SECRETARIA'])
+    ->prefix('notas-extraordinarias')
+    ->name('notas-extraordinarias.')
+    ->group(function () {
+        Route::get('/', [NotaExtraordinariaController::class, 'index'])->name('index');
+        Route::get('/bitacora', [NotaExtraordinariaController::class, 'bitacora'])->name('bitacora');
+        Route::post('/', [NotaExtraordinariaController::class, 'store'])->name('store');
+    });
+
+// Traslados e historial academico: ADMIN y Secretaria.
+Route::middleware(['auth', 'role:ADMIN,SECRETARIA'])
+    ->prefix('traslados')
+    ->name('traslados.')
+    ->group(function () {
+        Route::get('/', [TrasladoController::class, 'index'])->name('index');
+        Route::get('/crear', [TrasladoController::class, 'create'])->name('create');
+        Route::post('/', [TrasladoController::class, 'store'])->name('store');
+
+        Route::get('/{expediente}', [TrasladoController::class, 'show'])->name('show');
+        Route::put('/{expediente}', [TrasladoController::class, 'update'])->name('update');
+
+        Route::post('/{expediente}/documentos', [TrasladoController::class, 'subirDocumento'])->name('documentos.store');
+        Route::delete('/{expediente}/documentos/{documento}', [TrasladoController::class, 'eliminarDocumento'])->name('documentos.destroy');
+
+        Route::post('/{expediente}/promociones', [TrasladoController::class, 'storePromocion'])->name('promociones.store');
+        Route::delete('/{expediente}/promociones/{promocion}', [TrasladoController::class, 'destroyPromocion'])->name('promociones.destroy');
+
+        Route::post('/{expediente}/notas', [TrasladoController::class, 'storeNota'])->name('notas.store');
+        Route::delete('/{expediente}/notas/{nota}', [TrasladoController::class, 'destroyNota'])->name('notas.destroy');
+
+        Route::post('/{expediente}/paz-salvo', [TrasladoController::class, 'actualizarPazYSalvo'])->name('paz-salvo.update');
+        Route::post('/{expediente}/cerrar', [TrasladoController::class, 'cerrar'])->name('cerrar');
+
+        Route::get('/{expediente}/historial/pdf', [TrasladoController::class, 'historialPdf'])->name('historial.pdf');
+        Route::get('/{expediente}/certificado-salida/pdf', [TrasladoController::class, 'certificadoSalidaPdf'])->name('certificado.pdf');
     });
 
 Route::middleware(['auth', 'role:DOCENTE'])->prefix('docente')->name('docente.')->group(function () {

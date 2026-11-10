@@ -9,8 +9,12 @@ class Matricula extends Model
 {
     use HasFactory;
 
+    public const ESTADO_PROVISIONAL = 'provisional';
+
+    public const ESTADO_DEFINITIVA = 'definitiva';
+
     protected $fillable = [
-        'codigo_matricula', 'alumno_id', 'curso_id', 'paralelo_id', 'periodo_id', 'especializacion',
+        'codigo_matricula', 'alumno_id', 'curso_id', 'paralelo_id', 'periodo_id', 'especializacion', 'estado',
         'firma_rectora_completada', 'firma_secretaria_completada', 'firma_representante_completada',
     ];
 
@@ -36,6 +40,16 @@ class Matricula extends Model
     public function paralelo()
     {
         return $this->belongsTo(Paralelo::class);
+    }
+
+    public function expedientesTraslado()
+    {
+        return $this->hasMany(ExpedienteTraslado::class, 'matricula_id');
+    }
+
+    public function esProvisional(): bool
+    {
+        return $this->estado === self::ESTADO_PROVISIONAL;
     }
 
     public function periodo()

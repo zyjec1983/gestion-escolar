@@ -5,25 +5,18 @@ namespace App\Http\Controllers\Docente;
 use App\Http\Controllers\Controller;
 use App\Models\Alumno;
 use App\Models\ClaseDocente;
-use App\Models\Institucion;
 use App\Models\Matricula;
 use App\Models\Nota;
+use App\Models\PeriodoLectivo;
 use App\Services\CalculoNotas;
+use App\Services\ConfiguracionNotas;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class NotaController extends Controller
 {
-    /**
-     * Campos de nota del grid. Admiten coma o punto al escribirse, pero
-     * siempre se guardan con punto: la columna es decimal(5,2) y PHP, SQL,
-     * JSON y Excel no interpretan una coma como separador decimal.
-     */
-    private const CAMPOS_NOTA = [
-        'fii', 'ffi', 'fig', 'ffg',
-        'proyecto_integrador', 'evaluacion_parcial',
-        'nota_examen',
-    ];
+    public function __construct(private readonly ConfiguracionNotas $configuracion) {}
 
     public function index(Request $request)
     {
@@ -35,25 +28,28 @@ class NotaController extends Controller
         $claseId = $request->query('clase_docente_id', $clases->first()?->id);
         $clase = $clases->firstWhere('id', $claseId) ?? $clases->first();
 
-        $sistema = $this->sistemaEvaluacion();
-        $opciones = $this->opcionesNotas($sistema);
+        $sistema = $this->configuracion->sistema();
+        $opciones = $this->configuracion->opciones($sistema);
         $grupos = collect($opciones)->groupBy('grupo');
 
         $parcial = (int) $request->query('parcial', $opciones[0]['parcial'] ?? 1);
-        $tipo = $this->tipoDeParcial($parcial, $sistema);
+        $tipo = $this->configuracion->tipoDeParcial($parcial, $sistema);
+        $periodo = PeriodoLectivo::where('activo', true)->first();
 
         $alumnos = collect();
         $notasExistentes = collect();
         $resumen = [];
 
         if ($clase) {
-            $alumnos = Alumno::whereHas('matriculas', function ($q) use ($clase) {
-                $q->where('curso_id', $clase->curso_id)
-                  ->where('paralelo_id', $clase->paralelo_id);
+            $alumnos = Alumno::whereHas('matriculas', function ($query) use ($clase, $periodo) {
+                $query->where('curso_id', $clase->curso_id)
+                    ->where('paralelo_id', $clase->paralelo_id)
+                    ->when($periodo, fn ($sub) => $sub->where('periodo_id', $periodo->id));
             })->orderBy('apellidos')->orderBy('nombres')->get();
 
             $matriculasIds = Matricula::where('curso_id', $clase->curso_id)
                 ->where('paralelo_id', $clase->paralelo_id)
+                ->when($periodo, fn ($query) => $query->where('periodo_id', $periodo->id))
                 ->pluck('id');
 
             $notasExistentes = Nota::whereIn('matricula_id', $matriculasIds)
@@ -78,49 +74,19 @@ class NotaController extends Controller
         ));
     }
 
-    /**
-     * Normaliza la coma decimal a punto ANTES de validar, para que un 9,5
-     * escrito a mano quede como 9.5 y no sea rechazado por la regla numeric.
-     */
-    private function normalizarDecimales(Request $request): void
-    {
-        $notas = $request->input('notas');
-
-        if (!is_array($notas)) {
-            return;
-        }
-
-        $formateadas = [];
-
-        foreach ($notas as $alumnoId => $item) {
-            if (is_array($item)) {
-                foreach (self::CAMPOS_NOTA as $campo) {
-                    if (isset($item[$campo]) && is_string($item[$campo])) {
-                        $item[$campo] = str_replace(',', '.', trim($item[$campo]));
-                    }
-                }
-            }
-
-            $formateadas[$alumnoId] = $item;
-        }
-
-        $request->merge(['notas' => $formateadas]);
-    }
-
     public function store(Request $request)
     {
-        $this->normalizarDecimales($request);
+        $this->configuracion->normalizarDecimales($request);
 
-        $sistema = $this->sistemaEvaluacion();
-        $opciones = $this->opcionesNotas($sistema);
-        $parcialesValidos = array_column($opciones, 'parcial');
+        $sistema = $this->configuracion->sistema();
+        $parcialesValidos = $this->configuracion->parcialesValidos($sistema);
 
         $parcial = (int) $request->input('parcial');
-        $tipo = $this->tipoDeParcial($parcial, $sistema);
+        $tipo = $this->configuracion->tipoDeParcial($parcial, $sistema);
 
         $rules = [
             'clase_docente_id' => 'required|exists:clases_docentes,id',
-            'parcial' => 'required|integer|in:' . implode(',', $parcialesValidos),
+            'parcial' => 'required|integer|in:'.implode(',', $parcialesValidos),
             'tipo_guardado' => 'required|in:parcial,final',
             'notas' => 'required|array',
             'notas.*.alumno_id' => 'required|exists:alumnos,id',
@@ -145,81 +111,109 @@ class NotaController extends Controller
 
         $clase = ClaseDocente::findOrFail($validated['clase_docente_id']);
 
+        // Un docente solo puede escribir en sus propias clases. La ruta ya
+        // exige rol DOCENTE, pero la pertenencia se valida en el servidor.
+        if ((int) $clase->user_id !== (int) $request->user()->id) {
+            abort(403, 'No puedes registrar notas en una clase que no te pertenece.');
+        }
+
         if ($validated['tipo_guardado'] === 'final') {
             $vacios = [];
-            foreach ($validated['notas'] as $alumnoId => $item) {
+            foreach ($validated['notas'] as $item) {
                 if ($tipo === 'examen') {
                     $completo = isset($item['nota_examen']) && $item['nota_examen'] !== '' && $item['nota_examen'] !== null;
                 } else {
                     $completo = true;
-                    foreach (['fii', 'ffi', 'fig', 'ffg', 'proyecto_integrador', 'evaluacion_parcial'] as $campo) {
-                        if (!isset($item[$campo]) || $item[$campo] === '' || $item[$campo] === null) {
+                    foreach (ConfiguracionNotas::CAMPOS_PARCIAL as $campo) {
+                        if (! isset($item[$campo]) || $item[$campo] === '' || $item[$campo] === null) {
                             $completo = false;
                             break;
                         }
                     }
                 }
 
-                if (!$completo) {
+                if (! $completo) {
                     $alumno = Alumno::find($item['alumno_id']);
-                    $vacios[] = $alumno?->apellidos . ' ' . $alumno?->nombres;
+                    $vacios[] = $alumno?->nombreCompleto() ?? 'Estudiante';
                 }
             }
 
             if (count($vacios) > 0) {
                 throw ValidationException::withMessages([
-                    'notas' => 'Faltan notas para: ' . implode(', ', array_slice($vacios, 0, 5)),
+                    'notas' => 'Faltan notas para: '.implode(', ', array_slice($vacios, 0, 5)),
                 ]);
             }
         }
 
-        foreach ($validated['notas'] as $alumnoId => $item) {
+        $periodo = PeriodoLectivo::where('activo', true)->first();
+
+        $filas = [];
+        $bloqueadas = [];
+
+        foreach ($validated['notas'] as $item) {
             $matricula = Matricula::where('alumno_id', $item['alumno_id'])
                 ->where('curso_id', $clase->curso_id)
                 ->where('paralelo_id', $clase->paralelo_id)
+                ->when($periodo, fn ($query) => $query->where('periodo_id', $periodo->id))
                 ->first();
 
-            if (!$matricula) continue;
-
-            if ($tipo === 'examen') {
-                $data = [
-                    'tipo_nota' => 'examen',
-                    'alumno_id' => $item['alumno_id'],
-                    'fii' => 0,
-                    'ffi' => 0,
-                    'fig' => 0,
-                    'ffg' => 0,
-                    'proyecto_integrador' => 0,
-                    'evaluacion_parcial' => 0,
-                    'nota_examen' => $item['nota_examen'] ?? null,
-                ];
-            } else {
-                $data = [
-                    'tipo_nota' => 'parcial',
-                    'fii' => $item['fii'] ?? 0,
-                    'ffi' => $item['ffi'] ?? 0,
-                    'fig' => $item['fig'] ?? 0,
-                    'ffg' => $item['ffg'] ?? 0,
-                    'proyecto_integrador' => $item['proyecto_integrador'] ?? 0,
-                    'evaluacion_parcial' => $item['evaluacion_parcial'] ?? 0,
-                    'nota_examen' => null,
-                    'alumno_id' => $item['alumno_id'],
-                ];
+            if (! $matricula) {
+                continue;
             }
+
+            $datos = $this->datosNota($item, $tipo);
 
             if ($validated['tipo_guardado'] === 'final') {
-                $data['estado'] = 'final';
+                $datos['estado'] = 'final';
             }
 
-            Nota::updateOrCreate(
-                [
-                    'matricula_id' => $matricula->id,
-                    'clase_docente_id' => $validated['clase_docente_id'],
-                    'parcial' => $validated['parcial'],
-                ],
-                $data
-            );
+            $existente = Nota::where('matricula_id', $matricula->id)
+                ->where('clase_docente_id', $clase->id)
+                ->where('parcial', $validated['parcial'])
+                ->first();
+
+            if ($existente && $existente->estado === 'final') {
+                // La nota final es inmutable para el docente. Solo Secretaria
+                // puede corregirla mediante el flujo extraordinario auditado.
+                if ($this->cambioNota($existente, $datos, $tipo)) {
+                    $bloqueadas[] = $matricula->alumno?->nombreCompleto()
+                        ?? Alumno::find($item['alumno_id'])?->nombreCompleto()
+                        ?? 'Estudiante';
+                }
+
+                continue;
+            }
+
+            $filas[] = [
+                'matricula_id' => $matricula->id,
+                'clase_docente_id' => $clase->id,
+                'parcial' => $validated['parcial'],
+                'datos' => $datos,
+            ];
         }
+
+        if ($bloqueadas !== []) {
+            throw ValidationException::withMessages([
+                'notas' => 'Las siguientes notas ya están finalizadas y no pueden modificarse: '
+                    .implode(', ', array_slice(array_unique($bloqueadas), 0, 5))
+                    .'. Solicite una corrección extraordinaria a Secretaría.',
+            ]);
+        }
+
+        DB::transaction(function () use ($filas) {
+            foreach ($filas as $fila) {
+                Nota::updateOrCreate(
+                    [
+                        'matricula_id' => $fila['matricula_id'],
+                        'clase_docente_id' => $fila['clase_docente_id'],
+                        'parcial' => $fila['parcial'],
+                    ],
+                    array_merge($fila['datos'], [
+                        'alumno_id' => $fila['datos']['alumno_id'],
+                    ])
+                );
+            }
+        });
 
         $msg = $validated['tipo_guardado'] === 'final'
             ? 'Notas guardadas y bloqueadas correctamente.'
@@ -231,42 +225,52 @@ class NotaController extends Controller
         ])->with('success', $msg);
     }
 
-    private function sistemaEvaluacion(): string
+    /** @return array<string, mixed> */
+    private function datosNota(array $item, string $tipo): array
     {
-        return Institucion::first()?->sistema_evaluacion ?? 'quimestre';
-    }
-
-    private function opcionesNotas(string $sistema): array
-    {
-        if ($sistema === 'trimestre') {
+        if ($tipo === 'examen') {
             return [
-                ['parcial' => 1, 'label' => 'Trimestre 1', 'grupo' => 'Trimestres'],
-                ['parcial' => 2, 'label' => 'Trimestre 2', 'grupo' => 'Trimestres'],
-                ['parcial' => 3, 'label' => 'Trimestre 3', 'grupo' => 'Trimestres'],
+                'tipo_nota' => 'examen',
+                'alumno_id' => $item['alumno_id'],
+                'fii' => 0,
+                'ffi' => 0,
+                'fig' => 0,
+                'ffg' => 0,
+                'proyecto_integrador' => 0,
+                'evaluacion_parcial' => 0,
+                'nota_examen' => $item['nota_examen'] ?? null,
             ];
         }
 
         return [
-            ['parcial' => 1, 'label' => 'Parcial 1', 'grupo' => '1er Quimestre'],
-            ['parcial' => 2, 'label' => 'Parcial 2', 'grupo' => '1er Quimestre'],
-            ['parcial' => 3, 'label' => 'Examen Quimestral', 'grupo' => '1er Quimestre'],
-            ['parcial' => 4, 'label' => 'Parcial 1', 'grupo' => '2do Quimestre'],
-            ['parcial' => 5, 'label' => 'Parcial 2', 'grupo' => '2do Quimestre'],
-            ['parcial' => 6, 'label' => 'Examen Quimestral', 'grupo' => '2do Quimestre'],
+            'tipo_nota' => 'parcial',
+            'fii' => $item['fii'] ?? 0,
+            'ffi' => $item['ffi'] ?? 0,
+            'fig' => $item['fig'] ?? 0,
+            'ffg' => $item['ffg'] ?? 0,
+            'proyecto_integrador' => $item['proyecto_integrador'] ?? 0,
+            'evaluacion_parcial' => $item['evaluacion_parcial'] ?? 0,
+            'nota_examen' => null,
+            'alumno_id' => $item['alumno_id'],
         ];
     }
 
-    private function tipoDeParcial(int $parcial, string $sistema): string
+    private function cambioNota(Nota $existente, array $datos, string $tipo): bool
     {
-        if ($sistema === 'quimestre' && in_array($parcial, [3, 6])) {
-            return 'examen';
-        }
-        return 'parcial';
-    }
+        $campos = $tipo === 'examen'
+            ? ['nota_examen']
+            : ['fii', 'ffi', 'fig', 'ffg', 'proyecto_integrador', 'evaluacion_parcial'];
 
-    private function notaParcialDe(?Nota $n): ?float
-    {
-        return app(CalculoNotas::class)->notaParcialDe($n);
+        foreach ($campos as $campo) {
+            $anterior = $existente->{$campo} === null ? null : round((float) $existente->{$campo}, 4);
+            $nuevo = ($datos[$campo] ?? null) === null ? null : round((float) $datos[$campo], 4);
+
+            if ($anterior !== $nuevo) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function resumenNotas($alumnos, $notasClase, string $sistema): array
@@ -276,9 +280,14 @@ class NotaController extends Controller
 
     private function calcularPromedio($alumnos, $notasExistentes, string $tipo): ?array
     {
-        if ($alumnos->isEmpty()) return null;
+        if ($alumnos->isEmpty()) {
+            return null;
+        }
 
-        $sumForm = 0; $sumEval = 0; $sumTotal = 0; $count = 0;
+        $sumForm = 0;
+        $sumEval = 0;
+        $sumTotal = 0;
+        $count = 0;
 
         foreach ($alumnos as $alumno) {
             $n = $notasExistentes->get($alumno->id);
@@ -301,7 +310,9 @@ class NotaController extends Controller
             $count++;
         }
 
-        if ($count === 0) return null;
+        if ($count === 0) {
+            return null;
+        }
 
         return [
             'form70' => $sumForm / $count,

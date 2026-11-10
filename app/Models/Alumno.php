@@ -65,6 +65,11 @@ class Alumno extends Model
         return $this->belongsTo(User::class, 'representante_user_id');
     }
 
+    public function nombreCompleto(): string
+    {
+        return trim(($this->apellidos ?? '').' '.($this->nombres ?? '')) ?: 'Estudiante sin nombre';
+    }
+
     public function usuarioEstudiante()
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -73,6 +78,11 @@ class Alumno extends Model
     public function matriculas()
     {
         return $this->hasMany(Matricula::class);
+    }
+
+    public function expedientesTraslado()
+    {
+        return $this->hasMany(ExpedienteTraslado::class);
     }
 
     /** Historial de representantes legales que ha tenido el alumno. */

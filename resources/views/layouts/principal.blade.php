@@ -94,8 +94,8 @@
         </li>
         @if($rol === 'SECRETARIA')
         @php
-            $matriculasActivas = request()->is('admin/pre-registros*') || request()->is('actualizacion*');
-            $academicoActivo = request()->is('inspeccion/asistencia*') || request()->is('inspeccion/observaciones*') || request()->is('planificaciones*');
+            $matriculasActivas = request()->is('admin/pre-registros*') || request()->is('actualizacion*') || request()->is('traslados*');
+            $academicoActivo = request()->is('inspeccion/asistencia*') || request()->is('inspeccion/observaciones*') || request()->is('planificaciones*') || request()->is('notas-extraordinarias*');
             $citasSecretariaActivas = request()->is('inspeccion/citas*');
         @endphp
         <li class="nav-item mt-3">
@@ -122,6 +122,11 @@
                     <li class="nav-item">
                         <a href="{{ route('actualizacion.index') }}" class="nav-link text-white small py-1 {{ request()->is('actualizacion*') && !request()->boolean('pendientes') ? 'active' : '' }}">
                             <i class="bi bi-pencil-square me-2"></i> Actualización de datos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('traslados.index') }}" class="nav-link text-white small py-1 {{ request()->is('traslados*') ? 'active' : '' }}">
+                            <i class="bi bi-arrow-left-right me-2"></i> Traslados e historial
                         </a>
                     </li>
                 </ul>
@@ -158,6 +163,16 @@
                     <li class="nav-item">
                         <a href="{{ route('planificaciones.bitacora') }}" class="nav-link text-white small py-1 {{ request()->is('planificaciones/bitacora*') ? 'active' : '' }}">
                             <i class="bi bi-file-earmark-text me-2"></i> Bitácora de planificaciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('notas-extraordinarias.index') }}" class="nav-link text-white small py-1 {{ request()->is('notas-extraordinarias') && !request()->is('notas-extraordinarias/bitacora*') ? 'active' : '' }}">
+                            <i class="bi bi-shield-exclamation me-2"></i> Corrección de notas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('notas-extraordinarias.bitacora') }}" class="nav-link text-white small py-1 {{ request()->is('notas-extraordinarias/bitacora*') ? 'active' : '' }}">
+                            <i class="bi bi-journal-text me-2"></i> Bitácora de notas
                         </a>
                     </li>
                 </ul>
@@ -306,6 +321,26 @@
                 <i class="bi bi-clipboard-check me-2"></i> Solicitudes de matrícula
             </a>
         </li>
+        @if($rol === 'ADMIN')
+        <li class="nav-item">
+            <a href="{{ route('traslados.index') }}"
+               class="nav-link text-white {{ request()->is('traslados*') ? 'active' : '' }}">
+                <i class="bi bi-arrow-left-right me-2"></i> Traslados e historial
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('notas-extraordinarias.index') }}"
+               class="nav-link text-white {{ request()->is('notas-extraordinarias') && !request()->is('notas-extraordinarias/bitacora*') ? 'active' : '' }}">
+                <i class="bi bi-shield-exclamation me-2"></i> Corrección de notas
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('notas-extraordinarias.bitacora') }}"
+               class="nav-link text-white {{ request()->is('notas-extraordinarias/bitacora*') ? 'active' : '' }}">
+                <i class="bi bi-journal-text me-2"></i> Bitácora de notas
+            </a>
+        </li>
+        @endif
         @endif
         @if(in_array($rol, ['ADMIN', 'RECTORA']))
         <li class="nav-item">
