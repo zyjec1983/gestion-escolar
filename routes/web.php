@@ -184,6 +184,7 @@ Route::middleware(['auth', 'role:ADMIN,SECRETARIA'])
         Route::get('/', [TrasladoController::class, 'index'])->name('index');
         Route::get('/crear', [TrasladoController::class, 'create'])->name('create');
         Route::get('/buscar-alumnos', [TrasladoController::class, 'buscarAlumnos'])->name('buscar-alumnos');
+        Route::get('/buscar-representantes', [TrasladoController::class, 'buscarRepresentantes'])->name('buscar-representantes');
         Route::post('/', [TrasladoController::class, 'store'])->name('store');
 
         Route::get('/{expediente}', [TrasladoController::class, 'show'])->name('show');

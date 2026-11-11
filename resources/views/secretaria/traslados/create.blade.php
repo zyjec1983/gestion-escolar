@@ -154,17 +154,39 @@
                                         </select>
                                     </div>
                                     <div class="col-12">
-                                        <label for="representante_user_id" class="form-label small fw-semibold">Representante legal</label>
-                                        <select class="form-select" id="representante_user_id" name="representante_user_id">
-                                            <option value="">Seleccione un representante...</option>
-                                            @foreach($representantes as $representante)
-                                                <option value="{{ $representante->id }}" @selected((string) old('representante_user_id') === (string) $representante->id)>
-                                                    {{ $representante->apellidos }} {{ $representante->name }}
-                                                    @if($representante->numero_cedula) — {{ $representante->numero_cedula }} @endif
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <div class="form-text">Si el representante no existe, regístrelo primero desde Matrículas o Actualización de datos.</div>
+                                        <label for="buscarRepresentante" class="form-label small fw-semibold">Representante legal</label>
+                                        <div class="position-relative">
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                                <input type="search" class="form-control" id="buscarRepresentante"
+                                                       placeholder="Escriba apellidos, nombres o cédula..."
+                                                       autocomplete="off" role="combobox" aria-expanded="false"
+                                                       aria-controls="resultadosRepresentante" aria-autocomplete="list"
+                                                       aria-describedby="ayudaBuscarRepresentante">
+                                            </div>
+                                            <input type="hidden" name="representante_user_id" id="representante_user_id" value="{{ $representanteSeleccionado?->id }}">
+                                            <div id="resultadosRepresentante" class="list-group position-absolute w-100 shadow-sm d-none"
+                                                 role="listbox" aria-label="Representantes encontrados"
+                                                 style="z-index: 1050; max-height: 260px; overflow-y: auto;"></div>
+                                        </div>
+                                        <div id="representanteSeleccionado"
+                                             class="alert alert-success d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 px-3 mt-2 mb-0 {{ $representanteSeleccionado ? '' : 'd-none' }}">
+                                            <div class="small">
+                                                <i class="bi bi-person-check me-1"></i>
+                                                <strong id="representanteSeleccionadoNombre">{{ $representanteSeleccionado ? trim(($representanteSeleccionado->apellidos ?? '').' '.($representanteSeleccionado->name ?? '')) : '' }}</strong>
+                                                <span id="representanteSeleccionadoDetalle" class="text-muted">
+                                                    @if($representanteSeleccionado && $representanteSeleccionado->numero_cedula)
+                                                        — {{ $representanteSeleccionado->numero_cedula }}
+                                                    @endif
+                                                </span>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-success" id="limpiarRepresentante">
+                                                <i class="bi bi-arrow-repeat me-1"></i>Cambiar
+                                            </button>
+                                        </div>
+                                        <div class="form-text" id="ayudaBuscarRepresentante">
+                                            Si el representante no existe, regístrelo primero desde Matrículas o Actualización de datos.
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -271,22 +293,8 @@
         const modoNuevo = document.getElementById('modoNuevo');
         const bloqueExistente = document.getElementById('bloqueExistente');
         const bloqueNuevo = document.getElementById('bloqueNuevo');
-        const alumno = document.getElementById('alumno_id');
         const formTraslado = document.getElementById('formTraslado');
-        const buscarAlumno = document.getElementById('buscarAlumno');
-        const resultadosAlumno = document.getElementById('resultadosAlumno');
-        const alumnoSeleccionado = document.getElementById('alumnoSeleccionado');
-        const alumnoSeleccionadoNombre = document.getElementById('alumnoSeleccionadoNombre');
-        const alumnoSeleccionadoDetalle = document.getElementById('alumnoSeleccionadoDetalle');
-        const limpiarAlumno = document.getElementById('limpiarAlumno');
         const paralelo = document.getElementById('paralelo_id');
-        const urlBuscarAlumnos = @json(route('traslados.buscar-alumnos'));
-        const camposNuevos = ['nombres', 'apellidos', 'numero_cedula', 'representante_user_id'];
-
-        let resultados = [];
-        let indiceActivo = -1;
-        let temporizador = null;
-        let peticion = null;
 
         function tipoSeleccionado() {
             return document.getElementById('tipoSalida').checked ? 'salida' : 'ingreso';
@@ -339,11 +347,14 @@
             bloqueNuevo.classList.toggle('d-none', !nuevo);
 
             if (nuevo) {
-                buscarAlumno.setCustomValidity('');
-                cerrarResultados();
+                buscadorAlumno.limpiarError();
+                buscadorAlumno.cerrar();
+            } else {
+                buscadorRepresentante.limpiarError();
+                buscadorRepresentante.cerrar();
             }
 
-            camposNuevos.forEach(function (id) {
+            ['nombres', 'apellidos', 'numero_cedula'].forEach(function (id) {
                 const el = document.getElementById(id);
                 if (el) el.required = nuevo;
             });
@@ -355,173 +366,254 @@
             return div.innerHTML;
         }
 
-        function cerrarResultados() {
-            resultadosAlumno.classList.add('d-none');
-            resultadosAlumno.innerHTML = '';
-            buscarAlumno.setAttribute('aria-expanded', 'false');
-            buscarAlumno.removeAttribute('aria-activedescendant');
-            resultados = [];
-            indiceActivo = -1;
-        }
+        /**
+         * Buscador accesible reutilizable: entrada de texto, lista de
+         * coincidencias, navegacion por teclado y tarjeta de seleccion.
+         */
+        function crearBuscador(config) {
+            const input = document.getElementById(config.inputId);
+            const listaResultados = document.getElementById(config.listaId);
+            const tarjeta = document.getElementById(config.tarjetaId);
+            const nombreEl = document.getElementById(config.nombreId);
+            const detalleEl = document.getElementById(config.detalleId);
+            const limpiar = document.getElementById(config.limpiarId);
+            const oculto = document.getElementById(config.ocultoId);
 
-        function renderResultados() {
-            if (!resultados.length) {
-                resultadosAlumno.innerHTML = '<div class="list-group-item small text-muted">'
-                    + 'Sin coincidencias. Verifique el nombre o registre al estudiante como nuevo.</div>';
-                resultadosAlumno.classList.remove('d-none');
-                buscarAlumno.setAttribute('aria-expanded', 'true');
-                return;
+            let resultados = [];
+            let indiceActivo = -1;
+            let temporizador = null;
+            let peticion = null;
+
+            function cerrar() {
+                listaResultados.classList.add('d-none');
+                listaResultados.innerHTML = '';
+                input.setAttribute('aria-expanded', 'false');
+                input.removeAttribute('aria-activedescendant');
+                resultados = [];
+                indiceActivo = -1;
             }
 
-            resultadosAlumno.innerHTML = resultados.map(function (item, indice) {
-                const detalle = [item.cedula, item.curso].filter(Boolean).join(' · ');
-                return '<button type="button" class="list-group-item list-group-item-action py-2"'
-                    + ' role="option" id="resultadoAlumno' + indice + '" data-indice="' + indice + '"'
-                    + ' aria-selected="false">'
-                    + '<div class="fw-semibold small">' + escaparHtml(item.nombre) + '</div>'
-                    + '<div class="text-muted" style="font-size:.75rem;">'
-                    + escaparHtml(detalle || 'Sin matrícula en el período activo') + '</div>'
-                    + '</button>';
-            }).join('');
+            function detalleTexto(datos) {
+                return (config.partesDetalle(datos) || []).filter(Boolean).join(' · ');
+            }
 
-            resultadosAlumno.classList.remove('d-none');
-            buscarAlumno.setAttribute('aria-expanded', 'true');
-        }
+            function render() {
+                if (!resultados.length) {
+                    listaResultados.innerHTML = '<div class="list-group-item small text-muted">'
+                        + escaparHtml(config.mensajeVacio) + '</div>';
+                    listaResultados.classList.remove('d-none');
+                    input.setAttribute('aria-expanded', 'true');
+                    return;
+                }
 
-        function moverActivo(delta) {
-            if (!resultados.length) return;
+                listaResultados.innerHTML = resultados.map(function (item, indice) {
+                    const detalle = detalleTexto(item);
+                    return '<button type="button" class="list-group-item list-group-item-action py-2"'
+                        + ' role="option" id="' + config.prefijo + indice + '" data-indice="' + indice + '"'
+                        + ' aria-selected="false">'
+                        + '<div class="fw-semibold small">' + escaparHtml(item.nombre) + '</div>'
+                        + '<div class="text-muted" style="font-size:.75rem;">'
+                        + escaparHtml(detalle || config.sinDetalle) + '</div>'
+                        + '</button>';
+                }).join('');
 
-            indiceActivo = (indiceActivo + delta + resultados.length) % resultados.length;
+                listaResultados.classList.remove('d-none');
+                input.setAttribute('aria-expanded', 'true');
+            }
 
-            Array.from(resultadosAlumno.querySelectorAll('[data-indice]')).forEach(function (el) {
-                const activo = Number(el.dataset.indice) === indiceActivo;
-                el.classList.toggle('active', activo);
-                el.setAttribute('aria-selected', activo ? 'true' : 'false');
+            function moverActivo(delta) {
+                if (!resultados.length) return;
 
-                if (activo) {
-                    el.scrollIntoView({ block: 'nearest' });
-                    buscarAlumno.setAttribute('aria-activedescendant', el.id);
+                indiceActivo = (indiceActivo + delta + resultados.length) % resultados.length;
+
+                Array.from(listaResultados.querySelectorAll('[data-indice]')).forEach(function (el) {
+                    const activo = Number(el.dataset.indice) === indiceActivo;
+                    el.classList.toggle('active', activo);
+                    el.setAttribute('aria-selected', activo ? 'true' : 'false');
+
+                    if (activo) {
+                        el.scrollIntoView({ block: 'nearest' });
+                        input.setAttribute('aria-activedescendant', el.id);
+                    }
+                });
+            }
+
+            function seleccionar(datos) {
+                oculto.value = datos.id;
+                nombreEl.textContent = datos.nombre;
+                const detalle = detalleTexto(datos);
+                detalleEl.textContent = detalle ? ' — ' + detalle : '';
+                tarjeta.classList.remove('d-none');
+                input.value = '';
+                input.setCustomValidity('');
+                cerrar();
+
+                if (config.onSeleccion) {
+                    config.onSeleccion(datos);
+                }
+            }
+
+            function limpiarSeleccion() {
+                oculto.value = '';
+                tarjeta.classList.add('d-none');
+                nombreEl.textContent = '';
+                detalleEl.textContent = '';
+                input.focus();
+            }
+
+            async function consultar(termino) {
+                if (peticion) {
+                    peticion.abort();
+                }
+                peticion = new AbortController();
+
+                try {
+                    const respuesta = await fetch(config.url + '?q=' + encodeURIComponent(termino), {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        signal: peticion.signal,
+                    });
+
+                    if (!respuesta.ok) {
+                        throw new Error('No se pudo completar la búsqueda.');
+                    }
+
+                    const cuerpo = await respuesta.json();
+                    resultados = Array.isArray(cuerpo.data) ? cuerpo.data : [];
+                    indiceActivo = -1;
+                    render();
+                } catch (error) {
+                    if (error.name === 'AbortError') return;
+                    cerrar();
+                }
+            }
+
+            input.addEventListener('input', function () {
+                input.setCustomValidity('');
+                const termino = input.value.trim();
+                clearTimeout(temporizador);
+
+                if (termino.length < 2) {
+                    cerrar();
+                    return;
+                }
+
+                temporizador = setTimeout(function () {
+                    consultar(termino);
+                }, 250);
+            });
+
+            input.addEventListener('keydown', function (evento) {
+                const abierto = !listaResultados.classList.contains('d-none') && resultados.length > 0;
+
+                if (evento.key === 'ArrowDown' && abierto) {
+                    evento.preventDefault();
+                    moverActivo(1);
+                } else if (evento.key === 'ArrowUp' && abierto) {
+                    evento.preventDefault();
+                    moverActivo(-1);
+                } else if (evento.key === 'Enter' && abierto && indiceActivo >= 0) {
+                    evento.preventDefault();
+                    seleccionar(resultados[indiceActivo]);
+                } else if (evento.key === 'Escape') {
+                    cerrar();
                 }
             });
-        }
 
-        function seleccionarAlumno(datos) {
-            alumno.value = datos.id;
-            alumnoSeleccionadoNombre.textContent = datos.nombre;
-            const detalle = [datos.cedula, datos.curso].filter(Boolean).join(' · ');
-            alumnoSeleccionadoDetalle.textContent = detalle ? ' — ' + detalle : '';
-            alumnoSeleccionado.classList.remove('d-none');
-            buscarAlumno.value = '';
-            buscarAlumno.setCustomValidity('');
-            cerrarResultados();
+            // Evita que el blur del input cierre la lista antes del clic.
+            listaResultados.addEventListener('mousedown', function (evento) {
+                evento.preventDefault();
+            });
 
-            if (datos.curso_id) {
-                curso.value = datos.curso_id;
-            }
-            if (datos.paralelo_id) {
-                paralelo.value = datos.paralelo_id;
-            }
+            listaResultados.addEventListener('click', function (evento) {
+                const boton = evento.target.closest('[data-indice]');
+                if (!boton) return;
 
-            renderChecklist();
-        }
-
-        function limpiarSeleccion() {
-            alumno.value = '';
-            alumnoSeleccionado.classList.add('d-none');
-            alumnoSeleccionadoNombre.textContent = '';
-            alumnoSeleccionadoDetalle.textContent = '';
-            buscarAlumno.focus();
-        }
-
-        async function consultarAlumnos(termino) {
-            if (peticion) {
-                peticion.abort();
-            }
-            peticion = new AbortController();
-
-            try {
-                const respuesta = await fetch(urlBuscarAlumnos + '?q=' + encodeURIComponent(termino), {
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                    signal: peticion.signal,
-                });
-
-                if (!respuesta.ok) {
-                    throw new Error('No se pudo buscar estudiantes.');
+                const datos = resultados[Number(boton.dataset.indice)];
+                if (datos) {
+                    seleccionar(datos);
                 }
+            });
 
-                const cuerpo = await respuesta.json();
-                resultados = Array.isArray(cuerpo.data) ? cuerpo.data : [];
-                indiceActivo = -1;
-                renderResultados();
-            } catch (error) {
-                if (error.name === 'AbortError') return;
-                cerrarResultados();
-            }
+            document.addEventListener('click', function (evento) {
+                if (!listaResultados.contains(evento.target) && evento.target !== input) {
+                    cerrar();
+                }
+            });
+
+            limpiar.addEventListener('click', limpiarSeleccion);
+
+            return {
+                cerrar: cerrar,
+                limpiar: limpiarSeleccion,
+                limpiarError: function () {
+                    input.setCustomValidity('');
+                },
+                marcarError: function (mensaje) {
+                    input.setCustomValidity(mensaje);
+                    input.reportValidity();
+                    input.focus();
+                },
+                valor: function () {
+                    return oculto.value;
+                },
+            };
         }
 
-        buscarAlumno.addEventListener('input', function () {
-            buscarAlumno.setCustomValidity('');
-            const termino = buscarAlumno.value.trim();
-            clearTimeout(temporizador);
+        const buscadorAlumno = crearBuscador({
+            inputId: 'buscarAlumno',
+            listaId: 'resultadosAlumno',
+            tarjetaId: 'alumnoSeleccionado',
+            nombreId: 'alumnoSeleccionadoNombre',
+            detalleId: 'alumnoSeleccionadoDetalle',
+            limpiarId: 'limpiarAlumno',
+            ocultoId: 'alumno_id',
+            url: @json(route('traslados.buscar-alumnos')),
+            prefijo: 'resultadoAlumno',
+            mensajeVacio: 'Sin coincidencias. Verifique el nombre o registre al estudiante como nuevo.',
+            sinDetalle: 'Sin matrícula en el período activo',
+            partesDetalle: function (datos) {
+                return [datos.cedula, datos.curso];
+            },
+            onSeleccion: function (datos) {
+                if (datos.curso_id) {
+                    curso.value = datos.curso_id;
+                }
+                if (datos.paralelo_id) {
+                    paralelo.value = datos.paralelo_id;
+                }
+                renderChecklist();
+            },
+        });
 
-            if (termino.length < 2) {
-                cerrarResultados();
+        const buscadorRepresentante = crearBuscador({
+            inputId: 'buscarRepresentante',
+            listaId: 'resultadosRepresentante',
+            tarjetaId: 'representanteSeleccionado',
+            nombreId: 'representanteSeleccionadoNombre',
+            detalleId: 'representanteSeleccionadoDetalle',
+            limpiarId: 'limpiarRepresentante',
+            ocultoId: 'representante_user_id',
+            url: @json(route('traslados.buscar-representantes')),
+            prefijo: 'resultadoRepresentante',
+            mensajeVacio: 'Sin coincidencias. Verifique el nombre o registre al representante primero.',
+            sinDetalle: 'Sin cédula registrada',
+            partesDetalle: function (datos) {
+                return [datos.cedula];
+            },
+        });
+
+        formTraslado.addEventListener('submit', function (evento) {
+            if (modoNuevo.checked) {
+                if (!buscadorRepresentante.valor()) {
+                    evento.preventDefault();
+                    buscadorRepresentante.marcarError('Seleccione un representante de la lista.');
+                }
                 return;
             }
 
-            temporizador = setTimeout(function () {
-                consultarAlumnos(termino);
-            }, 250);
-        });
-
-        buscarAlumno.addEventListener('keydown', function (evento) {
-            const abierto = !resultadosAlumno.classList.contains('d-none') && resultados.length > 0;
-
-            if (evento.key === 'ArrowDown' && abierto) {
+            if (!buscadorAlumno.valor()) {
                 evento.preventDefault();
-                moverActivo(1);
-            } else if (evento.key === 'ArrowUp' && abierto) {
-                evento.preventDefault();
-                moverActivo(-1);
-            } else if (evento.key === 'Enter' && abierto && indiceActivo >= 0) {
-                evento.preventDefault();
-                seleccionarAlumno(resultados[indiceActivo]);
-            } else if (evento.key === 'Escape') {
-                cerrarResultados();
-            }
-        });
-
-        // Evita que el blur del input cierre la lista antes del clic.
-        resultadosAlumno.addEventListener('mousedown', function (evento) {
-            evento.preventDefault();
-        });
-
-        resultadosAlumno.addEventListener('click', function (evento) {
-            const boton = evento.target.closest('[data-indice]');
-            if (!boton) return;
-
-            const datos = resultados[Number(boton.dataset.indice)];
-            if (datos) {
-                seleccionarAlumno(datos);
-            }
-        });
-
-        document.addEventListener('click', function (evento) {
-            if (!resultadosAlumno.contains(evento.target) && evento.target !== buscarAlumno) {
-                cerrarResultados();
-            }
-        });
-
-        limpiarAlumno.addEventListener('click', limpiarSeleccion);
-
-        formTraslado.addEventListener('submit', function (evento) {
-            if (modoNuevo.checked) return;
-
-            if (!alumno.value) {
-                evento.preventDefault();
-                buscarAlumno.setCustomValidity('Seleccione un estudiante de la lista.');
-                buscarAlumno.reportValidity();
-                buscarAlumno.focus();
+                buscadorAlumno.marcarError('Seleccione un estudiante de la lista.');
             }
         });
 

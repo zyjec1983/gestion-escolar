@@ -101,10 +101,13 @@ class TrasladoController extends Controller
                 ->find(old('alumno_id'))
             : null;
 
-        $representantes = User::where('rol', 'REPRESENTANTE')
-            ->orderBy('apellidos')
-            ->orderBy('name')
-            ->get(['id', 'name', 'apellidos', 'numero_cedula']);
+        // El representante también se busca por nombre o cédula en lugar de
+        // cargar todo el listado en un select.
+        $representanteSeleccionado = old('representante_user_id')
+            ? User::where('rol', 'REPRESENTANTE')
+                ->select('id', 'name', 'apellidos', 'numero_cedula')
+                ->find(old('representante_user_id'))
+            : null;
 
         $cursoOctavo = new Curso(['nombre' => 'OCTAVO']);
 
@@ -140,7 +143,7 @@ class TrasladoController extends Controller
 
         return view('secretaria.traslados.create', compact(
             'cursos', 'paralelos', 'periodo', 'periodoVigente', 'alumnoSeleccionado',
-            'representantes', 'checklists', 'cursosOctavo'
+            'representanteSeleccionado', 'checklists', 'cursosOctavo'
         ));
     }
 
@@ -151,15 +154,9 @@ class TrasladoController extends Controller
      */
     public function buscarAlumnos(Request $request)
     {
-        $validated = $request->validate([
-            'q' => ['nullable', 'string', 'max:100'],
-        ]);
+        $termino = $this->terminoBusqueda($request);
 
-        // Se neutralizan los comodines de SQL para que el termino se trate
-        // siempre como texto literal y se compara sin acentos ni mayusculas.
-        $termino = trim(str_replace(['%', '_', '\\'], ' ', $validated['q'] ?? ''));
-
-        if (mb_strlen($termino) < 2) {
+        if ($termino === null) {
             return response()->json(['data' => []]);
         }
 
@@ -199,6 +196,60 @@ class TrasladoController extends Controller
             });
 
         return response()->json(['data' => $alumnos]);
+    }
+
+    /**
+     * Buscador de representantes legales para el alta de estudiantes nuevos.
+     * Devuelve coincidencias por nombres, apellidos o cedula.
+     */
+    public function buscarRepresentantes(Request $request)
+    {
+        $termino = $this->terminoBusqueda($request);
+
+        if ($termino === null) {
+            return response()->json(['data' => []]);
+        }
+
+        $like = '%'.mb_strtolower(Str::ascii($termino), 'UTF-8').'%';
+        $nombres = $this->columnaSinAcentos('name');
+        $apellidos = $this->columnaSinAcentos('apellidos');
+
+        $representantes = User::query()
+            ->select('id', 'name', 'apellidos', 'numero_cedula')
+            ->where('rol', 'REPRESENTANTE')
+            ->where(function ($query) use ($nombres, $apellidos, $like) {
+                $query->whereRaw("{$nombres} LIKE ?", [$like])
+                    ->orWhereRaw("{$apellidos} LIKE ?", [$like])
+                    ->orWhere('numero_cedula', 'like', $like);
+            })
+            ->orderBy('apellidos')
+            ->orderBy('name')
+            ->limit(15)
+            ->get()
+            ->map(fn (User $representante) => [
+                'id' => $representante->id,
+                'nombre' => trim(($representante->apellidos ?? '').' '.($representante->name ?? '')),
+                'cedula' => $representante->numero_cedula,
+            ]);
+
+        return response()->json(['data' => $representantes]);
+    }
+
+    /**
+     * Valida y normaliza el termino de busqueda. Devuelve null cuando es
+     * demasiado corto para consultar.
+     */
+    private function terminoBusqueda(Request $request): ?string
+    {
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        // Se neutralizan los comodines de SQL para que el termino se trate
+        // siempre como texto literal.
+        $termino = trim(str_replace(['%', '_', '\\'], ' ', $validated['q'] ?? ''));
+
+        return mb_strlen($termino) >= 2 ? $termino : null;
     }
 
     /**

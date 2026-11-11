@@ -139,14 +139,16 @@ class TrasladoTest extends TestCase
     }
 
     /** @test */
-    public function el_formulario_usa_buscador_de_estudiantes_en_lugar_de_un_select(): void
+    public function el_formulario_usa_buscadores_en_lugar_de_selects(): void
     {
         $this->actingAs($this->secretaria)
             ->get(route('traslados.create'))
             ->assertOk()
             ->assertSee('Buscar estudiante')
             ->assertSee('id="buscarAlumno"', false)
-            ->assertDontSee('<select name="alumno_id"', false);
+            ->assertSee('id="buscarRepresentante"', false)
+            ->assertDontSee('<select name="alumno_id"', false)
+            ->assertDontSee('<select name="representante_user_id"', false);
     }
 
     /** @test */
@@ -205,6 +207,92 @@ class TrasladoTest extends TestCase
         $this->actingAs(User::factory()->docente()->create())
             ->getJson(route('traslados.buscar-alumnos', ['q' => 'paredes']))
             ->assertForbidden();
+    }
+
+    /** @test */
+    public function el_buscador_de_representantes_filtra_por_rol_nombre_y_cedula(): void
+    {
+        $representante = User::factory()->representante()->create([
+            'name' => 'María Fernanda',
+            'apellidos' => 'Zambrano Núñez',
+            'numero_cedula' => '0912345678',
+        ]);
+
+        // Un usuario con el mismo apellido pero otro rol no debe aparecer.
+        User::factory()->docente()->create([
+            'name' => 'Docente',
+            'apellidos' => 'Zambrano Núñez',
+            'numero_cedula' => '0999999999',
+        ]);
+
+        $this->actingAs($this->secretaria)
+            ->getJson(route('traslados.buscar-representantes', ['q' => 'zambrano']))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $representante->id)
+            ->assertJsonPath('data.0.nombre', 'Zambrano Núñez María Fernanda')
+            ->assertJsonPath('data.0.cedula', '0912345678');
+
+        $this->actingAs($this->secretaria)
+            ->getJson(route('traslados.buscar-representantes', ['q' => '0912345678']))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $representante->id);
+
+        // Ignora tildes y mayusculas en ambos sentidos.
+        $this->actingAs($this->secretaria)
+            ->getJson(route('traslados.buscar-representantes', ['q' => 'MARIA']))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $representante->id);
+
+        $this->actingAs($this->secretaria)
+            ->getJson(route('traslados.buscar-representantes', ['q' => 'nunez']))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $representante->id);
+
+        $this->actingAs($this->secretaria)
+            ->getJson(route('traslados.buscar-representantes', ['q' => 'z']))
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->actingAs($this->secretaria)
+            ->getJson(route('traslados.buscar-representantes', ['q' => '%_']))
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->actingAs(User::factory()->docente()->create())
+            ->getJson(route('traslados.buscar-representantes', ['q' => 'zambrano']))
+            ->assertForbidden();
+    }
+
+    /** @test */
+    public function el_formulario_conserva_al_representante_elegido_tras_un_error_de_validacion(): void
+    {
+        $representante = User::factory()->representante()->create([
+            'name' => 'María Fernanda',
+            'apellidos' => 'Zambrano Núñez',
+            'numero_cedula' => '0912345678',
+        ]);
+
+        $this->actingAs($this->secretaria)
+            ->from(route('traslados.create'))
+            ->post(route('traslados.store'), [
+                'tipo' => 'ingreso',
+                'momento' => 'inicio',
+                'modo_alumno' => 'nuevo',
+                'nombres' => 'Nuevo',
+                'apellidos' => 'Estudiante',
+                'numero_cedula' => '0101010101',
+                'representante_user_id' => $representante->id,
+                'fecha_traslado' => '2026-08-15',
+                'anio_lectivo' => '2026 - 2027',
+            ])
+            ->assertSessionHasErrors('institucion');
+
+        $this->actingAs($this->secretaria)
+            ->get(route('traslados.create'))
+            ->assertOk()
+            ->assertSee('id="representante_user_id" value="'.$representante->id.'"', false)
+            ->assertSee('Zambrano Núñez María Fernanda');
     }
 
     /** @test */
