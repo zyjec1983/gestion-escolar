@@ -123,6 +123,27 @@ class NotaExtraordinariaTest extends TestCase
     }
 
     /** @test */
+    public function el_modal_de_correccion_tiene_un_area_desplazable(): void
+    {
+        $this->crearNota();
+
+        $response = $this->actingAs($this->secretaria)
+            ->get(route('notas-extraordinarias.index'))
+            ->assertOk()
+            ->assertSee('modal-dialog-scrollable', false)
+            ->assertSee('form-correccion', false);
+
+        // El formulario debe ser una columna flex que quepa en el modal para
+        // que el cuerpo se desplace y el pie con los botones quede visible.
+        $html = $response->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/\.form-correccion\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column[^}]*min-height:\s*0/s',
+            $html
+        );
+    }
+
+    /** @test */
     public function la_correccion_guarda_el_antes_y_despues_con_trazabilidad_de_red(): void
     {
         $nota = $this->crearNota(['fii' => 7.25]);

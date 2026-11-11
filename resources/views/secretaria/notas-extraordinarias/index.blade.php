@@ -13,6 +13,15 @@
     .tabla-notas th {
         white-space: nowrap;
     }
+    /* El formulario es el único hijo directo de .modal-content. Debe ser flex
+       para que .modal-body pueda desplazarse dentro del modal scrollable y el
+       pie con los botones quede siempre visible. */
+    .form-correccion {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
     @media (max-width: 767.98px) {
         .tabla-notas thead { display: none; }
         .tabla-notas tbody tr {
