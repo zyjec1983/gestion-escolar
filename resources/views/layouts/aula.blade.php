@@ -13,7 +13,8 @@
 @extends('layouts.app')
 
 @section('sidebar')
-<div class="d-flex flex-column p-3 text-white h-100" style="background: #0d1b2a;">
+{{-- Aside del aula: comparte la paleta global elegida por el administrador. --}}
+<div class="d-flex flex-column p-3 text-white h-100" style="background: var(--aside-bg);">
     <div class="d-flex justify-content-between align-items-center d-lg-none mb-3">
         <span class="fs-6 fw-bold">Aula Virtual</span>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>

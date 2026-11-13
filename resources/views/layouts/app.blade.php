@@ -7,7 +7,50 @@
     <title>@yield('titulo', 'Sistema de Gestión Escolar') - {{ config('app.name') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    @php
+        // Apariencia global: la elige el administrador y la comparten todos los roles.
+        // Ruta: GET/POST /admin/configuracion (pestaña Apariencia).
+        $tema = \App\Support\Tema::actual();
+    @endphp
     <style>
+        /* Variables de apariencia: aside, menú activo/hover y tamaño de fuente. */
+        :root {
+            --aside-bg: {{ $tema['aside'] }};
+            --aside-active: {{ $tema['activo'] }};
+            --aside-hover: {{ $tema['hover'] }};
+            --aside-text: {{ $tema['texto'] }};
+            --app-font-size: {{ $tema['fuente_pt'] }}pt;
+        }
+        /* El tamaño raíz escala todo Bootstrap igual que el zoom de Word. */
+        html {
+            font-size: var(--app-font-size);
+        }
+        body {
+            color: #000;
+            font-size: 1rem;
+        }
+        /* El área de contenido usa letra negra para que textos y formularios se lean. */
+        main,
+        main h1, main h2, main h3, main h4, main h5, main h6,
+        main p, main span, main label, main li, main dt, main dd,
+        main .form-label, main .form-check-label, main .form-text,
+        main .form-control, main .form-select, main textarea,
+        main .input-group-text, main .table {
+            color: #000;
+        }
+        main .form-control,
+        main .form-select,
+        main textarea {
+            background-color: #fff;
+        }
+        main .form-control::placeholder,
+        main textarea::placeholder {
+            color: #6c757d;
+            opacity: 1;
+        }
+        main .text-muted {
+            color: #495057 !important;
+        }
         .sidebar-static {
             width: 260px;
             min-width: 260px;
@@ -29,27 +72,42 @@
                 min-width: auto;
             }
         }
+        /* Menú lateral: fondo, letras blancas y negrilla al pasar o seleccionar. */
+        #sidebarOffcanvas {
+            background: var(--aside-bg);
+        }
         #sidebarOffcanvas .nav-link {
             border-radius: 0.5rem;
+            color: var(--aside-text) !important;
+            font-weight: 500;
             transition: background-color 0.2s ease, color 0.2s ease,
                         transform 0.2s ease, padding-left 0.2s ease;
         }
         #sidebarOffcanvas .nav-link:hover {
-            background: rgba(255, 255, 255, 0.12);
-            color: #fff;
+            background: var(--aside-hover) !important;
+            color: #fff !important;
+            font-weight: 700;
             transform: translateX(4px);
             padding-left: 1.4rem;
         }
+        #sidebarOffcanvas .nav-link.active {
+            background: var(--aside-active) !important;
+            color: #fff !important;
+            font-weight: 700;
+        }
         #sidebarOffcanvas .nav-link.active:hover {
-            background: var(--bs-primary);
+            background: var(--aside-hover) !important;
         }
         #sidebarOffcanvas .dropdown .dropdown-toggle {
+            color: var(--aside-text) !important;
             transition: background-color 0.2s ease, transform 0.2s ease;
             border-radius: 0.5rem;
             padding: 0.35rem 0.5rem;
         }
         #sidebarOffcanvas .dropdown .dropdown-toggle:hover {
-            background: rgba(255, 255, 255, 0.12);
+            background: var(--aside-hover) !important;
+            color: #fff !important;
+            font-weight: 700;
         }
         /* La columna de contenido debe poder encogerse dentro del flex; sin
            esto los textos con text-nowrap/truncate estiran toda la pagina. */

@@ -9,7 +9,7 @@ class Mensaje extends Model
     protected $fillable = [
         'asunto', 'cuerpo_contenido', 'carpeta',
         'emisor_id', 'emisor_type', 'destinatario_id',
-        'hilo_id', 'contexto_estudiante_id', 'leido', 'fecha_envio',
+        'hilo_id', 'contexto_estudiante_id', 'leido', 'es_circular', 'fecha_envio',
         'borrado_emisor', 'borrado_destinatario',
     ];
 
@@ -17,6 +17,7 @@ class Mensaje extends Model
     {
         return [
             'leido' => 'boolean',
+            'es_circular' => 'boolean',
             'fecha_envio' => 'datetime',
             'hilo_id' => 'integer',
             'borrado_emisor' => 'boolean',

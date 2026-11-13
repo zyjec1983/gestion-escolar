@@ -8,7 +8,8 @@
 @endpush
 
 @section('sidebar')
-<div class="d-flex flex-column p-3 text-white h-100" style="background: #1a1a2e;">
+{{-- Aside principal: el color lo define la apariencia global (layouts/app). --}}
+<div class="d-flex flex-column p-3 text-white h-100" style="background: var(--aside-bg);">
     <div class="d-flex justify-content-between align-items-center d-lg-none mb-3">
         <span class="fs-5 fw-bold">Unidad Educativa</span>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>

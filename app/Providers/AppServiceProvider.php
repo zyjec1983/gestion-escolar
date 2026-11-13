@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Institucion;
+use App\Services\Sms\LogSmsSender;
+use App\Services\Sms\SmsSender;
+use App\Services\Sms\WebhookSmsSender;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
 
@@ -10,7 +13,14 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // Canal SMS desacoplado: `log` para desarrollo y `webhook` para una
+        // pasarela externa. Lo usa CircularRecibida al enviar circulares.
+        $this->app->singleton(SmsSender::class, function () {
+            return match (config('services.sms.driver', 'log')) {
+                'webhook' => new WebhookSmsSender,
+                default => new LogSmsSender,
+            };
+        });
     }
 
     public function boot(): void
@@ -40,7 +50,7 @@ class AppServiceProvider extends ServiceProvider
 
         $zona = $zona ?: Config::get('app.timezone');
 
-        if (!esDesfaseHorarioValido($zona)) {
+        if (! esDesfaseHorarioValido($zona)) {
             // Sin valor en la BD (instalación nueva) se toma APP_TIMEZONE y se
             // traduce a desfase, venga como nombre de zona o como desfase.
             $minutos = minutosDesfaseZona($zona);

@@ -249,6 +249,16 @@
                         <label class="form-label">Mensaje</label>
                         <textarea name="cuerpo_contenido" rows="4" class="form-control"></textarea>
                     </div>
+                    {{-- Circular: al enviar se avisa por correo y SMS al contacto registrado. --}}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="es_circular" id="esCircular" value="1">
+                        <label class="form-check-label fw-semibold" for="esCircular">
+                            Enviar como circular (correo y SMS)
+                        </label>
+                        <div class="form-text">
+                            Se enviará el aviso institucional al correo y al celular registrados del destinatario.
+                        </div>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Adjunto (opcional, imágenes o PDF, máx. 5 MB)</label>
                         <input type="file" name="adjunto" class="form-control" accept=".pdf,image/*">

@@ -163,6 +163,8 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
     Route::get('/configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
     Route::post('/configuracion/sistema_evaluacion', [ConfiguracionController::class, 'updateSistemaEvaluacion'])->name('configuracion.sistema-evaluacion');
     Route::post('/configuracion/zona_horaria', [ConfiguracionController::class, 'updateZonaHoraria'])->name('configuracion.zona-horaria');
+    // Apariencia global: 10 paletas del aside y tamaño de fuente tipo Word.
+    Route::post('/configuracion/apariencia', [ConfiguracionController::class, 'updateApariencia'])->name('configuracion.apariencia');
 });
 
 // Actualizacion de datos de alumnos y de su representante legal.

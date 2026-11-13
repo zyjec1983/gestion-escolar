@@ -9,6 +9,7 @@ use App\Models\Curso;
 use App\Models\Mensaje;
 use App\Models\Paralelo;
 use App\Models\User;
+use App\Services\Notificaciones\NotificadorCircular;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -18,6 +19,16 @@ use Illuminate\Validation\Rule;
 
 class MensajeController extends Controller
 {
+    public function __construct(private readonly NotificadorCircular $notificadorCircular) {}
+
+    /**
+     * Bandeja de mensajes del usuario autenticado.
+     *
+     * Qué hace: arma los hilos recibidos/enviados, el compositor según el rol y
+     * el detalle del hilo seleccionado.
+     * Conecta con: Mensaje, User, Alumno y resources/views/mensajes/index.
+     * Ruta: GET /mensajes (mensajes.index).
+     */
     public function index(Request $request)
     {
         $user = $request->user();
@@ -144,6 +155,8 @@ class MensajeController extends Controller
             'contexto_estudiante_id' => 'nullable|exists:alumnos,id',
             'hilo_id' => 'nullable|exists:mensajes,id',
             'adjunto' => 'nullable|file|max:5120',
+            // Una circular dispara el aviso por correo y SMS al destinatario.
+            'es_circular' => 'nullable|boolean',
             // Inspección y Secretaría difunden por alcance, salvo que respondan.
             'alcance' => $puedeDifundir && ! $esRespuesta ? 'required|in:estudiante,nivel,curso,comunidad' : 'nullable|in:estudiante,nivel,curso,comunidad',
             'alumno_id' => Rule::requiredIf($alcance === 'estudiante').'|nullable|exists:alumnos,id',
@@ -174,6 +187,8 @@ class MensajeController extends Controller
             }
         }
 
+        $esCircular = (bool) ($validated['es_circular'] ?? false);
+
         $mensaje = Mensaje::create([
             'asunto' => $validated['asunto'],
             'cuerpo_contenido' => $validated['cuerpo_contenido'] ?? null,
@@ -184,6 +199,7 @@ class MensajeController extends Controller
             'hilo_id' => $validated['hilo_id'] ?? null,
             'contexto_estudiante_id' => $validated['contexto_estudiante_id'] ?? null,
             'leido' => false,
+            'es_circular' => $esCircular,
             'fecha_envio' => now(),
         ]);
 
@@ -199,6 +215,11 @@ class MensajeController extends Controller
             ]);
         }
 
+        // Aviso institucional por correo y SMS cuando el emisor marcó la circular.
+        if ($esCircular) {
+            $this->notificadorCircular->enviar($mensaje->destinatario, $mensaje);
+        }
+
         $retorno = $request->input('retorno', route('mensajes.index'));
 
         return redirect($retorno)->with('exito', 'Mensaje enviado correctamente.');
@@ -208,6 +229,11 @@ class MensajeController extends Controller
      * Envío del inspector a un grupo: un estudiante con su representante, todo
      * un curso, todo un nivel educativo o toda la comunidad. Cada destinatario
      * recibe su propio mensaje, sin copia para el emisor.
+     *
+     * Si el mensaje se marca como circular, además se avisa por correo y SMS
+     * al contacto registrado de cada destinatario.
+     * Conecta con: Mensaje, ArchivoAdjunto y NotificadorCircular.
+     * Ruta: POST /mensajes (mensajes.store) con alcance de difusión.
      */
     private function enviarDifusion(Request $request, array $validated)
     {
@@ -251,8 +277,10 @@ class MensajeController extends Controller
         }
 
         $total = $destinatarios->count();
+        $esCircular = (bool) ($validated['es_circular'] ?? false);
+        $creados = collect();
 
-        DB::transaction(function () use ($destinatarios, $emisor, $validated, $contextoId, $urlAdjunto, $nombreAdjunto) {
+        DB::transaction(function () use ($destinatarios, $emisor, $validated, $contextoId, $urlAdjunto, $nombreAdjunto, $esCircular, &$creados) {
             foreach ($destinatarios as $destinatarioId) {
                 $mensaje = Mensaje::create([
                     'asunto' => $validated['asunto'],
@@ -263,8 +291,11 @@ class MensajeController extends Controller
                     'destinatario_id' => $destinatarioId,
                     'contexto_estudiante_id' => $contextoId,
                     'leido' => false,
+                    'es_circular' => $esCircular,
                     'fecha_envio' => now(),
                 ]);
+
+                $creados->push($mensaje);
 
                 if ($urlAdjunto) {
                     ArchivoAdjunto::create([
@@ -276,6 +307,14 @@ class MensajeController extends Controller
                 }
             }
         });
+
+        // Los avisos se envían después del commit para no notificar algo que
+        // finalmente no quedó guardado.
+        if ($esCircular) {
+            foreach ($creados as $mensaje) {
+                $this->notificadorCircular->enviar($mensaje->destinatario, $mensaje);
+            }
+        }
 
         $retorno = $request->input('retorno', route('mensajes.index'));
 

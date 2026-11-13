@@ -106,4 +106,17 @@ class User extends Authenticatable
     {
         return $this->hasMany(RepresentanteCambio::class, 'registrado_por');
     }
+
+    /**
+     * Teléfono que usa el canal SMS de las notificaciones.
+     *
+     * Qué hace: Laravel busca `routeNotificationForSms` cuando una notificación
+     * incluye el canal SMS. Se devuelve el teléfono registrado en el perfil.
+     * Conecta con: App\Notifications\Channels\SmsChannel.
+     * Ruta: POST /mensajes (mensajes.store) cuando el mensaje es circular.
+     */
+    public function routeNotificationForSms(): ?string
+    {
+        return $this->telefono ?: null;
+    }
 }

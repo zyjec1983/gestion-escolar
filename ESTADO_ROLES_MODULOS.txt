@@ -1,0 +1,501 @@
+===============================================================================
+ SISTEMA DE GESTIÓN ESCOLAR
+ ESTADO DE ROLES Y MÓDULOS
+ Fecha de auditoría: 13/11/2026
+===============================================================================
+
+LEYENDA
+  (ready)             Módulo terminado y probado; se puede usar.
+  (ready with errors) Módulo usable, pero tiene fallas conocidas o pendientes.
+  (started)           Módulo iniciado; todavía no cubre todo lo esperado.
+  (not started)       Módulo planificado, sin implementación funcional.
+
+Roles del sistema (valores guardados en users.rol):
+  ESTUDIANTE   -> Alumno
+  REPRESENTANTE-> Representante legal
+  DOCENTE      -> Docente
+  INSPECCION   -> Inspector
+  DECE         -> Consejería estudiantil
+  SECRETARIA   -> Secretaría
+  RECTORA      -> Rectorado
+  VICERRECTORA -> Vicerrectorado
+  ADMIN        -> Administrador de la aplicación
+
+Nota: el acceso se controla con app/Http/Middleware/RoleMiddleware.php y las
+rutas de routes/web.php. El menú lateral se arma en
+resources/views/layouts/principal.blade.php según el rol.
+
+===============================================================================
+ 1. ALUMNO (ESTUDIANTE)  ->  VERIFICADO OK
+===============================================================================
+
+- Panel de inicio del estudiante .......................... (ready)
+  Ruta: GET /dashboard
+  Controlador: DashboardController@index -> EstudianteController@dashboard
+  Muestra materias, tareas, agenda y avisos del curso.
+
+- Aula virtual / Mis clases .............................. (ready)
+  Rutas: GET /clases, GET /clases/{id}
+  Controlador: AulaVirtualController
+  Incluye agenda, materiales, grupos y foros de la clase.
+
+- Agenda y entrega de tareas ............................. (ready)
+  Rutas: GET /estudiante/agendas, POST /estudiante/agendas/{agenda}/entregar
+  Controlador: EstudianteController
+  El alumno consulta la agenda y marca una tarea como entregada.
+
+- Materiales de la clase ................................. (ready)
+  Ruta: GET /clases/{clase}/materiales
+  Controlador: AulaVirtualController@materiales
+
+- Foros del aula ......................................... (ready)
+  Rutas: GET/POST /clases/{clase}/foros, GET /foros/{foro}
+  Controlador: ForoController
+
+- Mensajes ............................................... (ready)
+  Rutas: GET/POST /mensajes, GET /mensajes/{id}
+  Controlador: MensajeController
+  El alumno escribe a sus docentes y consulta sus conversaciones.
+
+- Perfil ................................................. (ready)
+  Rutas: GET/POST /perfil
+  Controlador: ProfileController
+
+- Notificaciones de circulares por correo y SMS .......... (ready)
+  Ruta: POST /mensajes (cuando el mensaje se marca como circular)
+  El alumno recibe el aviso en su correo y celular registrados.
+
+Observación: el alumno NO entra al módulo DECE ni a configuración. El menú
+solo le muestra sus opciones.
+
+===============================================================================
+ 2. REPRESENTANTE LEGAL  ->  VERIFICADO OK
+===============================================================================
+
+- Panel de inicio del representante ...................... (ready)
+  Ruta: GET /dashboard
+  Controlador: DashboardController@index -> RepresentanteController@dashboard
+  Resume información de sus representados.
+
+- Observaciones de sus hijos ............................. (ready)
+  Ruta: GET /observaciones
+  Controlador: RepresentanteController@observaciones
+
+- Citas con docentes y autoridades ....................... (ready)
+  Rutas: GET/POST /citas
+  Controlador: RepresentanteController
+  Permite solicitar cita y ver el estado.
+
+- Agendas de sus hijos ................................... (ready)
+  Ruta: GET /agendas
+  Controlador: RepresentanteController@agendas
+
+- Aula virtual en modo lectura ........................... (ready)
+  Rutas: GET /clases/{clase}/materiales y /clases/{clase}/grupos
+  Controlador: AulaVirtualController
+  Puede consultar materiales y grupos; no puede crear ni borrar.
+
+- Mensajes a docentes, inspección, DECE y vicerrectorado . (ready)
+  Rutas: GET/POST /mensajes
+  Controlador: MensajeController@compositorData
+  El compositor muestra materias, docentes y áreas de autoridad.
+
+- Perfil ................................................. (ready)
+  Rutas: GET/POST /perfil
+
+- Notificaciones de circulares por correo y SMS .......... (ready)
+  Ruta: POST /mensajes (circular)
+  Recibe el aviso en correo y celular registrados.
+
+===============================================================================
+ 3. DOCENTE  ->  VERIFICADO OK
+===============================================================================
+
+- Panel de inicio docente ................................ (ready)
+  Ruta: GET /dashboard
+  Controlador: DashboardController@index (panel general)
+
+- Mis clases / aula virtual .............................. (ready)
+  Rutas: GET /clases, GET /clases/{id}
+  Controlador: AulaVirtualController
+
+- Asistencia ............................................. (ready)
+  Rutas: GET/POST /docente/asistencia
+  Controlador: AsistenciaController
+
+- Observaciones .......................................... (ready)
+  Rutas: GET/POST /docente/observaciones, GET /docente/observaciones/{alumno}/print
+  Controlador: ObservacionController
+  Al registrar una observación se avisa al representante en su bandeja.
+
+- Citas .................................................. (ready)
+  Rutas: GET/POST /docente/citas, POST /docente/citas/{id}/registrar
+  Controlador: CitaController
+
+- Carga de notas ......................................... (ready)
+  Rutas: GET/POST /docente/notas
+  Controlador: NotaController
+
+- Actas .................................................. (ready)
+  Rutas: GET /docente/actas, /docente/actas/pdf, /docente/actas/excel
+  Controlador: ActaController
+
+- Planificaciones ........................................ (ready)
+  Rutas: GET /planificaciones, GET /planificaciones/crear, POST /planificaciones
+  Controlador: PlanificacionController
+  Incluye edición, impresión y bitácora de auditoría.
+
+- Materiales y grupos de la clase ........................ (ready)
+  Rutas: /clases/{clase}/materiales y /clases/{clase}/grupos
+  Controlador: AulaVirtualController
+
+- Foros del aula ......................................... (ready)
+  Controlador: ForoController
+
+- Mensajes ............................................... (ready)
+  Rutas: GET/POST /mensajes
+  Controlador: MensajeController
+  Puede escribir al estudiante o a su representante.
+
+- Derivación de casos al DECE ............................ (ready)
+  Rutas: GET/POST /dece/derivaciones
+  Controlador: Dece\DerivacionController
+
+- Perfil ................................................. (ready)
+
+- Notificaciones de circulares por correo y SMS .......... (ready)
+  Ruta: POST /mensajes (circular)
+
+===============================================================================
+ 4. INSPECTOR (INSPECCION)  ->  VERIFICADO OK
+===============================================================================
+
+- Panel de inicio del inspector .......................... (ready)
+  Ruta: GET /dashboard
+  Controlador: DashboardController@inspector
+  Muestra mensajes de representantes y citas del día.
+
+- Tomar asistencia ....................................... (ready)
+  Rutas: GET/POST /inspeccion/asistencia
+  Controlador: InspectorAsistenciaController
+
+- Estadísticas de asistencia ............................. (ready)
+  Ruta: GET /inspeccion/asistencia/estadisticas
+  Controlador: InspectorAsistenciaEstadisticasController
+
+- Observaciones .......................................... (ready)
+  Rutas: GET/POST /inspeccion/observaciones
+  Controlador: InspectorObservacionController
+  Incluye impresión por alumno y aviso al representante.
+
+- Reportes y estadísticas de observaciones ............... (ready)
+  Rutas: GET /inspeccion/observaciones/reporte/alumno,
+         GET /inspeccion/observaciones/estadisticas
+  Controlador: ObservacionReporteController / ObservacionEstadisticasController
+
+- Catálogo de tipos de observación ....................... (ready)
+  Rutas: GET/POST/PATCH /inspeccion/observaciones/tipos
+  Controlador: TipoObservacionController
+
+- Citas (agendar, historial y registrar) ................. (ready)
+  Rutas: GET/POST /inspeccion/citas/agendar,
+         GET /inspeccion/citas/historial,
+         POST /inspeccion/citas/{cita}/registrar
+  Controlador: InspectorCitaController
+
+- Mensajes y difusión .................................... (ready)
+  Rutas: GET/POST /mensajes
+  Controlador: MensajeController
+  Puede enviar a un estudiante, curso, nivel o toda la comunidad.
+
+- Circulares con correo y SMS ............................ (ready)
+  Ruta: POST /mensajes con "es_circular" y alcance
+  Envía el aviso institucional a cada destinatario.
+
+- Derivación de casos al DECE ............................ (ready)
+  Rutas: GET/POST /dece/derivaciones
+  Controlador: Dece\DerivacionController
+
+- Perfil ................................................. (ready)
+
+===============================================================================
+ 5. DECE (CONSEJERÍA ESTUDIANTIL)  ->  LISTO
+===============================================================================
+
+- Panel de inicio DECE ................................... (ready)
+  Ruta: GET /dashboard
+  Controlador: Dece\DashboardController
+  Indicadores, próximas citas, últimas atenciones y alertas.
+
+- Expedientes ............................................ (ready)
+  Rutas: GET /dece/expedientes, GET /dece/expedientes/{alumno}
+  Controlador: Dece\ExpedienteController
+
+- Atenciones ............................................. (ready)
+  Rutas: /dece/atenciones (índice, crear, ver, cerrar, PDF)
+  Controlador: Dece\AtencionController
+
+- Agenda de citas DECE ................................... (ready)
+  Rutas: /dece/citas (índice, crear, ver, registrar)
+  Controlador: Dece\CitaController
+
+- Acuerdos y actas ....................................... (ready)
+  Rutas: /dece/acuerdos (índice, crear, ver, firmar, seguimiento, PDF)
+  Controlador: Dece\AcuerdoController
+  La bitácora es inalterable (DeceAuditoria bloquea update/delete).
+
+- NEE y diagnósticos ..................................... (ready)
+  Rutas: /dece/nee y /dece/diagnosticos
+  Controlador: Dece\NeeController / Dece\DiagnosticoController
+
+- Talleres ............................................... (ready)
+  Rutas: /dece/talleres (índice, crear, ver, asistencia)
+  Controlador: Dece\TallerController
+
+- Derivaciones ........................................... (ready)
+  Rutas: /dece/derivaciones (índice, crear, ver, PDF)
+  Controlador: Dece\DerivacionController
+
+- Reportes ............................................... (ready)
+  Rutas: GET /dece/reportes, GET /dece/reportes/pdf
+  Controlador: Dece\ReporteController
+
+- Buscadores con autocompletado .......................... (ready)
+  Rutas: /dece/buscar/alumnos, /dece/buscar/talleres,
+         /dece/buscar/alumnos/{alumno}/citas,
+         /dece/buscar/alumnos/{alumno}/atenciones
+  Controlador: Dece\BuscadorController
+
+- Notificaciones internas ................................ (ready)
+  Se crean mensajes internos para los involucrados.
+
+- Perfil ................................................. (ready)
+
+===============================================================================
+ 6. SECRETARÍA (rol adicional existente)  ->  LISTO
+===============================================================================
+
+- Panel de secretaría .................................... (ready)
+  Ruta: GET /dashboard
+  Controlador: DashboardController@secretaria
+
+- Solicitudes de matrícula / pre-registro ................ (ready)
+  Rutas: /admin/pre-registros (índice, ver, aprobar, rechazar, PDF)
+  Controlador: Admin\PreRegistroController
+
+- Matrículas ............................................. (ready)
+  Rutas: GET/PUT /admin/matriculas/{id}
+  Controlador: Admin\MatriculaController
+
+- Actualización de datos ................................. (ready)
+  Rutas: /actualizacion (índice, editar, actualizar)
+  Controlador: ActualizacionDatosController
+
+- Traslados e historial académico ........................ (ready)
+  Rutas: /traslados (crear, documentos, promociones, notas, paz y salvo,
+         cierre, PDF de historial y certificado)
+  Controlador: TrasladoController
+
+- Corrección extraordinaria de notas ..................... (ready)
+  Rutas: /notas-extraordinarias (índice, bitácora, registrar)
+  Controlador: NotaExtraordinariaController
+
+- Planificación y auditoría .............................. (ready)
+  Rutas: /planificaciones, /planificaciones/bitacora
+  Controlador: PlanificacionController
+
+- Citas .................................................. (ready)
+  Rutas: /inspeccion/citas/agendar, /inspeccion/citas/historial
+  Controlador: InspectorCitaController
+
+- Reportes de asistencia y observaciones ................. (ready)
+  Rutas: /inspeccion/asistencia/estadisticas,
+         /inspeccion/observaciones/reporte/alumno,
+         /inspeccion/observaciones/estadisticas
+
+- Mensajes y difusión .................................... (ready)
+  Rutas: GET/POST /mensajes
+  Controlador: MensajeController
+
+- Perfil ................................................. (ready)
+
+===============================================================================
+ 7. RECTORADO (RECTORA)  ->  SIN INICIAR (solo accesos compartidos)
+===============================================================================
+
+- Panel propio de Rectorado .............................. (not started)
+  Hoy el rol RECTORA cae en el panel general (DashboardController@general).
+  El panel institucional completo (dashboard/rector.blade.php) está asignado
+  al rol ADMIN.
+
+- Módulos propios de Rectorado ........................... (not started)
+  No hay aprobaciones, resoluciones, supervisión académica ni reportes
+  gerenciales propios del rectorado.
+
+- Accesos compartidos en modo lectura .................... (started)
+  Rutas heredadas:
+  - GET /dece/expedientes, /dece/reportes
+  - GET /inspeccion/citas/historial
+  - GET /inspeccion/observaciones y reportes
+  - GET /planificaciones y /planificaciones/bitacora
+  - GET /mensajes
+  Estos módulos fueron creados para otros roles; Rectorado solo consulta.
+
+- Notificaciones de circulares ........................... (started)
+  Puede recibir circulares por correo/SMS, pero no tiene módulo propio de
+  emisión institucional.
+
+Conclusión: Rectorado NO tiene módulo propio terminado. Se marca (not started)
+en su gestión específica y (started) en los accesos compartidos.
+
+===============================================================================
+ 8. VICERRECTORADO (VICERRECTORA)  ->  SIN INICIAR (solo accesos compartidos)
+===============================================================================
+
+- Panel propio de Vicerrectorado ......................... (not started)
+  Usa el panel general; no existe un tablero de vicerrectorado.
+
+- Módulos propios de Vicerrectorado ...................... (not started)
+  No hay gestión de académico, disciplina, docentes, horarios ni reportes
+  propios del vicerrectorado.
+
+- Accesos compartidos en modo lectura .................... (started)
+  Rutas heredadas:
+  - GET /dece/expedientes, /dece/reportes
+  - GET /inspeccion/citas/historial
+  - GET /inspeccion/observaciones y reportes
+  - GET /planificaciones y /planificaciones/bitacora
+  - GET /mensajes
+  - El compositor de mensajes del representante muestra Vicerrectorado como
+    área de contacto.
+
+- Notificaciones de circulares ........................... (started)
+  Puede recibir circulares por correo/SMS; no emite circulares institucionales.
+
+Conclusión: Vicerrectorado NO tiene módulo propio terminado. Se marca
+(not started) en su gestión específica y (started) en los accesos compartidos.
+
+===============================================================================
+ 9. ADMINISTRADOR (ADMIN)  ->  LISTO
+===============================================================================
+
+- Panel institucional / Rectorado ........................ (ready)
+  Ruta: GET /dashboard
+  Controlador: DashboardController@rector
+  Indicadores de estudiantes, docentes, solicitudes y cursos.
+
+- Configuración del centro ............................... (ready)
+  Rutas: GET /admin/configuracion,
+         POST /admin/configuracion/sistema-evaluacion,
+         POST /admin/configuracion/zona-horaria,
+         POST /admin/configuracion/apariencia
+  Controlador: Admin\ConfiguracionController
+  Incluye zona horaria, sistema de evaluación, carrusel y apariencia.
+
+- Apariencia global (10 paletas + tamaño de fuente) ...... (ready)
+  Ruta: POST /admin/configuracion/apariencia
+  Clase: App\Support\Tema
+  Aplica el color del aside y el tamaño de letra a TODOS los roles.
+  Paleta por defecto: azul Microsoft Word (#2B579A); seleccionado/hover
+  #3E6DB5; letras blancas y negrilla al pasar o seleccionar.
+
+- Carrusel del portal .................................... (ready)
+  Rutas: /admin/hero-slides (crear, editar, eliminar, velocidad)
+  Controlador: Admin\HeroSlideController
+
+- Solicitudes de matrícula / pre-registro ................ (ready)
+  Rutas: /admin/pre-registros
+  Controlador: Admin\PreRegistroController
+
+- Matrículas ............................................. (ready)
+  Rutas: /admin/matriculas/{id}
+  Controlador: Admin\MatriculaController
+
+- Actualización de datos ................................. (ready)
+  Rutas: /actualizacion
+  Controlador: ActualizacionDatosController
+
+- Traslados e historial académico ........................ (ready)
+  Rutas: /traslados
+  Controlador: TrasladoController
+
+- Corrección extraordinaria de notas ..................... (ready)
+  Rutas: /notas-extraordinarias
+  Controlador: NotaExtraordinariaController
+
+- Planificación y auditoría .............................. (ready)
+  Rutas: /planificaciones y /planificaciones/bitacora
+  Controlador: PlanificacionController
+
+- Módulo DECE completo ................................... (ready)
+  Rutas: /dece/*
+  Controlador: Dece\*
+
+- Mensajes, difusión y circulares ........................ (ready)
+  Rutas: GET/POST /mensajes
+  Controlador: MensajeController
+  Puede enviar circulares con aviso por correo y SMS.
+
+- Gestión de usuarios y roles (altas, bajas, permisos) ... (not started)
+  No existe un CRUD de usuarios ni asignación de roles desde la interfaz.
+  Los usuarios se crean por matrícula/pre-registro y por datos de prueba.
+
+- Notificaciones de circulares por correo y SMS .......... (ready)
+  Canales: correo (Laravel Notifications) y SMS (driver log o webhook).
+  Para producción: configurar SMS_DRIVER=webhook, SMS_WEBHOOK_URL y
+  SMS_WEBHOOK_TOKEN en .env. Con SMS_DRIVER=log el SMS queda en el log.
+
+===============================================================================
+ 10. NOTIFICACIONES DE CIRCULARES (transversal a todos los roles)
+===============================================================================
+
+- Texto institucional enviado ............................ (ready)
+  "Saludos, Por esta vía le informamos que usted ha recibido una notificación
+  por parte de la institución. Le invitamos a leerla y si tiene alguna duda,
+  gustosos le ayudaremos a aclararla. Saludos cordiales"
+
+- Correo electrónico ..................................... (ready)
+  Clase: App\Notifications\CircularRecibida (canal mail)
+  Usa el email de la cuenta del destinatario.
+
+- SMS .................................................... (ready)
+  Clase: App\Notifications\Channels\SmsChannel
+  Usa users.telefono. Drivers:
+  - log: escribe en storage/logs (desarrollo).
+  - webhook: envía a SMS_WEBHOOK_URL (producción, requiere credenciales).
+
+- Marcado del mensaje .................................... (ready)
+  Columna mensajes.es_circular + casilla "Enviar como circular" en el
+  compositor de mensajes. Ruta: POST /mensajes.
+
+- Difusión masiva ........................................ (ready)
+  Si el mensaje es circular y se envía a un curso, nivel o comunidad, cada
+  destinatario recibe su correo y SMS. Los avisos se envían después del
+  commit de la base de datos.
+
+===============================================================================
+ RESUMEN GENERAL
+===============================================================================
+
+Rol                       Estado general
+------------------------  ----------------------------------------------------
+Alumno (ESTUDIANTE)       (ready) verificado ok
+Representante             (ready) verificado ok
+Docente                   (ready) verificado ok
+Inspector (INSPECCION)    (ready) verificado ok
+DECE                      (ready) listo
+Secretaría (SECRETARIA)   (ready) listo
+Rectorado (RECTORA)       (not started) en módulos propios; (started) en accesos
+Vicerrectorado            (not started) en módulos propios; (started) en accesos
+Administrador (ADMIN)     (ready) listo, salvo gestión de usuarios (not started)
+
+Pendientes recomendados:
+  1. Crear el panel y los módulos propios de Rectorado.
+  2. Crear el panel y los módulos propios de Vicerrectorado.
+  3. Implementar el CRUD de usuarios y la asignación de roles.
+  4. Configurar un proveedor SMS real (webhook) para producción.
+  5. Agregar pruebas específicas para actas docentes y reportes gerenciales.
+
+===============================================================================
+ FIN DEL DOCUMENTO
+===============================================================================
