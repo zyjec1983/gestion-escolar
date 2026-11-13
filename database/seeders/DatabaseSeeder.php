@@ -2,11 +2,12 @@
 
 namespace Database\Seeders;
 
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use \Illuminate\Database\Console\Seeds\WithoutModelEvents;
+    use WithoutModelEvents;
 
     public function run(): void
     {
@@ -30,6 +31,8 @@ class DatabaseSeeder extends Seeder
             UnidadSeeder::class,
             PlanificacionSeeder::class,
             AdminSeeder::class,
+            DecePersonalSeeder::class,
+            DeceDiagnosticoSeeder::class,
         ]);
     }
 }

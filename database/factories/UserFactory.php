@@ -70,4 +70,25 @@ class UserFactory extends Factory
             'rol' => 'ESTUDIANTE',
         ]);
     }
+
+    public function dece(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rol' => 'DECE',
+        ]);
+    }
+
+    public function rectora(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rol' => 'RECTORA',
+        ]);
+    }
+
+    public function vicerrectora(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rol' => 'VICERRECTORA',
+        ]);
+    }
 }

@@ -252,6 +252,74 @@
             </div>
         </li>
         @endif
+        @if(in_array($rol, ['DECE', 'ADMIN', 'RECTORA', 'VICERRECTORA']))
+        @php
+            $deceActivo = request()->is('dece*');
+        @endphp
+        <li class="nav-item mt-3">
+            <span class="text-uppercase text-white-50 small fw-semibold px-2">Consejería estudiantil</span>
+        </li>
+        <li class="nav-item mt-1">
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $deceActivo ? 'active' : '' }}"
+               data-bs-toggle="collapse" href="#submenuDece" aria-expanded="{{ $deceActivo ? 'true' : 'false' }}" aria-controls="submenuDece">
+                <span><i class="bi bi-heart-pulse me-2"></i> DECE</span>
+                <i class="bi bi-chevron-down chevron-icon"></i>
+            </a>
+            <div class="collapse {{ $deceActivo ? 'show' : '' }}" id="submenuDece">
+                <ul class="nav nav-pills flex-column ms-3 mt-1">
+                    <li class="nav-item">
+                        <a href="{{ route('dece.expedientes.index') }}" class="nav-link text-white small py-1 {{ request()->is('dece/expedientes*') ? 'active' : '' }}">
+                            <i class="bi bi-folder2-open me-2"></i> Expedientes
+                        </a>
+                    </li>
+                    @if(in_array($rol, ['DECE', 'ADMIN']))
+                    <li class="nav-item">
+                        <a href="{{ route('dece.atenciones.index') }}" class="nav-link text-white small py-1 {{ request()->is('dece/atenciones*') ? 'active' : '' }}">
+                            <i class="bi bi-clipboard2-pulse me-2"></i> Atenciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('dece.citas.index') }}" class="nav-link text-white small py-1 {{ request()->is('dece/citas*') ? 'active' : '' }}">
+                            <i class="bi bi-calendar2-week me-2"></i> Agenda de citas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('dece.acuerdos.index') }}" class="nav-link text-white small py-1 {{ request()->is('dece/acuerdos*') ? 'active' : '' }}">
+                            <i class="bi bi-file-earmark-check me-2"></i> Acuerdos y actas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('dece.nee.index') }}" class="nav-link text-white small py-1 {{ request()->is('dece/nee*') ? 'active' : '' }}">
+                            <i class="bi bi-universal-access me-2"></i> NEE y diagnósticos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('dece.talleres.index') }}" class="nav-link text-white small py-1 {{ request()->is('dece/talleres*') ? 'active' : '' }}">
+                            <i class="bi bi-people me-2"></i> Talleres
+                        </a>
+                    </li>
+                    @endif
+                    <li class="nav-item">
+                        <a href="{{ route('dece.derivaciones.index') }}" class="nav-link text-white small py-1 {{ request()->is('dece/derivaciones*') ? 'active' : '' }}">
+                            <i class="bi bi-arrow-up-right-circle me-2"></i> Derivaciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('dece.reportes.index') }}" class="nav-link text-white small py-1 {{ request()->is('dece/reportes*') ? 'active' : '' }}">
+                            <i class="bi bi-bar-chart-line me-2"></i> Reportes
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        @endif
+        @if(in_array($rol, ['DOCENTE', 'INSPECCION']))
+        <li class="nav-item mt-2">
+            <a href="{{ route('dece.derivaciones.create') }}" class="nav-link text-white {{ request()->is('dece/derivaciones*') ? 'active' : '' }}">
+                <i class="bi bi-arrow-up-right-circle me-2"></i> Derivar al DECE
+            </a>
+        </li>
+        @endif
         @if($rol === 'INSPECCION')
         @php
             $asistenciaActivas = request()->is('inspeccion/asistencia*');

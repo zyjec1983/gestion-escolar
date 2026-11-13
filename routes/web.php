@@ -8,6 +8,16 @@ use App\Http\Controllers\Api\DashboardController as ApiDashboardController;
 use App\Http\Controllers\AulaVirtualController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Dece\AcuerdoController as DeceAcuerdoController;
+use App\Http\Controllers\Dece\AtencionController as DeceAtencionController;
+use App\Http\Controllers\Dece\BuscadorController as DeceBuscadorController;
+use App\Http\Controllers\Dece\CitaController as DeceCitaController;
+use App\Http\Controllers\Dece\DerivacionController as DeceDerivacionController;
+use App\Http\Controllers\Dece\DiagnosticoController as DeceDiagnosticoController;
+use App\Http\Controllers\Dece\ExpedienteController as DeceExpedienteController;
+use App\Http\Controllers\Dece\NeeController as DeceNeeController;
+use App\Http\Controllers\Dece\ReporteController as DeceReporteController;
+use App\Http\Controllers\Dece\TallerController as DeceTallerController;
 use App\Http\Controllers\Docente\ActaController;
 use App\Http\Controllers\Docente\AsistenciaController;
 use App\Http\Controllers\Docente\CitaController;
@@ -265,6 +275,86 @@ Route::middleware(['auth', 'role:INSPECCION,RECTORA,VICERRECTORA,DECE,SECRETARIA
         Route::get('/observaciones/reporte/alumno/pdf', [ObservacionReporteController::class, 'pdfPorAlumno'])->name('observaciones.reporte.alumno.pdf');
         Route::get('/observaciones/estadisticas', [ObservacionEstadisticasController::class, 'index'])->name('observaciones.estadisticas');
         Route::get('/asistencia/estadisticas', [InspectorAsistenciaEstadisticasController::class, 'index'])->name('asistencia.estadisticas');
+    });
+
+// Modulo DECE: expedientes y reportes agregados. El panel de inicio vive en
+// /dashboard (se renderiza alli para el rol DECE). Rectorado y Vicerrectorado
+// entran en modo lectura sin relatorias confidenciales.
+Route::middleware(['auth', 'role:DECE,ADMIN,RECTORA,VICERRECTORA'])
+    ->prefix('dece')->name('dece.')->group(function () {
+        Route::get('/expedientes', [DeceExpedienteController::class, 'index'])->name('expedientes.index');
+        Route::get('/expedientes/{alumno}', [DeceExpedienteController::class, 'show'])->name('expedientes.show');
+        Route::get('/reportes', [DeceReporteController::class, 'index'])->name('reportes.index');
+        Route::get('/reportes/pdf', [DeceReporteController::class, 'pdf'])->name('reportes.pdf');
+    });
+
+// Buscadores JSON del DECE. Evitan cargar el padron completo en cada formulario.
+Route::middleware(['auth', 'role:DECE,ADMIN,RECTORA,VICERRECTORA,DOCENTE,INSPECCION'])
+    ->prefix('dece')->name('dece.')->group(function () {
+        Route::get('/buscar/alumnos', [DeceBuscadorController::class, 'alumnos'])->name('buscar.alumnos');
+    });
+
+Route::middleware(['auth', 'role:DECE,ADMIN'])
+    ->prefix('dece')->name('dece.')->group(function () {
+        Route::get('/buscar/alumnos/{alumno}/citas', [DeceBuscadorController::class, 'citas'])->name('buscar.citas');
+        Route::get('/buscar/alumnos/{alumno}/atenciones', [DeceBuscadorController::class, 'atenciones'])->name('buscar.atenciones');
+        Route::get('/buscar/talleres', [DeceBuscadorController::class, 'talleres'])->name('buscar.talleres');
+    });
+
+// Gestion clinica y administrativa del DECE.
+Route::middleware(['auth', 'role:DECE,ADMIN'])
+    ->prefix('dece')->name('dece.')->group(function () {
+        Route::get('/atenciones', [DeceAtencionController::class, 'index'])->name('atenciones.index');
+        Route::get('/atenciones/crear', [DeceAtencionController::class, 'create'])->name('atenciones.create');
+        Route::post('/atenciones', [DeceAtencionController::class, 'store'])->name('atenciones.store');
+        Route::get('/atenciones/{atencion}', [DeceAtencionController::class, 'show'])->name('atenciones.show');
+        Route::post('/atenciones/{atencion}/cerrar', [DeceAtencionController::class, 'cerrar'])->name('atenciones.cerrar');
+        Route::get('/atenciones/{atencion}/pdf', [DeceAtencionController::class, 'pdf'])->name('atenciones.pdf');
+
+        Route::get('/citas', [DeceCitaController::class, 'index'])->name('citas.index');
+        Route::get('/citas/crear', [DeceCitaController::class, 'create'])->name('citas.create');
+        Route::post('/citas', [DeceCitaController::class, 'store'])->name('citas.store');
+        Route::get('/citas/{cita}', [DeceCitaController::class, 'show'])->name('citas.show');
+        Route::post('/citas/{cita}/registrar', [DeceCitaController::class, 'registrar'])->name('citas.registrar');
+
+        Route::get('/acuerdos', [DeceAcuerdoController::class, 'index'])->name('acuerdos.index');
+        Route::get('/acuerdos/crear', [DeceAcuerdoController::class, 'create'])->name('acuerdos.create');
+        Route::post('/acuerdos', [DeceAcuerdoController::class, 'store'])->name('acuerdos.store');
+        Route::get('/acuerdos/{acuerdo}', [DeceAcuerdoController::class, 'show'])->name('acuerdos.show');
+        Route::post('/acuerdos/{acuerdo}/firmar', [DeceAcuerdoController::class, 'firmar'])->name('acuerdos.firmar');
+        Route::post('/acuerdos/{acuerdo}/seguimiento', [DeceAcuerdoController::class, 'seguimiento'])->name('acuerdos.seguimiento');
+        Route::get('/acuerdos/{acuerdo}/pdf', [DeceAcuerdoController::class, 'pdf'])->name('acuerdos.pdf');
+
+        Route::get('/nee', [DeceNeeController::class, 'index'])->name('nee.index');
+        Route::get('/nee/crear', [DeceNeeController::class, 'create'])->name('nee.create');
+        Route::post('/nee', [DeceNeeController::class, 'store'])->name('nee.store');
+        Route::get('/nee/{nee}', [DeceNeeController::class, 'show'])->name('nee.show');
+        Route::get('/nee/{nee}/editar', [DeceNeeController::class, 'edit'])->name('nee.edit');
+        Route::put('/nee/{nee}', [DeceNeeController::class, 'update'])->name('nee.update');
+        Route::post('/nee/{nee}/estado', [DeceNeeController::class, 'toggle'])->name('nee.toggle');
+
+        Route::get('/diagnosticos', [DeceDiagnosticoController::class, 'index'])->name('diagnosticos.index');
+        Route::post('/diagnosticos', [DeceDiagnosticoController::class, 'store'])->name('diagnosticos.store');
+        Route::put('/diagnosticos/{diagnostico}', [DeceDiagnosticoController::class, 'update'])->name('diagnosticos.update');
+        Route::post('/diagnosticos/{diagnostico}/estado', [DeceDiagnosticoController::class, 'toggle'])->name('diagnosticos.toggle');
+
+        Route::post('/derivaciones/{derivacion}', [DeceDerivacionController::class, 'update'])->name('derivaciones.update');
+
+        Route::get('/talleres', [DeceTallerController::class, 'index'])->name('talleres.index');
+        Route::get('/talleres/crear', [DeceTallerController::class, 'create'])->name('talleres.create');
+        Route::post('/talleres', [DeceTallerController::class, 'store'])->name('talleres.store');
+        Route::get('/talleres/{taller}', [DeceTallerController::class, 'show'])->name('talleres.show');
+        Route::post('/talleres/{taller}/asistencia', [DeceTallerController::class, 'registrarAsistencia'])->name('talleres.asistencia');
+    });
+
+// Derivaciones internas: docentes e inspeccion pueden remitir un caso al DECE.
+Route::middleware(['auth', 'role:DECE,ADMIN,DOCENTE,INSPECCION'])
+    ->prefix('dece')->name('dece.')->group(function () {
+        Route::get('/derivaciones', [DeceDerivacionController::class, 'index'])->name('derivaciones.index');
+        Route::get('/derivaciones/crear', [DeceDerivacionController::class, 'create'])->name('derivaciones.create');
+        Route::post('/derivaciones', [DeceDerivacionController::class, 'store'])->name('derivaciones.store');
+        Route::get('/derivaciones/{derivacion}', [DeceDerivacionController::class, 'show'])->name('derivaciones.show');
+        Route::get('/derivaciones/{derivacion}/pdf', [DeceDerivacionController::class, 'pdf'])->name('derivaciones.pdf');
     });
 
 Route::get('/debug-data', function () {

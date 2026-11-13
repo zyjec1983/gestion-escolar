@@ -27,6 +27,7 @@ class DashboardController extends Controller
             'REPRESENTANTE' => $this->representante($request),
             'ESTUDIANTE' => $this->estudiante($request),
             'INSPECCION' => $this->inspector($request),
+            'DECE' => $this->dece($request),
             default => $this->general($request),
         };
     }
@@ -118,6 +119,15 @@ class DashboardController extends Controller
         $data = (new DashboardResource($request->user()))->resolve($request);
 
         return view('dashboard.index', $data);
+    }
+
+    /**
+     * El rol DECE comparte el panel institucional con el modulo de consejeria:
+     * el mismo panel de /dece se muestra en /dashboard.
+     */
+    private function dece(Request $request)
+    {
+        return app(Dece\DashboardController::class)->index($request);
     }
 
     private function inspector(Request $request)
