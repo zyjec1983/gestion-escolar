@@ -14,6 +14,8 @@ class LoginTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertViewIs('auth.login');
+        $response->assertSee('Volver al inicio');
+        $response->assertSee(route('welcome'), false);
     }
 
     /** @test */

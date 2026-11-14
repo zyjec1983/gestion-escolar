@@ -37,8 +37,83 @@
             color: #1f2937;
             background: #eef1f6;
             display: flex;
+            flex-direction: column;
+        }
+        /* Barra superior: identidad institucional y regreso al portal. */
+        .login-topbar {
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+        }
+        .login-topbar-inner {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .login-topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--login-brand);
+            text-decoration: none;
+            min-width: 0;
+        }
+        .login-topbar-brand:hover { color: var(--login-brand-hover); }
+        .login-topbar-brand img {
+            height: 38px;
+            width: 38px;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+        .login-topbar-brand .brand-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+            min-width: 0;
+        }
+        .login-topbar-brand strong {
+            font-size: .95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .login-topbar-brand small {
+            color: #6b7280;
+            font-size: .72rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .btn-back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid var(--login-brand);
+            color: var(--login-brand);
+            background: transparent;
+            font-weight: 600;
+            font-size: .82rem;
+            padding: 7px 14px;
+            border-radius: 999px;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background .2s, color .2s;
+        }
+        .btn-back-home:hover,
+        .btn-back-home:focus {
+            background: var(--login-brand);
+            color: var(--login-text);
+        }
+        .login-main {
+            flex: 1;
+            display: flex;
             align-items: center;
             justify-content: center;
+            width: 100%;
             padding: 24px 16px;
         }
         .login-shell {
@@ -253,14 +328,45 @@
             .login-form-panel { padding: 34px 26px; }
         }
         @media (max-width: 575.98px) {
-            body { padding: 12px; }
+            .login-main { padding: 12px; }
+            .login-topbar-inner { padding: 10px 14px; }
+            .login-topbar-brand small { display: none; }
+            .btn-back-home { padding: 6px 11px; font-size: .78rem; }
             .login-visual { min-height: 200px; }
             .login-form-panel { padding: 26px 20px; }
         }
     </style>
 </head>
 <body>
-    <main class="login-shell">
+    {{--
+        Barra superior del login.
+
+        Qué hace: muestra la identidad institucional y un botón para volver al
+        portal público sin salir de la pantalla de acceso.
+        Conecta con: App\Models\Institucion y la ruta welcome.
+        Ruta: GET /login.
+    --}}
+    <header class="login-topbar">
+        <div class="login-topbar-inner">
+            <a href="{{ route('welcome') }}" class="login-topbar-brand" title="Ir al inicio">
+                @if(!empty($institucion?->logo_path))
+                <img src="{{ $institucion->logoUrl() }}" alt="Logo {{ $nombreInstitucion }}">
+                @else
+                <i class="bi bi-mortarboard-fill fs-3"></i>
+                @endif
+                <span class="brand-text">
+                    <strong>{{ $nombreInstitucion }}</strong>
+                    <small>{{ $subtituloInstitucion }}</small>
+                </span>
+            </a>
+            <a href="{{ route('welcome') }}" class="btn-back-home">
+                <i class="bi bi-arrow-left"></i> Volver al inicio
+            </a>
+        </div>
+    </header>
+
+    <main class="login-main">
+        <div class="login-shell">
         <div class="login-card">
             {{-- ============ COLUMNA IZQUIERDA: CARRUSEL ============ --}}
             <section class="login-visual" aria-label="Presentación institucional">
@@ -368,6 +474,7 @@
                     &copy; {{ date('Y') }} {{ $nombreInstitucion }}. Todos los derechos reservados.
                 </div>
             </section>
+            </div>
         </div>
     </main>
 

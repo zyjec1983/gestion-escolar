@@ -567,7 +567,9 @@ incorporarán después si se requieren.
   Vista: resources/views/auth/login.blade.php
   Columna izquierda con carrusel administrable y columna derecha con el
   formulario. Usa la paleta y el tamaño de fuente activos, el nombre y el logo
-  institucional y el logo como favicon. Incluye mostrar/ocultar contraseña.
+  institucional y el logo como favicon. Incluye mostrar/ocultar contraseña y
+  una barra superior con la identidad institucional y el botón "Volver al
+  inicio" que lleva al portal público.
 
 - Selección de perfil al iniciar sesión .................. (ready)
   Ruta: GET /perfil/seleccionar
