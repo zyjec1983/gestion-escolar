@@ -11,6 +11,9 @@
                 Asigne el rol principal y los roles adicionales de cada cuenta. Una persona puede usar varios perfiles.
             </p>
         </div>
+        <a href="{{ route('admin.usuarios.create') }}" class="btn btn-primary">
+            <i class="bi bi-person-plus me-1"></i>Nueva cuenta
+        </a>
     </div>
 
     @if(session('success'))
@@ -92,6 +95,10 @@
                         <td class="text-end">
                             <a href="{{ route('admin.usuarios.edit', $usuario) }}" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-pencil-square me-1"></i>Editar
+                            </a>
+                            <a href="{{ route('admin.usuarios.password', $usuario) }}" class="btn btn-sm btn-outline-warning"
+                               title="Restablecer contraseña">
+                                <i class="bi bi-key"></i>
                             </a>
                         </td>
                     </tr>

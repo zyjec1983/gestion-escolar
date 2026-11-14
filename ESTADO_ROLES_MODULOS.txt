@@ -288,6 +288,16 @@ solo le muestra sus opciones.
   Rutas: /admin/pre-registros (índice, ver, aprobar, rechazar, PDF)
   Controlador: Admin\PreRegistroController
 
+- Circulares institucionales .............................. (ready)
+  Rutas: GET/POST/DELETE /admin/circulares
+  Controlador: Admin\CircularController
+  Publica circulares y envía el aviso por correo y SMS a los roles elegidos.
+
+- Fechas de subida de notas ............................... (ready)
+  Rutas: /admin/ventanas-notas (crear, editar, habilitar/deshabilitar, eliminar)
+  Controlador: Admin\VentanaNotaController
+  Permite una ventana por parcial o una ventana general para todos los parciales.
+
 - Matrículas ............................................. (ready)
   Rutas: GET/PUT /admin/matriculas/{id}
   Controlador: Admin\MatriculaController
@@ -325,17 +335,19 @@ solo le muestra sus opciones.
 - Perfil ................................................. (ready)
 
 ===============================================================================
- 7. RECTORADO (RECTORA)  ->  SIN INICIAR (solo accesos compartidos)
+ 7. RECTORADO (RECTORA)  ->  PANEL COMPARTIDO (módulos propios sin iniciar)
 ===============================================================================
 
-- Panel propio de Rectorado .............................. (not started)
-  Hoy el rol RECTORA cae en el panel general (DashboardController@general).
-  El panel institucional completo (dashboard/rector.blade.php) está asignado
-  al rol ADMIN.
+- Panel de Rectorado / Vicerrectorado ..................... (ready)
+  Ruta: GET /dashboard
+  Controlador: DashboardController@index -> rector
+  Vista: resources/views/dashboard/rector.blade.php
+  Tablero institucional compartido con indicadores de estudiantes, docentes,
+  solicitudes pendientes y cursos abiertos, más las circulares publicadas.
 
 - Módulos propios de Rectorado ........................... (not started)
   No hay aprobaciones, resoluciones, supervisión académica ni reportes
-  gerenciales propios del rectorado.
+  gerenciales exclusivos del rectorado.
 
 - Accesos compartidos en modo lectura .................... (started)
   Rutas heredadas:
@@ -346,19 +358,22 @@ solo le muestra sus opciones.
   - GET /mensajes
   Estos módulos fueron creados para otros roles; Rectorado solo consulta.
 
-- Notificaciones de circulares ........................... (started)
-  Puede recibir circulares por correo/SMS, pero no tiene módulo propio de
-  emisión institucional.
+- Circulares institucionales .............................. (ready)
+  Rutas: GET/POST/DELETE /admin/circulares
+  Controlador: Admin\CircularController
+  Puede publicar circulares y avisar por correo/SMS a los roles elegidos.
 
-Conclusión: Rectorado NO tiene módulo propio terminado. Se marca (not started)
-en su gestión específica y (started) en los accesos compartidos.
+Conclusión: Rectorado tiene panel institucional y emisión de circulares
+(ready); sus módulos gerenciales propios siguen (not started).
 
 ===============================================================================
- 8. VICERRECTORADO (VICERRECTORA)  ->  SIN INICIAR (solo accesos compartidos)
+ 8. VICERRECTORADO (VICERRECTORA)  ->  PANEL COMPARTIDO (módulos propios sin iniciar)
 ===============================================================================
 
-- Panel propio de Vicerrectorado ......................... (not started)
-  Usa el panel general; no existe un tablero de vicerrectorado.
+- Panel de Rectorado / Vicerrectorado ..................... (ready)
+  Ruta: GET /dashboard
+  Controlador: DashboardController@index -> rector
+  Usa el mismo tablero institucional compartido con Rectorado.
 
 - Módulos propios de Vicerrectorado ...................... (not started)
   No hay gestión de académico, disciplina, docentes, horarios ni reportes
@@ -374,20 +389,89 @@ en su gestión específica y (started) en los accesos compartidos.
   - El compositor de mensajes del representante muestra Vicerrectorado como
     área de contacto.
 
-- Notificaciones de circulares ........................... (started)
-  Puede recibir circulares por correo/SMS; no emite circulares institucionales.
+- Circulares institucionales .............................. (ready)
+  Rutas: GET/POST/DELETE /admin/circulares
+  Controlador: Admin\CircularController
+  Puede publicar circulares y avisar por correo/SMS a los roles elegidos.
 
-Conclusión: Vicerrectorado NO tiene módulo propio terminado. Se marca
-(not started) en su gestión específica y (started) en los accesos compartidos.
+Conclusión: Vicerrectorado tiene panel institucional compartido y circulares
+(ready); sus módulos gerenciales propios siguen (not started).
 
 ===============================================================================
  9. ADMINISTRADOR (ADMIN)  ->  LISTO
 ===============================================================================
 
-- Panel institucional / Rectorado ........................ (ready)
+El rol ADMIN tiene panel y menú propios. Solo muestra los módulos
+administrables solicitados; las funciones operativas de otros roles
+(matrículas, planificación, DECE, mensajes) quedan fuera de su menú y se
+incorporarán después si se requieren.
+
+- Panel de Administración ................................ (ready)
   Ruta: GET /dashboard
-  Controlador: DashboardController@rector
-  Indicadores de estudiantes, docentes, solicitudes y cursos.
+  Controlador: DashboardController@index -> admin
+  Vista: resources/views/dashboard/admin.blade.php
+  Indicadores de estudiantes, docentes, cursos, circulares y ventanas de notas
+  activas; accesos directos a los módulos, últimos cambios del historial y
+  circulares recientes.
+
+- Menú lateral exclusivo del ADMIN ....................... (ready)
+  Archivo: resources/views/layouts/principal.blade.php
+  Grupos: Administración (Sitio web, Comunidad educativa, Carrusel del portal,
+  Carrusel del login, Circulares, Observaciones, Fechas de subida de notas) y
+  Seguridad y auditoría (Usuarios, Historial de cambios, Configuración).
+
+- Sitio web (todos los campos del portal) ................ (ready)
+  Rutas: GET /admin/sitio,
+         POST /admin/sitio/contenido/{grupo},
+         CRUD /admin/sitio/historia, /admin/sitio/utiles, /admin/sitio/descargas
+  Controlador: Admin\SitioController
+  Catálogo de campos: App\Support\PortalContenido
+  Pestañas: Textos e imágenes (identidad, inicio, historia, comunidad, útiles,
+  descargas y admisiones), Historia, Útiles y Descargas. Cada texto, enlace,
+  booleano e imagen del portal es editable desde aquí.
+
+- Comunidad educativa .................................... (ready)
+  Rutas: CRUD /admin/comunidad
+  Controlador: Admin\ComunidadController
+  Cargo, foto, nombres, responsabilidad y área (Rectorado, DECE, Matemáticas,
+  Inglés, etc.). Filas ilimitadas y agrupación por área en el portal.
+
+- Circulares institucionales ............................. (ready)
+  Rutas: GET/POST/DELETE /admin/circulares
+  Controlador: Admin\CircularController
+  Publica circulares con archivo y avisa por correo y SMS a los roles elegidos.
+  También disponible para Rectorado y Secretaría.
+
+- Observaciones enviadas por error ....................... (ready)
+  Rutas: GET /admin/observaciones, DELETE /admin/observaciones/{id}
+  Controlador: Admin\ObservacionAdminController
+  Lista con filtros por estudiante, tipo y fecha; elimina registros erróneos y
+  deja constancia en el historial de cambios.
+
+- Fechas de subida de notas .............................. (ready)
+  Rutas: /admin/ventanas-notas (crear, editar, habilitar/deshabilitar, eliminar)
+  Controlador: Admin\VentanaNotaController
+  Ventana por parcial o ventana general para todos los parciales. También
+  disponible para Secretaría.
+
+- Historial de cambios ................................... (ready)
+  Ruta: GET /admin/historial
+  Controlador: Admin\HistorialController
+  Registro de quién creó, editó o eliminó información en los módulos
+  administrables, con módulo, acción, descripción, datos e IP.
+
+- Gestión de usuarios, roles y contraseñas ............... (ready)
+  Rutas: GET /admin/usuarios, GET /admin/usuarios/nueva,
+         POST /admin/usuarios, GET /admin/usuarios/{user}/editar,
+         PUT /admin/usuarios/{user},
+         GET /admin/usuarios/{user}/password,
+         POST /admin/usuarios/{user}/password
+  Controlador: Admin\UserController
+  Crea cuentas nuevas, busca cuentas, cambia el rol principal, marca roles
+  adicionales (multirol) y restablece contraseñas olvidadas. Protege al
+  sistema para que siempre exista al menos una cuenta ADMIN y nadie pueda
+  quitarse ese rol a sí mismo. Si la persona tiene clases asignadas, el perfil
+  DOCENTE se agrega solo.
 
 - Configuración del centro ............................... (ready)
   Rutas: GET /admin/configuracion,
@@ -396,7 +480,8 @@ Conclusión: Vicerrectorado NO tiene módulo propio terminado. Se marca
          POST /admin/configuracion/zona-horaria,
          POST /admin/configuracion/apariencia
   Controlador: Admin\ConfiguracionController
-  Incluye institución, zona horaria, sistema de evaluación, carrusel y apariencia.
+  Pestañas: Institución, Sistema de evaluación, Zona horaria, Carrusel del
+  portal, Carrusel del login y Apariencia.
 
 - Institución, logo y favicon ............................ (ready)
   Ruta: POST /admin/configuracion/institucion (pestaña Institución)
@@ -407,63 +492,33 @@ Conclusión: Vicerrectorado NO tiene módulo propio terminado. Se marca
 - Apariencia global (10 paletas + tamaño de fuente) ...... (ready)
   Ruta: POST /admin/configuracion/apariencia
   Clase: App\Support\Tema
-  Aplica el color del aside y el tamaño de letra a TODOS los roles.
+  Aplica el color del aside y el tamaño de letra a TODOS los roles y al login.
   Paleta por defecto: azul Microsoft Word (#2B579A); seleccionado/hover
   #3E6DB5; letras blancas y negrilla al pasar o seleccionar.
 
 - Carrusel del portal y del login ........................ (ready)
   Rutas: /admin/hero-slides (crear, editar, eliminar, velocidad)
   Controlador: Admin\HeroSlideController
-  Cada imagen se marca para "Página de inicio", "Inicio de sesión" o "Inicio y
-  login"; el inicio y el login muestran solo su propio carrusel.
+  Dos pestañas independientes dentro de Configuración ("Carrusel del portal" y
+  "Carrusel del login"). Cada imagen se marca para "Página de inicio", "Inicio
+  de sesión" o "Inicio y login". El botón "Nuevo Slide" de la pestaña del login
+  preselecciona esa ubicación.
 
 - Solicitudes de matrícula / pre-registro ................ (ready)
   Rutas: /admin/pre-registros
   Controlador: Admin\PreRegistroController
-
-- Matrículas ............................................. (ready)
-  Rutas: /admin/matriculas/{id}
-  Controlador: Admin\MatriculaController
-
-- Actualización de datos ................................. (ready)
-  Rutas: /actualizacion
-  Controlador: ActualizacionDatosController
-
-- Traslados e historial académico ........................ (ready)
-  Rutas: /traslados
-  Controlador: TrasladoController
-
-- Corrección extraordinaria de notas ..................... (ready)
-  Rutas: /notas-extraordinarias
-  Controlador: NotaExtraordinariaController
-
-- Planificación y auditoría .............................. (ready)
-  Rutas: /planificaciones y /planificaciones/bitacora
-  Controlador: PlanificacionController
-
-- Módulo DECE completo ................................... (ready)
-  Rutas: /dece/*
-  Controlador: Dece\*
-
-- Mensajes, difusión y circulares ........................ (ready)
-  Rutas: GET/POST /mensajes
-  Controlador: MensajeController
-  Puede enviar circulares con aviso por correo y SMS.
-
-- Gestión de usuarios y roles (multirol) ................. (ready)
-  Rutas: GET /admin/usuarios,
-         GET /admin/usuarios/{user}/editar,
-         PUT /admin/usuarios/{user}
-  Controlador: Admin\UserController
-  Permite buscar cuentas, cambiar el rol principal, marcar roles adicionales
-  y restablecer contraseñas. Protege al sistema para que siempre exista al
-  menos una cuenta ADMIN y nadie pueda quitarse ese rol a sí mismo.
-  Si la persona tiene clases asignadas, el perfil DOCENTE se agrega solo.
+  Se conserva el módulo aunque ya no aparece en el menú del ADMIN.
 
 - Notificaciones de circulares por correo y SMS .......... (ready)
   Canales: correo (Laravel Notifications) y SMS (driver log o webhook).
   Para producción: configurar SMS_DRIVER=webhook, SMS_WEBHOOK_URL y
   SMS_WEBHOOK_TOKEN en .env. Con SMS_DRIVER=log el SMS queda en el log.
+
+- Funciones operativas retiradas del menú ADMIN .......... (started)
+  Matrículas, actualización de datos, traslados, corrección extraordinaria de
+  notas, planificación, DECE y mensajes siguen existiendo y funcionando con sus
+  roles, pero ya no se muestran en el menú del ADMIN. Se reintegrarán al panel
+  cuando se soliciten.
 
 ===============================================================================
  10. NOTIFICACIONES DE CIRCULARES (transversal a todos los roles)
@@ -522,6 +577,44 @@ Conclusión: Vicerrectorado NO tiene módulo propio terminado. Se marca
   menú lateral y el aula virtual también usan el perfil activo.
 
 ===============================================================================
+ 12. PORTAL PÚBLICO INSTITUCIONAL (sin iniciar sesión)
+===============================================================================
+
+- Página de inicio fusionada con el portal ................ (ready)
+  Ruta: GET / (nombre de ruta: welcome)
+  Controlador: PortalController@index
+  Vista: resources/views/welcome.blade.php
+  Reúne el diseño del template franciscano con los contenidos administrables
+  del sistema: carrusel, historia, comunidad, útiles, descargas y circulares.
+  Navbar y pie propios del portal; los botones de acceso van a /login y los de
+  matrícula a /pre-registro.
+
+- Contenidos editables (CMS clave/valor) .................. (ready)
+  Modelo: App\Models\SiteContent
+  Catálogo: App\Support\PortalContenido
+  Tabla: site_contents. Guarda textos, enlaces, booleanos e imágenes por grupo
+  (institucion, inicio, historia, comunidad, utiles, descargas, admisiones).
+
+- Carrusel del portal ..................................... (ready)
+  Modelo: App\Models\HeroSlide (campo ubicacion)
+  Solo se muestran los slides activos marcados para "Página de inicio" o
+  "Inicio y login", ordenados por `orden`.
+
+- Historia, comunidad, útiles, descargas y circulares ..... (ready)
+  Modelos: HistoriaHito, ComunidadMiembro, UtilItem, DescargaDocumento y
+  Circular. Se listan solo los registros activos; la comunidad se agrupa por
+  área y los útiles se separan por nivel.
+
+- Datos de contacto y redes ............................... (ready)
+  Dirección, teléfonos, correo, horario y redes sociales provienen del CMS y se
+  editan en Administración -> Sitio web.
+
+- Acceso al sistema desde el portal ....................... (ready)
+  "Iniciar sesión" -> GET /login
+  "Solicitar Matrícula" / "Pre-registro" -> GET /pre-registro (según el estado
+  de `pre_registro_activo` de la institución).
+
+===============================================================================
  RESUMEN GENERAL
 ===============================================================================
 
@@ -536,12 +629,14 @@ Secretaría (SECRETARIA)   (ready) listo
 Rectorado (RECTORA)       (started) panel institucional compartido
 Vicerrectorado            (started) panel institucional compartido
 Administrador (ADMIN)     (ready) listo
+Portal público            (ready) listo
 
 Pendientes recomendados:
   1. Crear los módulos propios de Rectorado.
   2. Crear los módulos propios de Vicerrectorado.
   3. Configurar un proveedor SMS real (webhook) para producción.
   4. Agregar pruebas específicas para actas docentes y reportes gerenciales.
+  5. Definir qué funciones operativas vuelven al menú del ADMIN.
 
 ===============================================================================
  FIN DEL DOCUMENTO

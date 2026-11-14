@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             NivelesAlumnosSeeder::class,
             // MatriculaSeeder::class,   // reemplazado por TestDataSeeder
             CircularSeeder::class,
+            PortalContenidoSeeder::class,
             TipoObservacionSeeder::class,
             ObservacionSeeder::class,
             TipoActividadSeeder::class,

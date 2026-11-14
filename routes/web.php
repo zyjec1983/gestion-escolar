@@ -1,10 +1,16 @@
 <?php
 
+use App\Http\Controllers\Admin\CircularController;
+use App\Http\Controllers\Admin\ComunidadController;
 use App\Http\Controllers\Admin\ConfiguracionController;
 use App\Http\Controllers\Admin\HeroSlideController;
+use App\Http\Controllers\Admin\HistorialController;
 use App\Http\Controllers\Admin\MatriculaController;
+use App\Http\Controllers\Admin\ObservacionAdminController;
 use App\Http\Controllers\Admin\PreRegistroController as AdminPreRegistroController;
+use App\Http\Controllers\Admin\SitioController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\VentanaNotaController;
 use App\Http\Controllers\Api\DashboardController as ApiDashboardController;
 use App\Http\Controllers\AulaVirtualController;
 use App\Http\Controllers\Auth\LoginController;
@@ -35,27 +41,16 @@ use App\Http\Controllers\Inspeccion\ObservacionReporteController;
 use App\Http\Controllers\Inspeccion\TipoObservacionController;
 use App\Http\Controllers\MensajeController;
 use App\Http\Controllers\PlanificacionController;
+use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PreRegistroController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RepresentanteController;
 use App\Http\Controllers\Secretaria\ActualizacionDatosController;
 use App\Http\Controllers\Secretaria\NotaExtraordinariaController;
 use App\Http\Controllers\Secretaria\TrasladoController;
-use App\Models\HeroSlide;
-use App\Models\Institucion;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    // El inicio usa solo los slides marcados para esta ubicación (o "ambos").
-    $slides = HeroSlide::where('activo', true)
-        ->paraUbicacion('inicio')
-        ->orderBy('orden')
-        ->orderBy('id')
-        ->get();
-    $institucion = Institucion::first();
-
-    return view('welcome', compact('slides', 'institucion'));
-});
+Route::get('/', [PortalController::class, 'index'])->name('welcome');
 
 Route::get('/pre-registro', [PreRegistroController::class, 'create'])->name('pre-registro.create');
 Route::post('/pre-registro', [PreRegistroController::class, 'store'])->name('pre-registro.store');
@@ -172,8 +167,40 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
 
     // Usuarios y multirol: solo Administración.
     Route::get('/usuarios', [AdminUserController::class, 'index'])->name('usuarios.index');
+    Route::get('/usuarios/crear', [AdminUserController::class, 'create'])->name('usuarios.create');
+    Route::post('/usuarios', [AdminUserController::class, 'store'])->name('usuarios.store');
     Route::get('/usuarios/{user}/editar', [AdminUserController::class, 'edit'])->name('usuarios.edit');
     Route::put('/usuarios/{user}', [AdminUserController::class, 'update'])->name('usuarios.update');
+    Route::get('/usuarios/{user}/contrasena', [AdminUserController::class, 'password'])->name('usuarios.password');
+    Route::post('/usuarios/{user}/contrasena', [AdminUserController::class, 'updatePassword'])->name('usuarios.password.update');
+
+    // Sitio web institucional: todos los textos, imágenes e ítems del portal.
+    Route::prefix('sitio')->name('sitio.')->group(function () {
+        Route::get('/', [SitioController::class, 'index'])->name('index');
+        Route::post('/contenido/{grupo}', [SitioController::class, 'updateContenido'])->name('contenido');
+        Route::post('/historia', [SitioController::class, 'storeHito'])->name('historia.store');
+        Route::put('/historia/{hito}', [SitioController::class, 'updateHito'])->name('historia.update');
+        Route::delete('/historia/{hito}', [SitioController::class, 'destroyHito'])->name('historia.destroy');
+        Route::post('/utiles', [SitioController::class, 'storeUtil'])->name('utiles.store');
+        Route::put('/utiles/{item}', [SitioController::class, 'updateUtil'])->name('utiles.update');
+        Route::delete('/utiles/{item}', [SitioController::class, 'destroyUtil'])->name('utiles.destroy');
+        Route::post('/descargas', [SitioController::class, 'storeDescarga'])->name('descargas.store');
+        Route::put('/descargas/{documento}', [SitioController::class, 'updateDescarga'])->name('descargas.update');
+        Route::delete('/descargas/{documento}', [SitioController::class, 'destroyDescarga'])->name('descargas.destroy');
+    });
+
+    // Comunidad educativa: cargo, foto, nombres, responsabilidad y área.
+    Route::get('/comunidad', [ComunidadController::class, 'index'])->name('comunidad.index');
+    Route::post('/comunidad', [ComunidadController::class, 'store'])->name('comunidad.store');
+    Route::put('/comunidad/{miembro}', [ComunidadController::class, 'update'])->name('comunidad.update');
+    Route::delete('/comunidad/{miembro}', [ComunidadController::class, 'destroy'])->name('comunidad.destroy');
+
+    // Observaciones enviadas por error.
+    Route::get('/observaciones', [ObservacionAdminController::class, 'index'])->name('observaciones.index');
+    Route::delete('/observaciones/{observacion}', [ObservacionAdminController::class, 'destroy'])->name('observaciones.destroy');
+
+    // Historial de cambios del sistema.
+    Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
 
     Route::get('/configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
     Route::post('/configuracion/institucion', [ConfiguracionController::class, 'updateInstitucion'])->name('configuracion.institucion');
@@ -182,6 +209,26 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
     // Apariencia global: 10 paletas del aside y tamaño de fuente tipo Word.
     Route::post('/configuracion/apariencia', [ConfiguracionController::class, 'updateApariencia'])->name('configuracion.apariencia');
 });
+
+// Circulares: Administración, Rectorado y Secretaría pueden cargarlas y avisar
+// por correo y SMS al contacto registrado.
+Route::middleware(['auth', 'role:ADMIN,RECTORA,SECRETARIA'])
+    ->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/circulares', [CircularController::class, 'index'])->name('circulares.index');
+        Route::post('/circulares', [CircularController::class, 'store'])->name('circulares.store');
+        Route::delete('/circulares/{circular}', [CircularController::class, 'destroy'])->name('circulares.destroy');
+    });
+
+// Fechas de subida de notas: Administración y Secretaría habilitan o
+// deshabilitan la carga por parcial.
+Route::middleware(['auth', 'role:ADMIN,SECRETARIA'])
+    ->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/ventanas-notas', [VentanaNotaController::class, 'index'])->name('ventanas-notas.index');
+        Route::post('/ventanas-notas', [VentanaNotaController::class, 'store'])->name('ventanas-notas.store');
+        Route::put('/ventanas-notas/{ventana}', [VentanaNotaController::class, 'update'])->name('ventanas-notas.update');
+        Route::post('/ventanas-notas/{ventana}/estado', [VentanaNotaController::class, 'estado'])->name('ventanas-notas.estado');
+        Route::delete('/ventanas-notas/{ventana}', [VentanaNotaController::class, 'destroy'])->name('ventanas-notas.destroy');
+    });
 
 // Actualizacion de datos de alumnos y de su representante legal.
 Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA'])

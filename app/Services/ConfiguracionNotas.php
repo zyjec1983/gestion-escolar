@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Institucion;
+use App\Models\VentanaNota;
 use Illuminate\Http\Request;
 
 /**
@@ -114,5 +115,31 @@ class ConfiguracionNotas
     public function decimal(mixed $valor): mixed
     {
         return is_string($valor) ? str_replace(',', '.', trim($valor)) : $valor;
+    }
+
+    /**
+     * Indica si el parcial admite carga de notas en este momento.
+     *
+     * Qué hace: si no existe ninguna ventana configurada para el parcial se
+     * mantiene el comportamiento anterior (carga permitida). Cuando sí existe,
+     * solo se permite guardar si hay una ventana activa y dentro de sus fechas.
+     * Conecta con: App\Models\VentanaNota y Docente\NotaController@store.
+     */
+    public function ventanaAbierta(int $parcial): bool
+    {
+        $existe = VentanaNota::paraParcial($parcial)->exists();
+
+        if (! $existe) {
+            return true;
+        }
+
+        return VentanaNota::paraParcial($parcial)->vigente()->exists();
+    }
+
+    /** Mensaje que se muestra al docente cuando la ventana está cerrada. */
+    public function mensajeVentanaCerrada(int $parcial): string
+    {
+        return 'La carga de notas para '.$this->etiquetaParcial($parcial)
+            .' no está habilitada en este momento. Consulte las fechas con Secretaría.';
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\HistorialCambio;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -20,8 +21,12 @@ use Illuminate\Validation\Rule;
  *
  * Rutas:
  * - GET  /admin/usuarios                  (admin.usuarios.index)
+ * - GET  /admin/usuarios/crear            (admin.usuarios.create)
+ * - POST /admin/usuarios                  (admin.usuarios.store)
  * - GET  /admin/usuarios/{user}/editar    (admin.usuarios.edit)
  * - PUT  /admin/usuarios/{user}           (admin.usuarios.update)
+ * - GET  /admin/usuarios/{user}/contrasena (admin.usuarios.password)
+ * - POST /admin/usuarios/{user}/contrasena (admin.usuarios.password.update)
  */
 class UserController extends Controller
 {
@@ -64,6 +69,102 @@ class UserController extends Controller
             'rolesAdicionales' => User::ROLES_ADICIONALES,
             'adicionalesActuales' => $user->rolesAdicionales->pluck('rol')->all(),
         ]);
+    }
+
+    /** Formulario para crear una cuenta nueva. */
+    public function create()
+    {
+        return view('admin.usuarios.create', [
+            'roles' => User::ROLES,
+            'rolesAdicionales' => User::ROLES_ADICIONALES,
+        ]);
+    }
+
+    /**
+     * Crea una cuenta con su rol principal, roles adicionales y contraseña.
+     * Ruta: POST /admin/usuarios (admin.usuarios.store).
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'apellidos' => 'nullable|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
+            'telefono' => 'nullable|string|max:30',
+            'rol' => ['required', Rule::in(User::ROLES)],
+            'roles_adicionales' => 'array',
+            'roles_adicionales.*' => [Rule::in(User::ROLES_ADICIONALES)],
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'name.required' => 'El nombre es obligatorio.',
+            'email.unique' => 'Ya existe otra cuenta con ese correo.',
+            'rol.in' => 'El rol principal seleccionado no es válido.',
+            'password.required' => 'Defina una contraseña inicial.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.confirmed' => 'La confirmación de la contraseña no coincide.',
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'apellidos' => $validated['apellidos'] ?? null,
+            'email' => $validated['email'],
+            'telefono' => $validated['telefono'] ?? null,
+            'rol' => $validated['rol'],
+            'password' => $validated['password'],
+        ]);
+
+        $adicionales = collect($validated['roles_adicionales'] ?? [])
+            ->filter(fn ($rol) => in_array($rol, User::ROLES_ADICIONALES, true))
+            ->reject(fn ($rol) => $rol === $validated['rol'])
+            ->unique()
+            ->values();
+
+        foreach ($adicionales as $rol) {
+            $user->rolesAdicionales()->create(['rol' => $rol]);
+        }
+
+        HistorialCambio::registrar(
+            'Usuarios',
+            'crear',
+            "Cuenta creada: {$user->nombreCompleto()} ({$user->email})",
+            ['id' => $user->id, 'rol' => $user->rol, 'adicionales' => $adicionales->all()]
+        );
+
+        return redirect()->route('admin.usuarios.index')
+            ->with('success', 'Cuenta creada correctamente. Comparta las credenciales con la persona.');
+    }
+
+    /** Formulario para restablecer la contraseña de una cuenta olvidada. */
+    public function password(User $user)
+    {
+        return view('admin.usuarios.password', ['usuario' => $user]);
+    }
+
+    /**
+     * Restablece la contraseña sin tocar el resto de los datos.
+     * Ruta: POST /admin/usuarios/{user}/contrasena.
+     */
+    public function updatePassword(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'password.required' => 'Escriba la nueva contraseña.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.confirmed' => 'La confirmación de la contraseña no coincide.',
+        ]);
+
+        $user->update(['password' => $validated['password']]);
+
+        HistorialCambio::registrar(
+            'Usuarios',
+            'restablecer contraseña',
+            "Contraseña restablecida para {$user->nombreCompleto()} ({$user->email})",
+            ['id' => $user->id]
+        );
+
+        return redirect()->route('admin.usuarios.index')
+            ->with('success', 'Contraseña restablecida. Comparta la nueva clave con la persona.');
     }
 
     public function update(Request $request, User $user)
@@ -138,6 +239,13 @@ class UserController extends Controller
         }
 
         $user->limpiarPerfilesMemo();
+
+        HistorialCambio::registrar(
+            'Usuarios',
+            'actualizar',
+            "Cuenta actualizada: {$user->nombreCompleto()} ({$user->email})",
+            ['id' => $user->id, 'rol' => $user->rol]
+        );
 
         return redirect()
             ->route('admin.usuarios.index')

@@ -84,6 +84,14 @@ class NotaController extends Controller
         $parcial = (int) $request->input('parcial');
         $tipo = $this->configuracion->tipoDeParcial($parcial, $sistema);
 
+        // Fechas de subida de notas definidas por Administración/Secretaría.
+        // Si el parcial tiene ventana configurada, debe estar activa y vigente.
+        if (! $this->configuracion->ventanaAbierta($parcial)) {
+            throw ValidationException::withMessages([
+                'parcial' => $this->configuracion->mensajeVentanaCerrada($parcial),
+            ]);
+        }
+
         $rules = [
             'clase_docente_id' => 'required|exists:clases_docentes,id',
             'parcial' => 'required|integer|in:'.implode(',', $parcialesValidos),

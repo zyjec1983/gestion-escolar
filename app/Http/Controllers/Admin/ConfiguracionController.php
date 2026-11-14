@@ -22,10 +22,16 @@ class ConfiguracionController extends Controller
      */
     public function index()
     {
+        $slides = HeroSlide::orderBy('orden')->orderBy('id')->get();
+
         return view('admin.configuracion.index', [
             'institucion' => Institucion::firstOrFail(),
             'desfases' => desfasesHorariosDisponibles(),
-            'slides' => HeroSlide::orderBy('orden')->orderBy('id')->get(),
+            'slides' => $slides,
+            // El portal y el login tienen carruseles independientes; se separan
+            // para que el administrador vea cada pestaña con sus propias imágenes.
+            'slidesInicio' => $slides->whereIn('ubicacion', ['inicio', 'ambos'])->values(),
+            'slidesLogin' => $slides->whereIn('ubicacion', ['login', 'ambos'])->values(),
             'tema' => Tema::actual(),
             'paletas' => Tema::paletas(),
             'fuentes' => Tema::fuentes(),

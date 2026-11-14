@@ -23,24 +23,39 @@ class RectorDashboardTest extends TestCase
     }
 
     /** @test */
-    public function el_dashboard_del_rector_es_la_vista_rector()
+    public function el_dashboard_del_admin_es_la_vista_de_administracion()
     {
         $response = $this->actingAs($this->admin)->get('/dashboard');
 
         $response->assertOk();
-        $response->assertViewIs('dashboard.rector');
-        $response->assertSee('Panel institucional');
-        $response->assertSee('Estudiantes matriculados');
-        $response->assertSee('Solicitudes pendientes');
-        $response->assertSee('Cursos abiertos');
+        $response->assertViewIs('dashboard.admin');
+        $response->assertSee('Panel de Administración');
+        $response->assertSee('Estudiantes');
+        $response->assertSee('Ventanas activas');
+        $response->assertSee('Módulos de administración');
     }
 
     /** @test */
-    public function el_sidebar_muestra_solicitudes_de_matricula_para_admin()
+    public function el_sidebar_del_admin_muestra_solo_los_modulos_solicitados()
     {
         $response = $this->actingAs($this->admin)->get('/dashboard');
 
-        $response->assertSee('Solicitudes de matrícula');
+        // Módulos administrables solicitados.
+        $response->assertSee('Sitio web');
+        $response->assertSee('Comunidad educativa');
+        $response->assertSee('Carrusel del portal');
+        $response->assertSee('Carrusel del login');
+        $response->assertSee('Circulares');
+        $response->assertSee('Observaciones');
+        $response->assertSee('Fechas de subida de notas');
+        $response->assertSee('Usuarios');
+        $response->assertSee('Historial de cambios');
+        $response->assertSee('Configuración');
+
+        // Los menús operativos de otros roles no se muestran al ADMIN.
+        $response->assertDontSee('Solicitudes de matrícula');
+        $response->assertDontSee('Mis Clases');
+        $response->assertDontSee('Planificación');
     }
 
     /** @test */

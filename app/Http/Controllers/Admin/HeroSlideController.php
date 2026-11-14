@@ -20,9 +20,17 @@ class HeroSlideController extends Controller
     {
         $ultimoOrden = HeroSlide::max('orden') ?? 0;
 
+        // Si el administrador pulsa "Nuevo Slide" desde la pestaña del login,
+        // el formulario llega con la ubicación preseleccionada.
+        $ubicacion = request('ubicacion');
+        if (! array_key_exists($ubicacion ?? '', HeroSlide::UBICACIONES)) {
+            $ubicacion = 'inicio';
+        }
+
         return view('admin.hero-slides.form', [
             'slide' => null,
             'ultimoOrden' => $ultimoOrden + 1,
+            'ubicacion' => $ubicacion,
         ]);
     }
 
@@ -31,6 +39,7 @@ class HeroSlideController extends Controller
         $validated = $request->validate([
             'titulo' => 'nullable|string|max:255',
             'subtitulo' => 'nullable|string|max:255',
+            'etiqueta' => 'nullable|string|max:120',
             'imagen' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'orden' => 'nullable|integer|min:0',
             'activo' => 'boolean',
@@ -43,6 +52,7 @@ class HeroSlideController extends Controller
         HeroSlide::create([
             'titulo' => $validated['titulo'] ?? null,
             'subtitulo' => $validated['subtitulo'] ?? null,
+            'etiqueta' => $validated['etiqueta'] ?? null,
             'imagen_path' => $path,
             'orden' => $validated['orden'] ?? 0,
             'activo' => $request->boolean('activo', true),
@@ -50,7 +60,7 @@ class HeroSlideController extends Controller
             'link' => $validated['link'] ?? null,
         ]);
 
-        return redirect()->to('/admin/configuracion#panel-carrusel')
+        return redirect()->to($this->urlConfiguracion($validated['ubicacion'] ?? 'inicio'))
             ->with('success', 'Slide creado correctamente.');
     }
 
@@ -68,6 +78,7 @@ class HeroSlideController extends Controller
         $validated = $request->validate([
             'titulo' => 'nullable|string|max:255',
             'subtitulo' => 'nullable|string|max:255',
+            'etiqueta' => 'nullable|string|max:120',
             'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'orden' => 'nullable|integer|min:0',
             'activo' => 'boolean',
@@ -78,6 +89,7 @@ class HeroSlideController extends Controller
         $data = [
             'titulo' => $validated['titulo'] ?? $slide->titulo,
             'subtitulo' => $validated['subtitulo'] ?? $slide->subtitulo,
+            'etiqueta' => $validated['etiqueta'] ?? $slide->etiqueta,
             'orden' => $validated['orden'] ?? $slide->orden,
             'activo' => $request->boolean('activo', $slide->activo),
             'ubicacion' => $validated['ubicacion'] ?? $slide->ubicacion,
@@ -93,7 +105,7 @@ class HeroSlideController extends Controller
 
         $slide->update($data);
 
-        return redirect()->to('/admin/configuracion#panel-carrusel')
+        return redirect()->to($this->urlConfiguracion($data['ubicacion']))
             ->with('success', 'Slide actualizado correctamente.');
     }
 
@@ -103,10 +115,26 @@ class HeroSlideController extends Controller
         if ($slide->imagen_path && Storage::disk('public')->exists($slide->imagen_path)) {
             Storage::disk('public')->delete($slide->imagen_path);
         }
+        $ubicacion = $slide->ubicacion;
         $slide->delete();
 
-        return redirect()->to('/admin/configuracion#panel-carrusel')
+        return redirect()->to($this->urlConfiguracion($ubicacion))
             ->with('success', 'Slide eliminado correctamente.');
+    }
+
+    /**
+     * Devuelve la pestaña de Configuración que corresponde a una ubicación.
+     *
+     * Qué hace: los slides de inicio y de login se administran en pestañas
+     * distintas; tras crear, editar o eliminar volvemos a la pestaña correcta.
+     * Conecta con: admin.configuracion.index y Admin\ConfiguracionController.
+     * Ruta: GET /admin/configuracion?tab=carrusel|carrusel-login.
+     */
+    private function urlConfiguracion(?string $ubicacion): string
+    {
+        $tab = $ubicacion === 'login' ? 'carrusel-login' : 'carrusel';
+
+        return route('admin.configuracion.index', ['tab' => $tab]);
     }
 
     public function updateVelocidad(Request $request)

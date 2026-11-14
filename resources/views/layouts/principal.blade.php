@@ -41,6 +41,89 @@
                 <i class="bi bi-speedometer2 me-2"></i> Dashboard
             </a>
         </li>
+        @if($rol === 'ADMIN')
+        {{--
+            Menú exclusivo del rol ADMIN.
+
+            Qué hace: agrupa solo los módulos administrables solicitados
+            (sitio, comunidad, carruseles, circulares, observaciones, fechas de
+            notas, usuarios, historial y configuración). Los menús operativos de
+            los demás roles no se muestran aquí.
+            Conecta con: DashboardController@admin, Admin\SitioController,
+            ComunidadController, HeroSlideController, CircularController,
+            ObservacionAdminController, VentanaNotaController, UserController,
+            HistorialController y ConfiguracionController.
+            Rutas: /admin/sitio, /admin/comunidad, /admin/configuracion,
+                   /admin/circulares, /admin/observaciones, /admin/ventanas-notas,
+                   /admin/usuarios y /admin/historial.
+        --}}
+        <li class="nav-item mt-3">
+            <span class="text-uppercase text-white-50 small fw-semibold px-2">Administración</span>
+        </li>
+        <li class="nav-item mt-1">
+            <a href="{{ route('admin.sitio.index') }}"
+               class="nav-link text-white {{ request()->is('admin/sitio*') ? 'active' : '' }}">
+                <i class="bi bi-globe2 me-2"></i> Sitio web
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.comunidad.index') }}"
+               class="nav-link text-white {{ request()->is('admin/comunidad*') ? 'active' : '' }}">
+                <i class="bi bi-people-fill me-2"></i> Comunidad educativa
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.configuracion.index', ['tab' => 'carrusel']) }}"
+               class="nav-link text-white {{ request()->is('admin/configuracion*') && request('tab') === 'carrusel' ? 'active' : '' }}">
+                <i class="bi bi-images me-2"></i> Carrusel del portal
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.configuracion.index', ['tab' => 'carrusel-login']) }}"
+               class="nav-link text-white {{ request()->is('admin/configuracion*') && request('tab') === 'carrusel-login' ? 'active' : '' }}">
+                <i class="bi bi-box-arrow-in-right me-2"></i> Carrusel del login
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.circulares.index') }}"
+               class="nav-link text-white {{ request()->is('admin/circulares*') ? 'active' : '' }}">
+                <i class="bi bi-megaphone me-2"></i> Circulares
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.observaciones.index') }}"
+               class="nav-link text-white {{ request()->is('admin/observaciones*') ? 'active' : '' }}">
+                <i class="bi bi-exclamation-triangle me-2"></i> Observaciones
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.ventanas-notas.index') }}"
+               class="nav-link text-white {{ request()->is('admin/ventanas-notas*') ? 'active' : '' }}">
+                <i class="bi bi-calendar-range me-2"></i> Fechas de subida de notas
+            </a>
+        </li>
+        <li class="nav-item mt-3">
+            <span class="text-uppercase text-white-50 small fw-semibold px-2">Seguridad y auditoría</span>
+        </li>
+        <li class="nav-item mt-1">
+            <a href="{{ route('admin.usuarios.index') }}"
+               class="nav-link text-white {{ request()->is('admin/usuarios*') ? 'active' : '' }}">
+                <i class="bi bi-person-gear me-2"></i> Usuarios
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.historial.index') }}"
+               class="nav-link text-white {{ request()->is('admin/historial*') ? 'active' : '' }}">
+                <i class="bi bi-clock-history me-2"></i> Historial de cambios
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.configuracion.index') }}"
+               class="nav-link text-white {{ request()->is('admin/configuracion*') && !in_array(request('tab'), ['carrusel', 'carrusel-login'], true) ? 'active' : '' }}">
+                <i class="bi bi-gear me-2"></i> Configuración
+            </a>
+        </li>
+        @else
         @if($esDocente || $esEstudiante)
         <li class="nav-item">
             <a href="/clases" class="nav-link text-white {{ request()->is('clases*') ? 'active' : '' }}">
@@ -429,19 +512,7 @@
             </a>
         </li>
         @endif
-        @if($rol === 'ADMIN')
-        <li class="nav-item mt-2">
-            <a href="{{ route('admin.usuarios.index') }}" class="nav-link text-white {{ request()->is('admin/usuarios*') ? 'active' : '' }}">
-                <i class="bi bi-people me-2"></i> Usuarios
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('admin.configuracion.index') }}" class="nav-link text-white {{ request()->is('admin/configuracion*') || request()->is('admin/hero-slides*') ? 'active' : '' }}">
-                <i class="bi bi-gear me-2"></i> Configuración
-            </a>
-        </li>
-        @endif
-        @if(in_array($rol, ['DOCENTE', 'ADMIN', 'RECTORA', 'VICERRECTORA']))
+        @if(in_array($rol, ['DOCENTE', 'RECTORA', 'VICERRECTORA']))
         <li class="nav-item mt-2">
             <a href="{{ route('planificaciones.index') }}" class="nav-link text-white {{ request()->is('planificaciones') || request()->is('planificaciones/*') && !request()->is('planificaciones/bitacora*') ? 'active' : '' }}">
                 <i class="bi bi-journal-bookmark me-2"></i> {{ $rol === 'DOCENTE' ? 'Planificación' : 'Planificación y auditoría' }}
@@ -453,6 +524,7 @@
                 <i class="bi bi-file-earmark-text me-2"></i> Bitácora de planificaciones
             </a>
         </li>
+        @endif
         @endif
         @endif
     </ul>

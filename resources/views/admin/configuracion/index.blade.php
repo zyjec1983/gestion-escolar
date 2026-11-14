@@ -8,6 +8,11 @@
     $tema = $tema ?? \App\Support\Tema::actual();
     $paletas = $paletas ?? \App\Support\Tema::paletas();
     $fuentes = $fuentes ?? \App\Support\Tema::fuentes();
+
+    // La pestaña activa puede llegar por ?tab= para que el menú lateral y el
+    // panel de administración enlacen directo a carrusel, login o apariencia.
+    $tabsValidas = ['general', 'institucion', 'carrusel', 'carrusel-login', 'apariencia'];
+    $tabActiva = in_array(request('tab'), $tabsValidas, true) ? request('tab') : 'general';
 @endphp
 
 @push('styles')
@@ -49,26 +54,32 @@
 
     <ul class="nav nav-tabs config-tab mb-4" id="configTabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="tab-general" data-bs-toggle="tab" data-bs-target="#panel-general"
-                    type="button" role="tab" aria-controls="panel-general" aria-selected="true">
+            <button class="nav-link {{ $tabActiva === 'general' ? 'active' : '' }}" id="tab-general" data-bs-toggle="tab" data-bs-target="#panel-general"
+                    type="button" role="tab" aria-controls="panel-general" aria-selected="{{ $tabActiva === 'general' ? 'true' : 'false' }}">
                 <i class="bi bi-sliders me-1"></i>General
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-institucion" data-bs-toggle="tab" data-bs-target="#panel-institucion"
-                    type="button" role="tab" aria-controls="panel-institucion" aria-selected="false">
+            <button class="nav-link {{ $tabActiva === 'institucion' ? 'active' : '' }}" id="tab-institucion" data-bs-toggle="tab" data-bs-target="#panel-institucion"
+                    type="button" role="tab" aria-controls="panel-institucion" aria-selected="{{ $tabActiva === 'institucion' ? 'true' : 'false' }}">
                 <i class="bi bi-building me-1"></i>Institución
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-carrusel" data-bs-toggle="tab" data-bs-target="#panel-carrusel"
-                    type="button" role="tab" aria-controls="panel-carrusel" aria-selected="false">
+            <button class="nav-link {{ $tabActiva === 'carrusel' ? 'active' : '' }}" id="tab-carrusel" data-bs-toggle="tab" data-bs-target="#panel-carrusel"
+                    type="button" role="tab" aria-controls="panel-carrusel" aria-selected="{{ $tabActiva === 'carrusel' ? 'true' : 'false' }}">
                 <i class="bi bi-images me-1"></i>Carrusel del portal
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-apariencia" data-bs-toggle="tab" data-bs-target="#panel-apariencia"
-                    type="button" role="tab" aria-controls="panel-apariencia" aria-selected="false">
+            <button class="nav-link {{ $tabActiva === 'carrusel-login' ? 'active' : '' }}" id="tab-carrusel-login" data-bs-toggle="tab" data-bs-target="#panel-carrusel-login"
+                    type="button" role="tab" aria-controls="panel-carrusel-login" aria-selected="{{ $tabActiva === 'carrusel-login' ? 'true' : 'false' }}">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Carrusel del login
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ $tabActiva === 'apariencia' ? 'active' : '' }}" id="tab-apariencia" data-bs-toggle="tab" data-bs-target="#panel-apariencia"
+                    type="button" role="tab" aria-controls="panel-apariencia" aria-selected="{{ $tabActiva === 'apariencia' ? 'true' : 'false' }}">
                 <i class="bi bi-palette me-1"></i>Apariencia
             </button>
         </li>
@@ -76,7 +87,7 @@
 
     <div class="tab-content" id="configTabsContent">
         {{-- ============ PESTAÑA GENERAL ============ --}}
-        <div class="tab-pane fade show active" id="panel-general" role="tabpanel" aria-labelledby="tab-general" tabindex="0">
+        <div class="tab-pane fade {{ $tabActiva === 'general' ? 'show active' : '' }}" id="panel-general" role="tabpanel" aria-labelledby="tab-general" tabindex="0">
             <div class="row g-4">
                 <div class="col-lg-7">
                     <div class="card shadow-sm">
@@ -154,7 +165,7 @@
 
         {{-- ============ PESTAÑA INSTITUCIÓN ============ --}}
         {{-- Nombre, subtítulo y logo. Ruta: POST /admin/configuracion/institucion --}}
-        <div class="tab-pane fade" id="panel-institucion" role="tabpanel" aria-labelledby="tab-institucion" tabindex="0">
+        <div class="tab-pane fade {{ $tabActiva === 'institucion' ? 'show active' : '' }}" id="panel-institucion" role="tabpanel" aria-labelledby="tab-institucion" tabindex="0">
             <div class="row g-4">
                 <div class="col-lg-7">
                     <div class="card shadow-sm">
@@ -237,7 +248,7 @@
         </div>
 
         {{-- ============ PESTAÑA CARRUSEL DEL PORTAL ============ --}}
-        <div class="tab-pane fade" id="panel-carrusel" role="tabpanel" aria-labelledby="tab-carrusel" tabindex="0">
+        <div class="tab-pane fade {{ $tabActiva === 'carrusel' ? 'show active' : '' }}" id="panel-carrusel" role="tabpanel" aria-labelledby="tab-carrusel" tabindex="0">
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white">
                     <h6 class="mb-0"><i class="bi bi-speedometer2 me-1"></i>Configuración del carrusel</h6>
@@ -266,94 +277,32 @@
                 </div>
             </div>
 
-            <div class="card shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="bi bi-images me-1"></i>Slides ({{ $slides->count() }})</h6>
-                    <a href="{{ route('admin.hero-slides.create') }}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-circle me-1"></i>Nuevo Slide
-                    </a>
-                </div>
-                <div class="card-body p-0">
-                    @if($slides->count() > 0)
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width:60px;">Orden</th>
-                                    <th style="width:120px;">Vista previa</th>
-                                    <th>Título</th>
-                                    <th>Mostrar en</th>
-                                    <th>Estado</th>
-                                    <th style="width:160px;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($slides as $slide)
-                                <tr>
-                                    <td>
-                                        <span class="badge bg-secondary">{{ $slide->orden }}</span>
-                                    </td>
-                                    <td>
-                                        @if($slide->imagen_path)
-                                        <img src="{{ Storage::url($slide->imagen_path) }}" alt="{{ $slide->titulo }}"
-                                            class="slide-thumb rounded">
-                                        @else
-                                        <span class="text-muted small">Sin imagen</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <strong>{{ $slide->titulo ?? 'Sin título' }}</strong>
-                                        @if($slide->subtitulo)
-                                        <br><small class="text-muted">{{ $slide->subtitulo }}</small>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-info text-dark">
-                                            {{ \App\Models\HeroSlide::UBICACIONES[$slide->ubicacion] ?? 'Página de inicio' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if($slide->activo)
-                                        <span class="badge bg-success">Activo</span>
-                                        @else
-                                        <span class="badge bg-secondary">Inactivo</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('admin.hero-slides.edit', $slide->id) }}"
-                                            class="btn btn-sm btn-outline-primary me-1">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <form method="POST" action="{{ route('admin.hero-slides.destroy', $slide->id) }}"
-                                            class="d-inline" onsubmit="return confirm('¿Eliminar este slide?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                    @else
-                    <div class="text-center py-5">
-                        <i class="bi bi-images display-1 text-muted mb-3 d-block"></i>
-                        <p class="text-muted">No hay slides. Crea el primero.</p>
-                        <a href="{{ route('admin.hero-slides.create') }}" class="btn btn-primary">
-                            <i class="bi bi-plus-circle me-1"></i>Nuevo Slide
-                        </a>
-                    </div>
-                    @endif
-                </div>
+            @include('admin.configuracion._slides-tabla', [
+                'lista' => $slidesInicio ?? $slides,
+                'titulo' => 'Slides del portal',
+                'ubicacion' => 'inicio',
+            ])
+        </div>
+
+        {{-- ============ PESTAÑA CARRUSEL DEL LOGIN ============ --}}
+        {{-- Imágenes independientes para el panel visual del inicio de sesión. --}}
+        <div class="tab-pane fade {{ $tabActiva === 'carrusel-login' ? 'show active' : '' }}" id="panel-carrusel-login" role="tabpanel" aria-labelledby="tab-carrusel-login" tabindex="0">
+            <div class="alert alert-light border small mb-4">
+                <i class="bi bi-info-circle me-1 text-primary"></i>
+                Estas imágenes se muestran en el carrusel del login. Si no hay ninguna,
+                el login usa el logo o la imagen institucional de respaldo.
             </div>
+
+            @include('admin.configuracion._slides-tabla', [
+                'lista' => $slidesLogin ?? collect(),
+                'titulo' => 'Slides del login',
+                'ubicacion' => 'login',
+            ])
         </div>
 
         {{-- ============ PESTAÑA APARIENCIA ============ --}}
         {{-- Paletas y tamaño de fuente globales. Ruta: POST /admin/configuracion/apariencia --}}
-        <div class="tab-pane fade" id="panel-apariencia" role="tabpanel" aria-labelledby="tab-apariencia" tabindex="0">
+        <div class="tab-pane fade {{ $tabActiva === 'apariencia' ? 'show active' : '' }}" id="panel-apariencia" role="tabpanel" aria-labelledby="tab-apariencia" tabindex="0">
             <form method="POST" action="{{ route('admin.configuracion.apariencia') }}">
                 @csrf
                 <div class="row g-4">

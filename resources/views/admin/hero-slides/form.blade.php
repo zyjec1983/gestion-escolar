@@ -2,11 +2,25 @@
 
 @section('titulo', $slide ? 'Editar Slide' : 'Nuevo Slide')
 
+{{--
+    Formulario de slides del carrusel.
+
+    Qué hace: crea o edita una imagen del carrusel con título, subtítulo,
+    etiqueta, orden, enlace, ubicación (inicio, login o ambos) y estado.
+    Conecta con: Admin\HeroSlideController y App\Models\HeroSlide.
+    Rutas: POST /admin/hero-slides y PUT /admin/hero-slides/{id}.
+--}}
+@php
+    $ubicacionInicial = old('ubicacion', $slide->ubicacion ?? $ubicacion ?? 'inicio');
+    $tabDestino = $ubicacionInicial === 'login' ? 'carrusel-login' : 'carrusel';
+    $urlVolver = route('admin.configuracion.index', ['tab' => $tabDestino]);
+@endphp
+
 @section('contenido')
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">{{ $slide ? 'Editar Slide' : 'Nuevo Slide' }}</h1>
-        <a href="{{ route('admin.configuracion.index') }}#panel-carrusel" class="btn btn-outline-secondary">
+        <a href="{{ $urlVolver }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i>Volver
         </a>
     </div>
@@ -48,14 +62,21 @@
                         <label for="ubicacion" class="form-label">Mostrar en</label>
                         <select name="ubicacion" id="ubicacion" class="form-select @error('ubicacion') is-invalid @enderror">
                             @foreach(\App\Models\HeroSlide::UBICACIONES as $valor => $etiqueta)
-                            <option value="{{ $valor }}" @selected(old('ubicacion', $slide->ubicacion ?? 'inicio') === $valor)>
+                            <option value="{{ $valor }}" @selected($ubicacionInicial === $valor)>
                                 {{ $etiqueta }}
                             </option>
                             @endforeach
                         </select>
                         @error('ubicacion')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-8">
+                        <label for="etiqueta" class="form-label">Etiqueta (insignia sobre el título)</label>
+                        <input type="text" name="etiqueta" id="etiqueta" class="form-control @error('etiqueta') is-invalid @enderror"
+                            value="{{ old('etiqueta', $slide->etiqueta ?? '') }}" maxlength="120"
+                            placeholder="Ej. Carisma Franciscano">
+                        @error('etiqueta')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-4">
                         <label for="link" class="form-label">Enlace (opcional)</label>
                         <input type="url" name="link" id="link" class="form-control @error('link') is-invalid @enderror"
                             value="{{ old('link', $slide->link ?? '') }}" placeholder="https://..." maxlength="255">
@@ -92,7 +113,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i>{{ $slide ? 'Actualizar' : 'Crear' }} Slide
                     </button>
-                    <a href="{{ route('admin.configuracion.index') }}#panel-carrusel" class="btn btn-outline-secondary">Cancelar</a>
+                    <a href="{{ $urlVolver }}" class="btn btn-outline-secondary">Cancelar</a>
                 </div>
             </form>
         </div>

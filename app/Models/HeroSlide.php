@@ -18,7 +18,7 @@ class HeroSlide extends Model
     use HasFactory;
 
     protected $fillable = [
-        'titulo', 'subtitulo', 'imagen_path', 'orden', 'activo', 'ubicacion', 'link',
+        'titulo', 'subtitulo', 'etiqueta', 'imagen_path', 'orden', 'activo', 'ubicacion', 'link',
     ];
 
     protected function casts(): array

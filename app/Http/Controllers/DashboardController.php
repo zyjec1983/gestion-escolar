@@ -6,13 +6,16 @@ use App\Http\Resources\DashboardResource;
 use App\Models\Alumno;
 use App\Models\Circular;
 use App\Models\Cita;
+use App\Models\ComunidadMiembro;
 use App\Models\Curso;
 use App\Models\ExpedienteTraslado;
+use App\Models\HistorialCambio;
 use App\Models\Matricula;
 use App\Models\Observacion;
 use App\Models\PeriodoLectivo;
 use App\Models\PreRegistro;
 use App\Models\User;
+use App\Models\VentanaNota;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -22,9 +25,11 @@ class DashboardController extends Controller
         $user = $request->user();
 
         return match ($user->perfilActivo()) {
-            // ADMIN, RECTORA y VICERRECTORA comparten el panel institucional,
-            // pero cada rol tiene su propia cuenta y su propio título.
-            'ADMIN', 'RECTORA', 'VICERRECTORA' => $this->rector($request),
+            // El ADMIN tiene un panel propio centrado en la gestión del sitio,
+            // usuarios y auditoría. Rectorado y Vicerrectorado conservan el
+            // panel institucional.
+            'ADMIN' => $this->admin($request),
+            'RECTORA', 'VICERRECTORA' => $this->rector($request),
             'SECRETARIA' => $this->secretaria($request),
             'REPRESENTANTE' => $this->representante($request),
             'ESTUDIANTE' => $this->estudiante($request),
@@ -32,6 +37,47 @@ class DashboardController extends Controller
             'DECE' => $this->dece($request),
             default => $this->general($request),
         };
+    }
+
+    /**
+     * Panel exclusivo del rol ADMIN.
+     *
+     * Qué hace: reúne los accesos a los módulos administrables (sitio web,
+     * comunidad, carruseles, circulares, observaciones, fechas de notas,
+     * usuarios e historial) y muestra contadores y cambios recientes.
+     * Conecta con: DashboardResource, HistorialCambio, Circular y los modelos
+     * de los módulos administrables.
+     * Ruta: GET /dashboard (dashboard).
+     */
+    private function admin(Request $request)
+    {
+        $data = (new DashboardResource($request->user()))->resolve($request);
+
+        $periodoActivo = PeriodoLectivo::where('activo', true)->first();
+
+        $data['panel_titulo'] = 'Panel de Administración';
+        $data['kpis'] = [
+            'estudiantes' => $periodoActivo
+                ? Matricula::where('periodo_id', $periodoActivo->id)->count()
+                : Alumno::count(),
+            'usuarios' => User::count(),
+            'circulares' => Circular::count(),
+            'comunidad' => ComunidadMiembro::where('activo', true)->count(),
+            'observaciones' => Observacion::count(),
+            'ventanas' => VentanaNota::where('activo', true)->count(),
+        ];
+
+        $data['cambios_recientes'] = HistorialCambio::with('usuario')
+            ->latest()
+            ->take(8)
+            ->get();
+
+        $data['circulares_recientes'] = Circular::orderByDesc('fecha_publicacion')
+            ->orderByDesc('id')
+            ->take(5)
+            ->get();
+
+        return view('dashboard.admin', $data);
     }
 
     /**
