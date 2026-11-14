@@ -30,6 +30,11 @@ roles adicionales (tabla user_roles). Al iniciar sesión elige un "perfil
 activo"; RoleMiddleware, el dashboard y el menú comparan contra ese perfil.
 La configuración se hace en Administración → Usuarios.
 
+Cuentas familiares: la cuenta de un estudiante usa la cédula del alumno como
+usuario y contraseña inicial, con perfiles REPRESENTANTE y ESTUDIANTE. Para el
+resto del personal, el ADMIN crea la cuenta y también usa la cédula como
+usuario.
+
 ===============================================================================
  1. ALUMNO (ESTUDIANTE)  ->  VERIFICADO OK
 ===============================================================================
@@ -81,6 +86,17 @@ solo le muestra sus opciones.
   Ruta: GET /dashboard
   Controlador: DashboardController@index -> RepresentanteController@dashboard
   Resume información de sus representados.
+
+- Mis datos (ficha completa del representado) ............. (ready)
+  Rutas: GET /mis-datos, GET /mis-datos/{alumno},
+         PUT /mis-datos/{alumno}
+  Controlador: Representante\DatosController
+  Formulario para representantes ya activos o matriculados. Permite completar
+  y corregir todos los campos del alumno (identidad, tipo de sangre, salud,
+  NEE, domicilio y servicios), padre, madre, representante alterno, facturador
+  y los datos de contacto del representante. Solo abre las fichas vinculadas a
+  su cuenta (403 en fichas ajenas). Reutiliza la vista
+  secretaria/actualizacion/edit.blade.php en modo representante.
 
 - Observaciones de sus hijos ............................. (ready)
   Ruta: GET /observaciones
@@ -401,10 +417,11 @@ Conclusión: Vicerrectorado tiene panel institucional compartido y circulares
  9. ADMINISTRADOR (ADMIN)  ->  LISTO
 ===============================================================================
 
-El rol ADMIN tiene panel y menú propios. Solo muestra los módulos
-administrables solicitados; las funciones operativas de otros roles
-(matrículas, planificación, DECE, mensajes) quedan fuera de su menú y se
-incorporarán después si se requieren.
+El rol ADMIN tiene panel y menú propios. El menú se organiza en cinco
+secciones funcionales y no incluye Citas ni DECE: el ADMIN no agenda citas ni
+tiene relación con Consejería Estudiantil. Las funciones operativas que sí
+administra (matrículas, notas, traslados, actualización de datos) se agrupan
+en "Control académico y operativo" y "Registros académicos".
 
 - Panel de Administración ................................ (ready)
   Ruta: GET /dashboard
@@ -417,10 +434,17 @@ incorporarán después si se requieren.
 - Menú lateral exclusivo del ADMIN ....................... (ready)
   Archivo: resources/views/layouts/principal.blade.php
   Seccionado por función para no repetir pestañas:
-  - Contenido del portal: Sitio web, Pre-registro, Comunidad educativa,
-    Carruseles, Circulares.
-  - Gestión académica: Observaciones, Fechas de subida de notas.
-  - Seguridad y auditoría: Usuarios, Historial de cambios, Configuración.
+  - Portal y apariencia: Identidad y apariencia, Carrusel principal, Carrusel
+    del login, Contenido institucional, Comunidad educativa, Servicios y
+    descargas.
+  - Usuarios y seguridad: Usuarios y roles.
+  - Control académico y operativo: Matrículas e inscripciones, Ventanas de
+    calificaciones, Circulares y comunicados, Moderación de observaciones y
+    Registros académicos (corrección de notas, bitácora, traslados y
+    actualización de datos).
+  - Auditoría y respaldo: Historial de cambios.
+  - Configuración del sistema: Parámetros académicos.
+  Citas y DECE no aparecen en el menú del ADMIN.
 
 - Sitio web (todos los campos del portal) ................ (ready)
   Rutas: GET /admin/sitio,
@@ -455,8 +479,9 @@ incorporarán después si se requieren.
 - Observaciones enviadas por error ....................... (ready)
   Rutas: GET /admin/observaciones, DELETE /admin/observaciones/{id}
   Controlador: Admin\ObservacionAdminController
-  Lista con filtros por estudiante, tipo y fecha; elimina registros erróneos y
-  deja constancia en el historial de cambios.
+  Lista con filtros por estudiante, tipo y fecha. Solo elimina con la orden de
+  Rectorado y el motivo escrito de forma obligatoria; el motivo y los datos de
+  la observación quedan registrados en el historial de cambios.
 
 - Fechas de subida de notas .............................. (ready)
   Rutas: /admin/ventanas-notas (crear, editar, habilitar/deshabilitar, eliminar)
@@ -471,17 +496,36 @@ incorporarán después si se requieren.
   administrables, con módulo, acción, descripción, datos e IP.
 
 - Gestión de usuarios, roles y contraseñas ............... (ready)
-  Rutas: GET /admin/usuarios, GET /admin/usuarios/nueva,
-         POST /admin/usuarios, GET /admin/usuarios/{user}/editar,
-         PUT /admin/usuarios/{user},
-         GET /admin/usuarios/{user}/password,
-         POST /admin/usuarios/{user}/password
+  Rutas: GET /admin/usuarios, GET /admin/usuarios/crear,
+         POST /admin/usuarios,
+         POST /admin/usuarios/generar-cuentas-estudiantes,
+         GET /admin/usuarios/{user}/editar, PUT /admin/usuarios/{user},
+         GET /admin/usuarios/{user}/contrasena,
+         POST /admin/usuarios/{user}/contrasena,
+         POST /admin/usuarios/{user}/desbloquear
   Controlador: Admin\UserController
   Crea cuentas nuevas, busca cuentas, cambia el rol principal, marca roles
-  adicionales (multirol) y restablece contraseñas olvidadas. Protege al
-  sistema para que siempre exista al menos una cuenta ADMIN y nadie pueda
-  quitarse ese rol a sí mismo. Si la persona tiene clases asignadas, el perfil
-  DOCENTE se agrega solo.
+  adicionales (multirol) y restablece contraseñas olvidadas. La cédula es
+  única y sirve como usuario para iniciar sesión. Protege al sistema para que
+  siempre exista al menos una cuenta ADMIN y nadie pueda quitarse ese rol a sí
+  mismo. Si la persona tiene clases asignadas, el perfil DOCENTE se agrega solo.
+
+- Cuentas familiares por cédula del alumno ................ (ready)
+  Ruta: POST /admin/usuarios/generar-cuentas-estudiantes
+  Controlador: Admin\UserController@generarCuentasEstudiantes
+  Genera en bloque las cuentas de los estudiantes que aún no tienen usuario.
+  El usuario y la contraseña inicial son la cédula del alumno; la cuenta queda
+  con perfil principal REPRESENTANTE y perfil adicional ESTUDIANTE, y se
+  enlaza la ficha del alumno. Omite cédulas ya registradas. Para el resto del
+  personal, el ADMIN crea la cuenta y también usa la cédula como usuario.
+
+- Bloqueo por intentos fallidos ........................... (ready)
+  Rutas: POST /login, POST /admin/usuarios/{user}/desbloquear
+  Modelo: App\Models\User (estaBloqueado, registrarIntentoFallido,
+  limpiarIntentosFallidos, desbloquear)
+  Al tercer intento fallido la cuenta se bloquea 1 hora. Si se repite otro
+  bloqueo, la cuenta queda bloqueada hasta que solo ADMIN la desbloquee desde
+  Usuarios y roles. El login acepta correo electrónico o cédula.
 
 - Configuración del centro ............................... (ready)
   Rutas: GET /admin/configuracion,
@@ -517,18 +561,20 @@ incorporarán después si se requieren.
 - Solicitudes de matrícula / pre-registro ................ (ready)
   Rutas: /admin/pre-registros
   Controlador: Admin\PreRegistroController
-  Se conserva el módulo aunque ya no aparece en el menú del ADMIN.
+  Aparece en el menú como "Matrículas e inscripciones". Al aprobar una
+  solicitud se crea la cuenta del representante con su cédula y correo.
 
 - Notificaciones de circulares por correo y SMS .......... (ready)
   Canales: correo (Laravel Notifications) y SMS (driver log o webhook).
   Para producción: configurar SMS_DRIVER=webhook, SMS_WEBHOOK_URL y
   SMS_WEBHOOK_TOKEN en .env. Con SMS_DRIVER=log el SMS queda en el log.
 
-- Funciones operativas retiradas del menú ADMIN .......... (started)
-  Matrículas, actualización de datos, traslados, corrección extraordinaria de
-  notas, planificación, DECE y mensajes siguen existiendo y funcionando con sus
-  roles, pero ya no se muestran en el menú del ADMIN. Se reintegrarán al panel
-  cuando se soliciten.
+- Funciones operativas dentro del panel ADMIN ............. (ready)
+  Matrículas, actualización de datos, traslados y corrección extraordinaria de
+  notas se administran desde "Control académico y operativo" y "Registros
+  académicos". Planificación, mensajes y DECE siguen disponibles para sus
+  propios roles, pero no para ADMIN. El ADMIN no agenda citas ni interviene en
+  DECE.
 
 ===============================================================================
  10. NOTIFICACIONES DE CIRCULARES (transversal a todos los roles)
@@ -570,6 +616,18 @@ incorporarán después si se requieren.
   institucional y el logo como favicon. Incluye mostrar/ocultar contraseña y
   una barra superior con la identidad institucional y el botón "Volver al
   inicio" que lleva al portal público.
+
+- Ingreso con correo electrónico o cédula ................. (ready)
+  Ruta: POST /login
+  Controlador: Auth\LoginController@login
+  El identificador puede ser el correo o la cédula registrada en la cuenta.
+
+- Bloqueo por intentos fallidos ........................... (ready)
+  Modelo: App\Models\User
+  Columnas: intentos_fallidos, bloqueado_hasta, bloqueos_consecutivos y
+  requiere_desbloqueo. Al tercer intento fallido la cuenta se bloquea 1 hora.
+  Si se repite otro bloqueo, solo ADMIN puede desbloquearla desde Usuarios y
+  roles. Un inicio correcto o el desbloqueo manual limpian el contador.
 
 - Selección de perfil al iniciar sesión .................. (ready)
   Ruta: GET /perfil/seleccionar
@@ -659,7 +717,8 @@ Pendientes recomendados:
   2. Crear los módulos propios de Vicerrectorado.
   3. Configurar un proveedor SMS real (webhook) para producción.
   4. Agregar pruebas específicas para actas docentes y reportes gerenciales.
-  5. Definir qué funciones operativas vuelven al menú del ADMIN.
+  5. Implementar respaldos automáticos de la base de datos y la importación
+     masiva de estudiantes.
 
 ===============================================================================
  FIN DEL DOCUMENTO

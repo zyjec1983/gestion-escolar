@@ -40,17 +40,25 @@ class RectorDashboardTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->get('/dashboard');
 
-        // Módulos administrables solicitados.
-        $response->assertSee('Sitio web');
-        $response->assertSee('Comunidad educativa');
-        $response->assertSee('Carrusel del portal');
+        // Módulos administrables solicitados, agrupados por función.
+        $response->assertSee('Identidad y apariencia');
+        $response->assertSee('Carrusel principal');
         $response->assertSee('Carrusel del login');
-        $response->assertSee('Circulares');
-        $response->assertSee('Observaciones');
-        $response->assertSee('Fechas de subida de notas');
-        $response->assertSee('Usuarios');
+        $response->assertSee('Contenido institucional');
+        $response->assertSee('Comunidad educativa');
+        $response->assertSee('Servicios y descargas');
+        $response->assertSee('Usuarios y roles');
+        $response->assertSee('Matrículas e inscripciones');
+        $response->assertSee('Ventanas de calificaciones');
+        $response->assertSee('Circulares y comunicados');
+        $response->assertSee('Moderación de observaciones');
+        $response->assertSee('Registros académicos');
         $response->assertSee('Historial de cambios');
-        $response->assertSee('Configuración');
+        $response->assertSee('Parámetros académicos');
+
+        // El ADMIN no agenda citas ni administra DECE.
+        $response->assertDontSee('Citas');
+        $response->assertDontSee('Consejería estudiantil');
 
         // Los menús operativos de otros roles no se muestran al ADMIN.
         $response->assertDontSee('Solicitudes de matrícula');

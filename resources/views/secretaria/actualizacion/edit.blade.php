@@ -98,7 +98,11 @@
 <div class="container-fluid">
     <h4 class="mb-4">
         <i class="bi bi-pencil-square me-2"></i>
-        Actualizar datos: {{ $mayus($alumno->apellidos.' '.$alumno->nombres) }}
+        @if($modoRepresentante ?? false)
+            Mis datos: {{ $mayus($alumno->apellidos.' '.$alumno->nombres) }}
+        @else
+            Actualizar datos: {{ $mayus($alumno->apellidos.' '.$alumno->nombres) }}
+        @endif
     </h4>
 
     @if(session('success'))
@@ -116,7 +120,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('actualizacion.update', $alumno->id) }}">
+    <form method="POST" action="{{ $accionFormulario ?? route('actualizacion.update', $alumno->id) }}">
         @csrf
         @method('PUT')
 
@@ -130,6 +134,8 @@
                     El representante legal debe ser una persona mayor de edad. Si el caso lo pide
                     (divorcio, salida del pa&iacute;s, prisi&oacute;n, etc.) se puede cambiar por otra cuenta.
                 </p>
+
+                @if(!($modoRepresentante ?? false))
 
                 <div class="row g-3">
                     <div class="col-12 col-lg-6">
@@ -193,6 +199,7 @@
                             <span class="badge bg-info ms-2">tiene historial de cambios</span>
                         @endif
                     </div>
+                @endif
                 @endif
 
                 <div class="row g-3">
@@ -258,7 +265,11 @@
                     <div class="col-12 col-md-4">
                         <label class="form-label">C&eacute;dula</label>
                         <input type="text" name="numero_cedula" class="form-control"
+                               @disabled($modoRepresentante ?? false)
                                value="{{ $mayus(old('numero_cedula', $alumno->numero_cedula)) }}">
+                        @if($modoRepresentante ?? false)
+                            <div class="form-text">La cédula es el usuario de acceso y solo la cambia Secretaría.</div>
+                        @endif
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label">C&oacute;digo interno</label>
@@ -355,11 +366,11 @@
             <button type="submit" class="btn btn-primary">
                 <i class="bi bi-save me-1"></i>Guardar cambios
             </button>
-            <a href="{{ route('actualizacion.index') }}" class="btn btn-outline-secondary">Volver</a>
+            <a href="{{ $volverUrl ?? route('actualizacion.index') }}" class="btn btn-outline-secondary">Volver</a>
         </div>
     </form>
 
-    @if($cambios->isNotEmpty())
+    @if(!($modoRepresentante ?? false) && $cambios->isNotEmpty())
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white">
                 <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Cambios de representante legal</h6>

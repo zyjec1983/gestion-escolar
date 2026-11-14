@@ -14,6 +14,13 @@
         <a href="{{ route('admin.usuarios.create') }}" class="btn btn-primary">
             <i class="bi bi-person-plus me-1"></i>Nueva cuenta
         </a>
+        <form method="POST" action="{{ route('admin.usuarios.generar-cuentas') }}" class="d-inline"
+              onsubmit="return confirm('¿Generar cuentas familiares para todos los estudiantes sin cuenta? El usuario y la contraseña inicial serán la cédula del alumno.')">
+            @csrf
+            <button type="submit" class="btn btn-outline-primary">
+                <i class="bi bi-people me-1"></i>Generar cuentas de estudiantes
+            </button>
+        </form>
     </div>
 
     @if(session('success'))
@@ -79,8 +86,17 @@
                     <tr>
                         <td>
                             <strong>{{ $usuario->nombreCompleto() }}</strong>
+                            @if($usuario->numero_cedula)
+                            <br><small class="text-muted"><i class="bi bi-person-vcard me-1"></i>{{ $usuario->numero_cedula }}</small>
+                            @endif
                             @if($usuario->telefono)
                             <br><small class="text-muted"><i class="bi bi-telephone me-1"></i>{{ $usuario->telefono }}</small>
+                            @endif
+                            @if($usuario->estaBloqueado())
+                            <br><span class="badge bg-danger mt-1">
+                                <i class="bi bi-lock me-1"></i>
+                                {{ $usuario->requiere_desbloqueo ? 'Bloqueada: requiere desbloqueo' : 'Bloqueada '.$usuario->minutosDeBloqueo().' min' }}
+                            </span>
                             @endif
                         </td>
                         <td><small>{{ $usuario->email }}</small></td>
@@ -100,6 +116,14 @@
                                title="Restablecer contraseña">
                                 <i class="bi bi-key"></i>
                             </a>
+                            @if($usuario->estaBloqueado())
+                            <form method="POST" action="{{ route('admin.usuarios.desbloquear', $usuario) }}" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Desbloquear cuenta">
+                                    <i class="bi bi-unlock"></i>
+                                </button>
+                            </form>
+                            @endif
                         </td>
                     </tr>
                     @empty

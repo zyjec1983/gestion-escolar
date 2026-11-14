@@ -102,9 +102,13 @@
                         <td><small>{{ $observacion->profesor?->nombreCompleto() ?? '—' }}</small></td>
                         <td class="text-end">
                             <form method="POST" action="{{ route('admin.observaciones.destroy', $observacion) }}"
+                                class="d-flex gap-1 justify-content-end"
                                 onsubmit="return confirm('¿Eliminar definitivamente esta observación?')">
                                 @csrf
                                 @method('DELETE')
+                                <input type="text" name="motivo" class="form-control form-control-sm"
+                                    style="max-width: 190px;" placeholder="Motivo / orden de Rectorado"
+                                    title="Indique el motivo y la orden de Rectorado" required>
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     <i class="bi bi-trash me-1"></i>Eliminar
                                 </button>

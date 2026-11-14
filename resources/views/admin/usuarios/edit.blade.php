@@ -45,13 +45,19 @@
                                     value="{{ old('apellidos', $usuario->apellidos) }}">
                                 @error('apellidos')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
-                            <div class="col-md-7">
+                            <div class="col-md-4">
+                                <label class="form-label" for="numero_cedula">Cédula</label>
+                                <input type="text" id="numero_cedula" name="numero_cedula" class="form-control @error('numero_cedula') is-invalid @enderror"
+                                    value="{{ old('numero_cedula', $usuario->numero_cedula) }}">
+                                @error('numero_cedula')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-4">
                                 <label class="form-label" for="email">Correo electrónico</label>
                                 <input type="email" id="email" name="email" class="form-control @error('email') is-invalid @enderror"
                                     value="{{ old('email', $usuario->email) }}" required>
                                 @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
-                            <div class="col-md-5">
+                            <div class="col-md-4">
                                 <label class="form-label" for="telefono">Teléfono (SMS)</label>
                                 <input type="text" id="telefono" name="telefono" class="form-control @error('telefono') is-invalid @enderror"
                                     value="{{ old('telefono', $usuario->telefono) }}">

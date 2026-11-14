@@ -117,4 +117,105 @@ class LoginTest extends TestCase
         $response->assertRedirect('/');
         $this->assertGuest();
     }
+
+    /** @test */
+    public function login_acepta_la_cedula_como_usuario()
+    {
+        $user = User::factory()->representante()->create([
+            'email' => 'familia@test.com',
+            'numero_cedula' => '0900000001',
+            'password' => bcrypt('password'),
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => '0900000001',
+            'password' => 'password',
+        ]);
+
+        $response->assertRedirect('/dashboard');
+        $this->assertAuthenticatedAs($user);
+    }
+
+    /** @test */
+    public function al_tercer_intento_fallido_la_cuenta_se_bloquea_una_hora()
+    {
+        $user = User::factory()->docente()->create([
+            'email' => 'docente@test.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        for ($intento = 0; $intento < 3; $intento++) {
+            $this->post('/login', [
+                'email' => 'docente@test.com',
+                'password' => 'incorrecta',
+            ]);
+        }
+
+        $user->refresh();
+
+        $this->assertNotNull($user->bloqueado_hasta);
+        $this->assertTrue($user->estaBloqueado());
+        $this->assertGuest();
+
+        // Aun con la contraseña correcta, el bloqueo temporal sigue vigente.
+        $this->post('/login', [
+            'email' => 'docente@test.com',
+            'password' => 'password',
+        ])->assertSessionHasErrors('email');
+
+        $this->assertGuest();
+    }
+
+    /** @test */
+    public function el_segundo_bloqueo_solo_lo_levanta_el_administrador()
+    {
+        $user = User::factory()->docente()->create([
+            'email' => 'docente@test.com',
+            'password' => bcrypt('password'),
+            'bloqueos_consecutivos' => 1,
+        ]);
+
+        for ($intento = 0; $intento < 3; $intento++) {
+            $this->post('/login', [
+                'email' => 'docente@test.com',
+                'password' => 'incorrecta',
+            ]);
+        }
+
+        $user->refresh();
+
+        $this->assertTrue($user->requiere_desbloqueo);
+        $this->assertNull($user->bloqueado_hasta);
+
+        // Esperar no sirve: el bloqueo es permanente hasta que ADMIN lo levante.
+        $this->travel(2)->hours();
+
+        $this->post('/login', [
+            'email' => 'docente@test.com',
+            'password' => 'password',
+        ])->assertSessionHasErrors('email');
+
+        $this->assertGuest();
+    }
+
+    /** @test */
+    public function el_administrador_desbloquea_una_cuenta()
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->docente()->create([
+            'requiere_desbloqueo' => true,
+            'intentos_fallidos' => 3,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.usuarios.desbloquear', $user))
+            ->assertRedirect();
+
+        $user->refresh();
+
+        $this->assertFalse($user->requiere_desbloqueo);
+        $this->assertNull($user->bloqueado_hasta);
+        $this->assertSame(0, (int) $user->intentos_fallidos);
+        $this->assertFalse($user->estaBloqueado());
+    }
 }

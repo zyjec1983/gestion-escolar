@@ -44,6 +44,7 @@ use App\Http\Controllers\PlanificacionController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PreRegistroController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Representante\DatosController as RepresentanteDatosController;
 use App\Http\Controllers\RepresentanteController;
 use App\Http\Controllers\Secretaria\ActualizacionDatosController;
 use App\Http\Controllers\Secretaria\NotaExtraordinariaController;
@@ -135,6 +136,10 @@ Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA,VICERRECTORA'])->group
 });
 
 Route::middleware(['auth', 'role:REPRESENTANTE'])->group(function () {
+    Route::get('/mis-datos', [RepresentanteDatosController::class, 'index'])->name('representante.datos.index');
+    Route::get('/mis-datos/{alumno}', [RepresentanteDatosController::class, 'edit'])->name('representante.datos.edit');
+    Route::put('/mis-datos/{alumno}', [RepresentanteDatosController::class, 'update'])->name('representante.datos.update');
+
     Route::get('/observaciones', [RepresentanteController::class, 'observaciones'])->name('representante.observaciones');
     Route::get('/citas', [RepresentanteController::class, 'citas'])->name('representante.citas');
     Route::post('/citas', [RepresentanteController::class, 'storeCita'])->name('representante.citas.store');
@@ -174,12 +179,14 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
 
     // Usuarios y multirol: solo Administración.
     Route::get('/usuarios', [AdminUserController::class, 'index'])->name('usuarios.index');
+    Route::post('/usuarios/generar-cuentas-estudiantes', [AdminUserController::class, 'generarCuentasEstudiantes'])->name('usuarios.generar-cuentas');
     Route::get('/usuarios/crear', [AdminUserController::class, 'create'])->name('usuarios.create');
     Route::post('/usuarios', [AdminUserController::class, 'store'])->name('usuarios.store');
     Route::get('/usuarios/{user}/editar', [AdminUserController::class, 'edit'])->name('usuarios.edit');
     Route::put('/usuarios/{user}', [AdminUserController::class, 'update'])->name('usuarios.update');
     Route::get('/usuarios/{user}/contrasena', [AdminUserController::class, 'password'])->name('usuarios.password');
     Route::post('/usuarios/{user}/contrasena', [AdminUserController::class, 'updatePassword'])->name('usuarios.password.update');
+    Route::post('/usuarios/{user}/desbloquear', [AdminUserController::class, 'desbloquear'])->name('usuarios.desbloquear');
 
     // Sitio web institucional: todos los textos, imágenes e ítems del portal.
     Route::prefix('sitio')->name('sitio.')->group(function () {
@@ -309,13 +316,13 @@ Route::middleware(['auth', 'role:DOCENTE'])->prefix('docente')->name('docente.')
 });
 
 // URL histórica: redirige al módulo de citas compartido con inspección.
-Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA,VICERRECTORA,INSPECCION,DECE'])->prefix('directivo')->name('directivo.')->group(function () {
+Route::middleware(['auth', 'role:SECRETARIA,RECTORA,VICERRECTORA,INSPECCION,DECE'])->prefix('directivo')->name('directivo.')->group(function () {
     Route::get('/citas', fn () => redirect()->route('inspeccion.citas.historial'))->name('citas.historial');
 });
 
 // Módulo de citas (agendar + historial + registro): inspección y autoridades.
 // El rector/vicerrector/dece/secretaría usan exactamente el mismo módulo.
-Route::middleware(['auth', 'role:ADMIN,SECRETARIA,RECTORA,VICERRECTORA,INSPECCION,DECE'])
+Route::middleware(['auth', 'role:SECRETARIA,RECTORA,VICERRECTORA,INSPECCION,DECE'])
     ->prefix('inspeccion')->name('inspeccion.')->group(function () {
         Route::get('/citas/agendar', [InspectorCitaController::class, 'agendar'])->name('citas.agendar');
         Route::post('/citas/agendar', [InspectorCitaController::class, 'store'])->name('citas.store');
@@ -352,7 +359,7 @@ Route::middleware(['auth', 'role:INSPECCION,RECTORA,VICERRECTORA,DECE,SECRETARIA
 // Modulo DECE: expedientes y reportes agregados. El panel de inicio vive en
 // /dashboard (se renderiza alli para el rol DECE). Rectorado y Vicerrectorado
 // entran en modo lectura sin relatorias confidenciales.
-Route::middleware(['auth', 'role:DECE,ADMIN,RECTORA,VICERRECTORA'])
+Route::middleware(['auth', 'role:DECE,RECTORA,VICERRECTORA'])
     ->prefix('dece')->name('dece.')->group(function () {
         Route::get('/expedientes', [DeceExpedienteController::class, 'index'])->name('expedientes.index');
         Route::get('/expedientes/{alumno}', [DeceExpedienteController::class, 'show'])->name('expedientes.show');
@@ -361,12 +368,12 @@ Route::middleware(['auth', 'role:DECE,ADMIN,RECTORA,VICERRECTORA'])
     });
 
 // Buscadores JSON del DECE. Evitan cargar el padron completo en cada formulario.
-Route::middleware(['auth', 'role:DECE,ADMIN,RECTORA,VICERRECTORA,DOCENTE,INSPECCION'])
+Route::middleware(['auth', 'role:DECE,RECTORA,VICERRECTORA,DOCENTE,INSPECCION'])
     ->prefix('dece')->name('dece.')->group(function () {
         Route::get('/buscar/alumnos', [DeceBuscadorController::class, 'alumnos'])->name('buscar.alumnos');
     });
 
-Route::middleware(['auth', 'role:DECE,ADMIN'])
+Route::middleware(['auth', 'role:DECE'])
     ->prefix('dece')->name('dece.')->group(function () {
         Route::get('/buscar/alumnos/{alumno}/citas', [DeceBuscadorController::class, 'citas'])->name('buscar.citas');
         Route::get('/buscar/alumnos/{alumno}/atenciones', [DeceBuscadorController::class, 'atenciones'])->name('buscar.atenciones');
@@ -374,7 +381,7 @@ Route::middleware(['auth', 'role:DECE,ADMIN'])
     });
 
 // Gestion clinica y administrativa del DECE.
-Route::middleware(['auth', 'role:DECE,ADMIN'])
+Route::middleware(['auth', 'role:DECE'])
     ->prefix('dece')->name('dece.')->group(function () {
         Route::get('/atenciones', [DeceAtencionController::class, 'index'])->name('atenciones.index');
         Route::get('/atenciones/crear', [DeceAtencionController::class, 'create'])->name('atenciones.create');
@@ -420,7 +427,7 @@ Route::middleware(['auth', 'role:DECE,ADMIN'])
     });
 
 // Derivaciones internas: docentes e inspeccion pueden remitir un caso al DECE.
-Route::middleware(['auth', 'role:DECE,ADMIN,DOCENTE,INSPECCION'])
+Route::middleware(['auth', 'role:DECE,DOCENTE,INSPECCION'])
     ->prefix('dece')->name('dece.')->group(function () {
         Route::get('/derivaciones', [DeceDerivacionController::class, 'index'])->name('derivaciones.index');
         Route::get('/derivaciones/crear', [DeceDerivacionController::class, 'create'])->name('derivaciones.create');

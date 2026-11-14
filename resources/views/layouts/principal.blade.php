@@ -43,35 +43,51 @@
         </li>
         @if($rol === 'ADMIN')
         {{--
-            Menú exclusivo del rol ADMIN, seccionado por función.
+            Menú exclusivo del rol ADMIN, ordenado por función en cinco secciones.
 
-            Qué hace: agrupa los módulos administrables en tres bloques para
-            evitar pestañas repetidas:
-            - Contenido del portal: lo que ve el público (sitio, pre-registro,
-              comunidad, carruseles y circulares).
-            - Gestión académica: observaciones y fechas de subida de notas.
-            - Seguridad y auditoría: usuarios, historial y configuración global.
+            Qué hace: agrupa los módulos administrables para que no existan
+            pestañas repetidas ni accesos sueltos al final del menú.
+            - Portal y apariencia: identidad, carruseles, textos, comunidad y descargas.
+            - Usuarios y seguridad: cuentas, roles y contraseñas.
+            - Control académico y operativo: matrículas, notas, circulares y observaciones.
+            - Auditoría y respaldo: historial de cambios.
+            - Configuración del sistema: parámetros académicos y zona horaria.
             Conecta con: DashboardController@admin, Admin\SitioController,
             ComunidadController, HeroSlideController, CircularController,
             ObservacionAdminController, VentanaNotaController, UserController,
-            HistorialController y ConfiguracionController.
+            HistorialController, ConfiguracionController y los módulos de
+            Secretaría (pre-registros, traslados, notas extraordinarias y
+            actualización de datos).
             Rutas: /admin/sitio, /admin/comunidad, /admin/configuracion,
                    /admin/circulares, /admin/observaciones, /admin/ventanas-notas,
-                   /admin/usuarios y /admin/historial.
+                   /admin/usuarios, /admin/historial, /admin/pre-registros,
+                   /traslados, /notas-extraordinarias y /actualizacion.
         --}}
         <li class="nav-item mt-3">
-            <span class="text-uppercase text-white-50 small fw-semibold px-2">Contenido del portal</span>
+            <span class="text-uppercase text-white-50 small fw-semibold px-2">Portal y apariencia</span>
         </li>
         <li class="nav-item mt-1">
-            <a href="{{ route('admin.sitio.index') }}"
-               class="nav-link text-white {{ request()->is('admin/sitio*') && request('tab') !== 'preregistro' ? 'active' : '' }}">
-                <i class="bi bi-globe2 me-2"></i> Sitio web
+            <a href="{{ route('admin.configuracion.index', ['tab' => 'institucion']) }}"
+               class="nav-link text-white {{ request()->is('admin/configuracion*') && in_array(request('tab'), ['institucion', 'apariencia'], true) ? 'active' : '' }}">
+                <i class="bi bi-palette me-2"></i> Identidad y apariencia
             </a>
         </li>
         <li class="nav-item">
-            <a href="{{ route('admin.sitio.index', ['tab' => 'preregistro']) }}"
-               class="nav-link text-white {{ request()->is('admin/sitio*') && request('tab') === 'preregistro' ? 'active' : '' }}">
-                <i class="bi bi-file-earmark-text me-2"></i> Pre-registro
+            <a href="{{ route('admin.configuracion.index', ['tab' => 'carrusel']) }}"
+               class="nav-link text-white {{ request()->is('admin/configuracion*') && request('tab') === 'carrusel' ? 'active' : '' }}">
+                <i class="bi bi-images me-2"></i> Carrusel principal
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.configuracion.index', ['tab' => 'carrusel-login']) }}"
+               class="nav-link text-white {{ request()->is('admin/configuracion*') && request('tab') === 'carrusel-login' ? 'active' : '' }}">
+                <i class="bi bi-person-badge me-2"></i> Carrusel del login
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.sitio.index', ['tab' => 'textos']) }}"
+               class="nav-link text-white {{ request()->is('admin/sitio*') && in_array(request('tab'), ['textos', 'historia'], true) ? 'active' : '' }}">
+                <i class="bi bi-file-text me-2"></i> Contenido institucional
             </a>
         </li>
         <li class="nav-item">
@@ -81,53 +97,103 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="{{ route('admin.configuracion.index', ['tab' => 'carrusel']) }}"
-               class="nav-link text-white {{ request()->is('admin/configuracion*') && in_array(request('tab'), ['carrusel', 'carrusel-login'], true) ? 'active' : '' }}">
-                <i class="bi bi-images me-2"></i> Carruseles
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('admin.circulares.index') }}"
-               class="nav-link text-white {{ request()->is('admin/circulares*') ? 'active' : '' }}">
-                <i class="bi bi-megaphone me-2"></i> Circulares
+            <a href="{{ route('admin.sitio.index', ['tab' => 'utiles']) }}"
+               class="nav-link text-white {{ request()->is('admin/sitio*') && in_array(request('tab'), ['utiles', 'descargas'], true) ? 'active' : '' }}">
+                <i class="bi bi-folder2-open me-2"></i> Servicios y descargas
             </a>
         </li>
 
         <li class="nav-item mt-3">
-            <span class="text-uppercase text-white-50 small fw-semibold px-2">Gestión académica</span>
+            <span class="text-uppercase text-white-50 small fw-semibold px-2">Usuarios y seguridad</span>
         </li>
         <li class="nav-item mt-1">
-            <a href="{{ route('admin.observaciones.index') }}"
-               class="nav-link text-white {{ request()->is('admin/observaciones*') ? 'active' : '' }}">
-                <i class="bi bi-exclamation-triangle me-2"></i> Observaciones
+            <a href="{{ route('admin.usuarios.index') }}"
+               class="nav-link text-white {{ request()->is('admin/usuarios*') ? 'active' : '' }}">
+                <i class="bi bi-person-gear me-2"></i> Usuarios y roles
+            </a>
+        </li>
+
+        <li class="nav-item mt-3">
+            <span class="text-uppercase text-white-50 small fw-semibold px-2">Control académico y operativo</span>
+        </li>
+        <li class="nav-item mt-1">
+            <a href="{{ route('admin.pre-registros.index') }}"
+               class="nav-link text-white {{ request()->is('admin/pre-registros*') ? 'active' : '' }}">
+                <i class="bi bi-clipboard-check me-2"></i> Matrículas e inscripciones
             </a>
         </li>
         <li class="nav-item">
             <a href="{{ route('admin.ventanas-notas.index') }}"
                class="nav-link text-white {{ request()->is('admin/ventanas-notas*') ? 'active' : '' }}">
-                <i class="bi bi-calendar-range me-2"></i> Fechas de subida de notas
-            </a>
-        </li>
-
-        <li class="nav-item mt-3">
-            <span class="text-uppercase text-white-50 small fw-semibold px-2">Seguridad y auditoría</span>
-        </li>
-        <li class="nav-item mt-1">
-            <a href="{{ route('admin.usuarios.index') }}"
-               class="nav-link text-white {{ request()->is('admin/usuarios*') ? 'active' : '' }}">
-                <i class="bi bi-person-gear me-2"></i> Usuarios
+                <i class="bi bi-calendar-range me-2"></i> Ventanas de calificaciones
             </a>
         </li>
         <li class="nav-item">
+            <a href="{{ route('admin.circulares.index') }}"
+               class="nav-link text-white {{ request()->is('admin/circulares*') ? 'active' : '' }}">
+                <i class="bi bi-megaphone me-2"></i> Circulares y comunicados
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.observaciones.index') }}"
+               class="nav-link text-white {{ request()->is('admin/observaciones*') ? 'active' : '' }}">
+                <i class="bi bi-exclamation-triangle me-2"></i> Moderación de observaciones
+            </a>
+        </li>
+        @php
+            $registrosAcademicosActivos = request()->is('notas-extraordinarias*')
+                || request()->is('traslados*')
+                || request()->is('actualizacion*');
+        @endphp
+        <li class="nav-item mt-1">
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $registrosAcademicosActivos ? 'active' : '' }}"
+               data-bs-toggle="collapse" href="#submenuAdminRegistros" aria-expanded="{{ $registrosAcademicosActivos ? 'true' : 'false' }}" aria-controls="submenuAdminRegistros">
+                <span><i class="bi bi-journal-check me-2"></i> Registros académicos</span>
+                <i class="bi bi-chevron-down chevron-icon"></i>
+            </a>
+            <div class="collapse {{ $registrosAcademicosActivos ? 'show' : '' }}" id="submenuAdminRegistros">
+                <ul class="nav nav-pills flex-column ms-3 mt-1">
+                    <li class="nav-item">
+                        <a href="{{ route('notas-extraordinarias.index') }}" class="nav-link text-white small py-1 {{ request()->is('notas-extraordinarias') && !request()->is('notas-extraordinarias/bitacora*') ? 'active' : '' }}">
+                            <i class="bi bi-shield-exclamation me-2"></i> Corrección de notas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('notas-extraordinarias.bitacora') }}" class="nav-link text-white small py-1 {{ request()->is('notas-extraordinarias/bitacora*') ? 'active' : '' }}">
+                            <i class="bi bi-journal-text me-2"></i> Bitácora de notas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('traslados.index') }}" class="nav-link text-white small py-1 {{ request()->is('traslados*') ? 'active' : '' }}">
+                            <i class="bi bi-arrow-left-right me-2"></i> Traslados e historial
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('actualizacion.index') }}" class="nav-link text-white small py-1 {{ request()->is('actualizacion*') ? 'active' : '' }}">
+                            <i class="bi bi-pencil-square me-2"></i> Actualización de datos
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+
+        <li class="nav-item mt-3">
+            <span class="text-uppercase text-white-50 small fw-semibold px-2">Auditoría y respaldo</span>
+        </li>
+        <li class="nav-item mt-1">
             <a href="{{ route('admin.historial.index') }}"
                class="nav-link text-white {{ request()->is('admin/historial*') ? 'active' : '' }}">
                 <i class="bi bi-clock-history me-2"></i> Historial de cambios
             </a>
         </li>
-        <li class="nav-item">
-            <a href="{{ route('admin.configuracion.index') }}"
-               class="nav-link text-white {{ request()->is('admin/configuracion*') && !in_array(request('tab'), ['carrusel', 'carrusel-login'], true) ? 'active' : '' }}">
-                <i class="bi bi-gear me-2"></i> Configuración
+
+        <li class="nav-item mt-3">
+            <span class="text-uppercase text-white-50 small fw-semibold px-2">Configuración del sistema</span>
+        </li>
+        <li class="nav-item mt-1">
+            <a href="{{ route('admin.configuracion.index', ['tab' => 'general']) }}"
+               class="nav-link text-white {{ request()->is('admin/configuracion*') && in_array(request('tab'), [null, 'general'], true) ? 'active' : '' }}">
+                <i class="bi bi-gear me-2"></i> Parámetros académicos
             </a>
         </li>
         @else
@@ -154,6 +220,12 @@
         </li>
         @endif
         @if($esRep)
+        <li class="nav-item">
+            <a href="{{ route('representante.datos.index') }}"
+               class="nav-link text-white {{ request()->is('mis-datos*') ? 'active' : '' }}">
+                <i class="bi bi-person-vcard me-2"></i> Mis datos
+            </a>
+        </li>
         <li class="nav-item">
             <a href="{{ route('representante.agendas') }}"
                class="nav-link text-white {{ request()->is('agendas') ? 'active' : '' }}">
@@ -327,7 +399,7 @@
             </div>
         </li>
         @endif
-        @if(in_array($rol, ['INSPECCION', 'ADMIN', 'RECTORA', 'VICERRECTORA', 'DECE']))
+        @if(in_array($rol, ['INSPECCION', 'RECTORA', 'VICERRECTORA', 'DECE']))
         @php
             $citasInspeccion = request()->is('inspeccion/citas*');
         @endphp
@@ -353,7 +425,7 @@
             </div>
         </li>
         @endif
-        @if(in_array($rol, ['DECE', 'ADMIN', 'RECTORA', 'VICERRECTORA']))
+        @if(in_array($rol, ['DECE', 'RECTORA', 'VICERRECTORA']))
         @php
             $deceActivo = request()->is('dece*');
         @endphp
@@ -373,7 +445,7 @@
                             <i class="bi bi-folder2-open me-2"></i> Expedientes
                         </a>
                     </li>
-                    @if(in_array($rol, ['DECE', 'ADMIN']))
+                    @if(in_array($rol, ['DECE']))
                     <li class="nav-item">
                         <a href="{{ route('dece.atenciones.index') }}" class="nav-link text-white small py-1 {{ request()->is('dece/atenciones*') ? 'active' : '' }}">
                             <i class="bi bi-clipboard2-pulse me-2"></i> Atenciones
@@ -483,35 +555,15 @@
             </div>
         </li>
         @endif
-        @if(in_array($rol, ['ADMIN', 'RECTORA', 'VICERRECTORA']))
+        @if(in_array($rol, ['RECTORA', 'VICERRECTORA']))
         <li class="nav-item mt-2">
             <a href="{{ route('admin.pre-registros.index') }}"
                class="nav-link text-white {{ request()->is('admin/pre-registros*') ? 'active' : '' }}">
                 <i class="bi bi-clipboard-check me-2"></i> Solicitudes de matrícula
             </a>
         </li>
-        @if($rol === 'ADMIN')
-        <li class="nav-item">
-            <a href="{{ route('traslados.index') }}"
-               class="nav-link text-white {{ request()->is('traslados*') ? 'active' : '' }}">
-                <i class="bi bi-arrow-left-right me-2"></i> Traslados e historial
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('notas-extraordinarias.index') }}"
-               class="nav-link text-white {{ request()->is('notas-extraordinarias') && !request()->is('notas-extraordinarias/bitacora*') ? 'active' : '' }}">
-                <i class="bi bi-shield-exclamation me-2"></i> Corrección de notas
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('notas-extraordinarias.bitacora') }}"
-               class="nav-link text-white {{ request()->is('notas-extraordinarias/bitacora*') ? 'active' : '' }}">
-                <i class="bi bi-journal-text me-2"></i> Bitácora de notas
-            </a>
-        </li>
         @endif
-        @endif
-        @if(in_array($rol, ['ADMIN', 'RECTORA']))
+        @if($rol === 'RECTORA')
         <li class="nav-item">
             <a href="{{ route('actualizacion.index') }}"
                class="nav-link text-white {{ request()->is('actualizacion*') ? 'active' : '' }}">

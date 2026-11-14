@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\HeroSlide;
 use App\Models\Institucion;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 /**
  * Inicio y cierre de sesión, más la selección del perfil activo.
@@ -41,17 +43,41 @@ class LoginController extends Controller
         ]);
     }
 
+    /**
+     * Autentica con correo electrónico o cédula.
+     *
+     * Reglas:
+     * - El identificador puede ser el correo o la cédula registrada.
+     * - Al tercer intento fallido la cuenta se bloquea 1 hora.
+     * - Si se repite el bloqueo, solo Administración puede desbloquearla.
+     *
+     * Conecta con: App\Models\User (estaBloqueado, registrarIntentoFallido,
+     * limpiarIntentosFallidos), RoleMiddleware y layouts/app.
+     * Ruta: POST /login.
+     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|string|max:255',
             'password' => 'required',
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        $identificador = trim($credentials['email']);
+        $campo = filter_var($identificador, FILTER_VALIDATE_EMAIL) ? 'email' : 'numero_cedula';
+
+        $user = User::where($campo, $identificador)->first();
+
+        if ($user && $user->estaBloqueado()) {
+            return back()->withErrors([
+                'email' => $user->mensajeBloqueo(),
+            ])->onlyInput('email');
+        }
+
+        if ($user && Hash::check($credentials['password'], $user->password)) {
+            Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
 
-            $user = Auth::user();
+            $user->limpiarIntentosFallidos();
             $perfiles = $user->perfiles();
 
             // Multirol: primero se elige el perfil y luego se redirige.
@@ -62,6 +88,18 @@ class LoginController extends Controller
             $request->session()->put('perfil_activo', $perfiles[0] ?? $user->rol);
 
             return redirect()->intended($this->redirectTo());
+        }
+
+        // Solo se cuentan los intentos de cuentas existentes: así no se puede
+        // descubrir ni bloquear cuentas ajenas escribiendo correos al azar.
+        if ($user) {
+            $user->registrarIntentoFallido();
+
+            if ($user->estaBloqueado()) {
+                return back()->withErrors([
+                    'email' => $user->mensajeBloqueo(),
+                ])->onlyInput('email');
+            }
         }
 
         return back()->withErrors([

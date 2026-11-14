@@ -52,13 +52,19 @@
                                     value="{{ old('apellidos') }}">
                                 @error('apellidos')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
-                            <div class="col-md-7">
+                            <div class="col-md-4">
+                                <label for="numero_cedula" class="form-label">Cédula</label>
+                                <input type="text" id="numero_cedula" name="numero_cedula" class="form-control @error('numero_cedula') is-invalid @enderror"
+                                    value="{{ old('numero_cedula') }}" placeholder="También sirve para iniciar sesión">
+                                @error('numero_cedula')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-4">
                                 <label for="email" class="form-label">Correo electrónico <span class="text-danger">*</span></label>
                                 <input type="email" id="email" name="email" class="form-control @error('email') is-invalid @enderror"
                                     value="{{ old('email') }}" required>
                                 @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
-                            <div class="col-md-5">
+                            <div class="col-md-4">
                                 <label for="telefono" class="form-label">Teléfono / celular</label>
                                 <input type="text" id="telefono" name="telefono" class="form-control @error('telefono') is-invalid @enderror"
                                     value="{{ old('telefono') }}" placeholder="Para avisos por SMS">

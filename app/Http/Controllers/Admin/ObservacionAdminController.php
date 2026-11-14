@@ -57,25 +57,42 @@ class ObservacionAdminController extends Controller
         ]);
     }
 
-    public function destroy(Observacion $observacion)
+    /**
+     * Elimina una observación enviada por error.
+     *
+     * Solo se elimina por orden de Rectorado y con el motivo escrito, que
+     * queda en el historial de cambios junto con los datos de la observación.
+     * Conecta con: Observacion, HistorialCambio.
+     * Ruta: DELETE /admin/observaciones/{observacion}.
+     */
+    public function destroy(Request $request, Observacion $observacion)
     {
+        $validated = $request->validate([
+            'motivo' => 'required|string|max:500',
+        ], [
+            'motivo.required' => 'Escriba el motivo y la orden de Rectorado para eliminar la observación.',
+        ]);
+
         $observacion->loadMissing(['alumno', 'tipoObservacion']);
 
         HistorialCambio::registrar(
             'Observaciones',
             'eliminar',
             'Observación eliminada de '.($observacion->alumno?->nombreCompleto() ?? 'un estudiante')
-                .': '.($observacion->tipoObservacion?->nombre ?? 'sin tipo'),
+                .': '.($observacion->tipoObservacion?->nombre ?? 'sin tipo')
+                .'. Motivo: '.$validated['motivo'],
             [
                 'id' => $observacion->id,
                 'alumno_id' => $observacion->alumno_id,
                 'descripcion' => $observacion->descripcion_texto,
+                'motivo' => $validated['motivo'],
+                'por' => $request->user()->id,
             ]
         );
 
         $observacion->delete();
 
         return redirect()->route('admin.observaciones.index')
-            ->with('success', 'Observación eliminada correctamente.');
+            ->with('success', 'Observación eliminada correctamente. El motivo quedó registrado.');
     }
 }

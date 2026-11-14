@@ -439,9 +439,9 @@
                     @csrf
 
                     <div class="login-field">
-                        <label for="email">Correo electrónico</label>
-                        <input type="email" id="email" name="email" value="{{ old('email') }}"
-                            placeholder="usuario@institucion.edu.ec" autocomplete="username" required autofocus>
+                        <label for="email">Correo electrónico o cédula</label>
+                        <input type="text" id="email" name="email" value="{{ old('email') }}"
+                            placeholder="usuario@institucion.edu.ec o 0900000001" autocomplete="username" required autofocus>
                     </div>
 
                     <div class="login-field">

@@ -63,6 +63,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'apellidos', 'email', 'password',
         'rol', 'institucion_id', 'telefono', 'numero_cedula', 'fecha_nacimiento',
+        'intentos_fallidos', 'bloqueado_hasta', 'bloqueos_consecutivos', 'requiere_desbloqueo',
     ];
 
     protected $hidden = [
@@ -74,6 +75,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'fecha_nacimiento' => 'date',
+            'bloqueado_hasta' => 'datetime',
+            'requiere_desbloqueo' => 'boolean',
             'password' => 'hashed',
         ];
     }
@@ -190,6 +193,98 @@ class User extends Authenticatable
     public function limpiarPerfilesMemo(): void
     {
         $this->perfilesMemo = null;
+    }
+
+    /**
+     * ¿La cuenta está bloqueada en este momento?
+     *
+     * Qué hace: considera bloqueo temporal (1 hora) y bloqueo que solo
+     * Administración puede levantar (`requiere_desbloqueo`).
+     * Conecta con: LoginController@login, Admin\UserController@desbloquear
+     * y layouts/principal (aviso en el menú de usuarios).
+     * Rutas: POST /login, POST /admin/usuarios/{user}/desbloquear.
+     */
+    public function estaBloqueado(): bool
+    {
+        if ($this->requiere_desbloqueo) {
+            return true;
+        }
+
+        return $this->bloqueado_hasta !== null && $this->bloqueado_hasta->isFuture();
+    }
+
+    /** Minutos que faltan para que termine el bloqueo temporal. */
+    public function minutosDeBloqueo(): int
+    {
+        if ($this->bloqueado_hasta === null || ! $this->bloqueado_hasta->isFuture()) {
+            return 0;
+        }
+
+        return max(1, (int) ceil(now()->diffInSeconds($this->bloqueado_hasta) / 60));
+    }
+
+    /** Mensaje que se muestra al intentar entrar con una cuenta bloqueada. */
+    public function mensajeBloqueo(): string
+    {
+        if ($this->requiere_desbloqueo) {
+            return 'La cuenta está bloqueada. Solicite a Administración que la desbloquee.';
+        }
+
+        return 'La cuenta está bloqueada temporalmente. Intente de nuevo en '
+            .$this->minutosDeBloqueo().' minuto(s).';
+    }
+
+    /**
+     * Registra un intento fallido y aplica la política institucional:
+     * 3 intentos → bloqueo de 1 hora; un segundo bloqueo → solo Administración.
+     *
+     * Conecta con: LoginController@login.
+     * Ruta: POST /login.
+     */
+    public function registrarIntentoFallido(): void
+    {
+        if ($this->requiere_desbloqueo) {
+            return;
+        }
+
+        $this->intentos_fallidos = (int) $this->intentos_fallidos + 1;
+
+        if ($this->intentos_fallidos >= 3) {
+            $this->intentos_fallidos = 0;
+
+            if ((int) $this->bloqueos_consecutivos >= 1) {
+                // Segundo bloqueo: ya no se libera solo con el paso del tiempo.
+                $this->requiere_desbloqueo = true;
+                $this->bloqueado_hasta = null;
+            } else {
+                $this->bloqueos_consecutivos = 1;
+                $this->bloqueado_hasta = now()->addHour();
+            }
+        }
+
+        $this->save();
+    }
+
+    /** Deja la cuenta limpia después de un inicio de sesión correcto. */
+    public function limpiarIntentosFallidos(): void
+    {
+        if (! $this->intentos_fallidos && ! $this->bloqueado_hasta
+            && ! $this->bloqueos_consecutivos && ! $this->requiere_desbloqueo) {
+            return;
+        }
+
+        $this->forceFill([
+            'intentos_fallidos' => 0,
+            'bloqueado_hasta' => null,
+            'bloqueos_consecutivos' => 0,
+            'requiere_desbloqueo' => false,
+        ])->save();
+    }
+
+    /** Desbloqueo manual desde Administración. */
+    public function desbloquear(): void
+    {
+        $this->limpiarIntentosFallidos();
     }
 
     /** Etiqueta legible de un rol. */

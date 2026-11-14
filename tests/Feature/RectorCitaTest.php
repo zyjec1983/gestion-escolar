@@ -30,7 +30,7 @@ class RectorCitaTest extends TestCase
         parent::setUp();
 
         $this->rector = User::factory()->create([
-            'rol' => 'ADMIN',
+            'rol' => 'RECTORA',
             'name' => 'RECTOR',
             'apellidos' => 'PRUEBA',
         ]);
@@ -64,7 +64,7 @@ class RectorCitaTest extends TestCase
         ]);
     }
 
-    public function test_rector_admin_puede_ver_agendar_e_historial(): void
+    public function test_rectora_puede_ver_agendar_e_historial(): void
     {
         $this->actingAs($this->rector)
             ->get(route('inspeccion.citas.agendar'))
@@ -75,6 +75,19 @@ class RectorCitaTest extends TestCase
             ->get(route('inspeccion.citas.historial'))
             ->assertOk()
             ->assertSee('Historial de citas');
+    }
+
+    public function test_admin_no_accede_al_modulo_de_citas(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('inspeccion.citas.agendar'))
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->get(route('inspeccion.citas.historial'))
+            ->assertForbidden();
     }
 
     public function test_rector_agenda_cita_atribuida_a_su_nombre(): void

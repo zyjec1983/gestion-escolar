@@ -24,9 +24,11 @@ class DeceAccesoTest extends TestCase
     {
         $docente = User::factory()->docente()->create();
         $estudiante = User::factory()->estudiante()->create();
+        $admin = User::factory()->admin()->create();
 
         $this->actingAs($docente)->get(route('dece.expedientes.index'))->assertForbidden();
         $this->actingAs($estudiante)->get(route('dece.expedientes.index'))->assertForbidden();
+        $this->actingAs($admin)->get(route('dece.expedientes.index'))->assertForbidden();
     }
 
     public function test_dece_y_autoridades_acceden_al_modulo(): void
@@ -34,10 +36,8 @@ class DeceAccesoTest extends TestCase
         $dece = User::factory()->dece()->create();
         $rectora = User::factory()->rectora()->create();
         $vicerrectora = User::factory()->vicerrectora()->create();
-        $admin = User::factory()->admin()->create();
 
         $this->actingAs($dece)->get(route('dece.expedientes.index'))->assertOk();
-        $this->actingAs($admin)->get(route('dece.expedientes.index'))->assertOk();
         $this->actingAs($rectora)->get(route('dece.expedientes.index'))->assertOk();
         $this->actingAs($vicerrectora)->get(route('dece.expedientes.index'))->assertOk();
     }

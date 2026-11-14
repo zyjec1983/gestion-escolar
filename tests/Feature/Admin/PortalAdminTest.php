@@ -256,8 +256,9 @@ class PortalAdminTest extends TestCase
             'descripcion_texto' => 'Registro equivocado',
         ]);
 
-        $this->actingAs($admin)->delete(route('admin.observaciones.destroy', $observacion))
-            ->assertRedirect(route('admin.observaciones.index'));
+        $this->actingAs($admin)->delete(route('admin.observaciones.destroy', $observacion), [
+            'motivo' => 'Orden de Rectorado: registro equivocado',
+        ])->assertRedirect(route('admin.observaciones.index'));
 
         $this->assertDatabaseMissing('observaciones', ['id' => $observacion->id]);
         $this->assertDatabaseHas('historial_cambios', [

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\Alumno;
 use App\Models\User;
 use App\Models\UserRole;
 use Illuminate\Support\Facades\Hash;
@@ -151,5 +152,71 @@ class UsuariosAdminTest extends TestCase
             'email' => $otro->email,
             'rol' => 'DOCENTE',
         ])->assertSessionHasErrors('email');
+    }
+
+    /** @test */
+    public function la_cedula_de_otro_usuario_no_se_puede_duplicar()
+    {
+        $admin = User::factory()->admin()->create();
+        $otro = User::factory()->docente()->create(['numero_cedula' => '1711111111']);
+        $objetivo = User::factory()->docente()->create(['numero_cedula' => '1722222222']);
+
+        $this->actingAs($admin)->put(route('admin.usuarios.update', $objetivo), [
+            'name' => $objetivo->name,
+            'email' => $objetivo->email,
+            'numero_cedula' => $otro->numero_cedula,
+            'rol' => 'DOCENTE',
+        ])->assertSessionHasErrors('numero_cedula');
+
+        $this->assertSame('1722222222', $objetivo->fresh()->numero_cedula);
+    }
+
+    /** @test */
+    public function el_admin_genera_las_cuentas_de_estudiantes_con_la_cedula()
+    {
+        $admin = User::factory()->admin()->create();
+        $alumno = Alumno::factory()->create([
+            'nombres' => 'Luis',
+            'apellidos' => 'Mendoza',
+            'numero_cedula' => '0900000001',
+            'email_activo' => 'luis@correo.test',
+            'user_id' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.usuarios.generar-cuentas'))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $user = User::where('numero_cedula', '0900000001')->first();
+
+        $this->assertNotNull($user);
+        $this->assertSame('REPRESENTANTE', $user->rol);
+        $this->assertTrue(Hash::check('0900000001', $user->password));
+        $this->assertTrue($user->rolesAdicionales()->where('rol', 'ESTUDIANTE')->exists());
+        $this->assertSame($user->id, $alumno->fresh()->user_id);
+    }
+
+    /** @test */
+    public function la_generacion_masiva_omite_las_cedulas_que_ya_tienen_cuenta()
+    {
+        $admin = User::factory()->admin()->create();
+        $existente = User::factory()->representante()->create([
+            'numero_cedula' => '0900000002',
+            'email' => 'existente@correo.test',
+        ]);
+        $alumno = Alumno::factory()->create([
+            'numero_cedula' => '0900000002',
+            'user_id' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.usuarios.generar-cuentas'))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame(1, User::where('numero_cedula', '0900000002')->count());
+        $this->assertNull($alumno->fresh()->user_id);
+        $this->assertNotNull($existente->fresh());
     }
 }
