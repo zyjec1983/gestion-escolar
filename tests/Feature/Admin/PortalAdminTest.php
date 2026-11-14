@@ -59,19 +59,35 @@ class PortalAdminTest extends TestCase
             'titulo' => 'Circular de prueba', 'fecha_publicacion' => now(),
         ]);
 
-        $response = $this->get('/');
+        // Cada pestaña del portal tiene su propia vista.
+        $this->get(route('welcome'))
+            ->assertOk()
+            ->assertSee('Unidad de Prueba')
+            ->assertSee('Circular de prueba');
 
-        $response->assertOk();
-        $response->assertSee('Unidad de Prueba');
-        $response->assertSee('Historia Editada');
-        $response->assertSee('Hito de prueba');
-        $response->assertSee('Hermana Prueba');
-        $response->assertSee('Cuaderno de prueba');
-        $response->assertSee('Horario de prueba');
-        $response->assertSee('Circular de prueba');
-        $response->assertSee('Comunidad Educativa');
-        $response->assertSee('Lista de Útiles Escolares');
-        $response->assertSee('Centro de Descargas');
+        $this->get(route('portal.historia'))
+            ->assertOk()
+            ->assertSee('Historia Editada')
+            ->assertSee('Hito de prueba');
+
+        $this->get(route('portal.comunidad'))
+            ->assertOk()
+            ->assertSee('Comunidad Educativa')
+            ->assertSee('Hermana Prueba');
+
+        $this->get(route('portal.utiles'))
+            ->assertOk()
+            ->assertSee('Lista de Útiles Escolares')
+            ->assertSee('Cuaderno de prueba');
+
+        $this->get(route('portal.descargas'))
+            ->assertOk()
+            ->assertSee('Centro de Descargas')
+            ->assertSee('Horario de prueba');
+
+        $this->get(route('portal.circulares'))
+            ->assertOk()
+            ->assertSee('Circular de prueba');
     }
 
     /** @test */

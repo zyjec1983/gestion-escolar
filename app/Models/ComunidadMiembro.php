@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
  * Qué hace: guarda cargo, nombre, responsabilidad, área y fotografía. El
  * portal agrupa las tarjetas por `area`, de modo que el administrador puede
  * crear grupos como Matemáticas, Inglés o DECE y añadir varias filas.
- * Conecta con: Admin\ComunidadController y welcome.blade.php.
+ * Conecta con: Admin\ComunidadController y portal/comunidad.blade.php.
  * Rutas: CRUD /admin/comunidad.
  */
 class ComunidadMiembro extends Model

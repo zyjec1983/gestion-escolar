@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * Qué hace: una fila por artículo, con nivel educativo, especificación,
  * cantidad y área de uso.
- * Conecta con: Admin\SitioController y welcome.blade.php.
+ * Conecta con: Admin\SitioController y portal/utiles.blade.php.
  * Rutas: CRUD /admin/sitio/utiles.
  */
 class UtilItem extends Model

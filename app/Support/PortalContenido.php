@@ -9,7 +9,7 @@ use App\Models\SiteContent;
  *
  * Qué hace: define la etiqueta, el grupo, el tipo y el valor por defecto de
  * cada texto o imagen del sitio. El panel "Sitio web" genera sus formularios
- * a partir de esta lista y welcome.blade.php usa los mismos valores por
+ * a partir de esta lista y las vistas del portal usan los mismos valores por
  * defecto cuando todavía no se ha guardado nada.
  * Conecta con: App\Models\SiteContent, Admin\SitioController y welcome.
  * Rutas: GET/POST /admin/sitio.

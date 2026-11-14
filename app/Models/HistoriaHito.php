@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
  * Hito de la línea de tiempo histórica.
  *
  * Qué hace: representa un año, título y descripción de "Nuestra historia".
- * Conecta con: Admin\SitioController y welcome.blade.php.
+ * Conecta con: Admin\SitioController y portal/historia.blade.php.
  * Rutas: POST/PUT/DELETE /admin/sitio/historia.
  */
 class HistoriaHito extends Model

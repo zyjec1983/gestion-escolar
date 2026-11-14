@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
  *
  * Qué hace: guarda título, descripción, fecha, peso y archivo de cada
  * documento oficial, agrupado por categoría.
- * Conecta con: Admin\SitioController y welcome.blade.php.
+ * Conecta con: Admin\SitioController y portal/descargas.blade.php.
  * Rutas: CRUD /admin/sitio/descargas.
  */
 class DescargaDocumento extends Model

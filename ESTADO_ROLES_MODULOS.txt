@@ -580,14 +580,24 @@ incorporarán después si se requieren.
  12. PORTAL PÚBLICO INSTITUCIONAL (sin iniciar sesión)
 ===============================================================================
 
-- Página de inicio fusionada con el portal ................ (ready)
+- Portada del portal (pestaña Home) ....................... (ready)
   Ruta: GET / (nombre de ruta: welcome)
   Controlador: PortalController@index
   Vista: resources/views/welcome.blade.php
-  Reúne el diseño del template franciscano con los contenidos administrables
-  del sistema: carrusel, historia, comunidad, útiles, descargas y circulares.
-  Navbar y pie propios del portal; los botones de acceso van a /login y los de
-  matrícula a /pre-registro.
+  Muestra el carrusel, la franja de admisiones, la identidad institucional,
+  los accesos a cada pestaña, el proceso de admisión y las circulares
+  recientes.
+
+- Pestañas con vista propia ............................... (ready)
+  Plantilla base: resources/views/portal/layout.blade.php
+  Cada pestaña tiene su controlador, su ruta y su archivo Blade; ya no son
+  anclas dentro de welcome.blade.php:
+  - GET /historia    (portal.historia)   -> portal/historia.blade.php
+  - GET /comunidad   (portal.comunidad)  -> portal/comunidad.blade.php
+  - GET /utiles      (portal.utiles)     -> portal/utiles.blade.php
+  - GET /descargas   (portal.descargas)  -> portal/descargas.blade.php
+  - GET /circulares  (portal.circulares) -> portal/circulares.blade.php
+  El navbar y el pie enlazan a estas rutas y marcan la pestaña activa.
 
 - Contenidos editables (CMS clave/valor) .................. (ready)
   Modelo: App\Models\SiteContent
@@ -602,7 +612,7 @@ incorporarán después si se requieren.
 
 - Historia, comunidad, útiles, descargas y circulares ..... (ready)
   Modelos: HistoriaHito, ComunidadMiembro, UtilItem, DescargaDocumento y
-  Circular. Se listan solo los registros activos; la comunidad se agrupa por
+  Circular. Cada modelo alimenta su propia página; la comunidad se agrupa por
   área y los útiles se separan por nivel.
 
 - Datos de contacto y redes ............................... (ready)

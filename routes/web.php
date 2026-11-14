@@ -52,6 +52,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PortalController::class, 'index'])->name('welcome');
 
+// Cada pestaña del portal tiene su propia vista y su propia ruta.
+Route::get('/historia', [PortalController::class, 'historia'])->name('portal.historia');
+Route::get('/comunidad', [PortalController::class, 'comunidad'])->name('portal.comunidad');
+Route::get('/utiles', [PortalController::class, 'utiles'])->name('portal.utiles');
+Route::get('/descargas', [PortalController::class, 'descargas'])->name('portal.descargas');
+Route::get('/circulares', [PortalController::class, 'circulares'])->name('portal.circulares');
+
 Route::get('/pre-registro', [PreRegistroController::class, 'create'])->name('pre-registro.create');
 Route::post('/pre-registro', [PreRegistroController::class, 'store'])->name('pre-registro.store');
 

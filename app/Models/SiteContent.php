@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Storage;
  * Qué hace: almacena textos, enlaces, booleanos e imágenes en formato
  * clave/valor. Welcome y el login leen estos valores; el administrador los
  * edita en "Sitio web".
- * Conecta con: Admin\SitioController, App\Support\PortalContenido y
- * resources/views/welcome.blade.php.
+ * Conecta con: Admin\SitioController, App\Support\PortalContenido y las
+ * vistas resources/views/portal/* y welcome.blade.php.
  * Rutas: GET/POST /admin/sitio.
  */
 class SiteContent extends Model
