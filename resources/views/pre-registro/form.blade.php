@@ -1,4 +1,4 @@
-@extends('layouts.public')
+@extends('portal.layout')
 
 @section('titulo', 'Solicitud de Matrícula')
 
@@ -9,22 +9,33 @@
     $patronTexto = "[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?:[ '\\-][A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)*";
     // Cédula o pasaporte: numeros o texto, sin simbolos ni espacios.
     $patronDocumento = "[A-Za-z0-9]{5,20}";
+    // Cabecera administrable (Sitio web -> Pre-registro).
+    $texto = fn (string $clave): string => \App\Support\PortalContenido::valor($clave);
 @endphp
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <div class="card shadow-sm border-0">
                 <div class="card-body p-4 p-md-5">
+                    {{--
+                        Cabecera administrable del formulario.
+                        Conecta con: PortalContenido (grupo preregistro) y el
+                        panel Administración -> Sitio web -> Pre-registro.
+                    --}}
                     <div class="text-center mb-4">
-                        <h5 class="fw-bold mb-1">UNIDAD EDUCATIVA "FRANCISCANO SALITRE"</h5>
-                        <h6 class="text-muted mb-1">HERMANAS FRANCISCANAS DE MARÍA INMACULADA</h6>
-                        <small class="d-block mb-1">DIR. AVENIDA 27 DE NOVIEMBRE Y AV. REPÚBLICA DE AUSTRIA</small>
-                        <small class="d-block mb-1">TELF. 2792-252 &nbsp;|&nbsp; AMIE: 09H04858 &nbsp;|&nbsp; EMAIL: franciscanosalitre@hotmail.com</small>
-                        <small class="d-block">Salitre - Ecuador</small>
+                        <h5 class="fw-bold mb-1">{{ $texto('preregistro.cabecera_nombre') }}</h5>
+                        <h6 class="text-muted mb-1">{{ $texto('preregistro.cabecera_hermandad') }}</h6>
+                        <small class="d-block mb-1">{{ $texto('preregistro.cabecera_direccion') }}</small>
+                        <small class="d-block mb-1">
+                            {{ $texto('preregistro.cabecera_telefono') }} &nbsp;|&nbsp;
+                            {{ $texto('preregistro.cabecera_amie') }} &nbsp;|&nbsp;
+                            {{ $texto('preregistro.cabecera_email') }}
+                        </small>
+                        <small class="d-block">{{ $texto('preregistro.cabecera_ciudad') }}</small>
                         <hr class="my-2">
-                        <h5 class="fw-bold mb-1">SOLICITUD DE MATRÍCULA {{ $periodo->nombre ?? '' }}</h5>
-                        <small class="text-muted">DATOS GENERALES, BÁSICOS Y ACTUALIZADOS DEL ESTUDIANTE</small><br>
-                        <small class="text-muted">(Debe ser llenada en computadora con letra legible, sin tachones ni enmendaduras)</small>
+                        <h5 class="fw-bold mb-1">{{ $texto('preregistro.titulo_solicitud') }} {{ $periodo->nombre ?? '' }}</h5>
+                        <small class="text-muted">{{ $texto('preregistro.subtitulo_solicitud') }}</small><br>
+                        <small class="text-muted">{{ $texto('preregistro.instrucciones') }}</small>
 
                         @if(isset($adminMode) && $adminMode)
                             <div class="alert alert-info mt-3 mb-0 py-2">

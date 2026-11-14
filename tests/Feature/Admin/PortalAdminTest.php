@@ -15,6 +15,7 @@ use App\Models\TipoObservacion;
 use App\Models\User;
 use App\Models\UtilItem;
 use App\Models\VentanaNota;
+use App\Support\PortalContenido;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -37,6 +38,30 @@ class PortalAdminTest extends TestCase
         $institucion = Institucion::factory()->create();
 
         return User::factory()->admin()->create(['institucion_id' => $institucion->id]);
+    }
+
+    /** @test */
+    public function el_admin_configura_la_cabecera_del_pre_registro()
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->get(route('admin.sitio.index', ['tab' => 'preregistro']))
+            ->assertOk()
+            ->assertSee('Cabecera del formulario de pre-registro')
+            ->assertSee('preregistro.cabecera_nombre', false);
+
+        $this->actingAs($admin)
+            ->post(route('admin.sitio.contenido', 'preregistro'), [
+                'campos' => [
+                    'preregistro.cabecera_nombre' => 'UNIDAD EDUCATIVA EDITADA',
+                    'preregistro.titulo_solicitud' => 'MATRÍCULA EDITADA',
+                ],
+            ])
+            ->assertRedirect(route('admin.sitio.index', ['tab' => 'preregistro']));
+
+        $this->assertSame('UNIDAD EDUCATIVA EDITADA', PortalContenido::valor('preregistro.cabecera_nombre'));
+        $this->assertSame('MATRÍCULA EDITADA', PortalContenido::valor('preregistro.titulo_solicitud'));
     }
 
     /** @test */

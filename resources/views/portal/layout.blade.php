@@ -9,6 +9,17 @@
     Institucion y las vistas portal/*.
     Rutas: GET /, /historia, /comunidad, /utiles, /descargas, /circulares.
 --}}
+@php
+    // Datos compartidos por el layout y todas las pestañas del portal. Se
+    // resuelven aquí para que cualquier vista que extienda esta plantilla
+    // (incluido el pre-registro) funcione sin depender del controlador.
+    $nombreInstitucion = $institucion->nombre ?? \App\Support\PortalContenido::valor('institucion.nombre_corto');
+    $eslogan = \App\Support\PortalContenido::valor('institucion.eslogan');
+    $logoUrl = !empty($institucion?->logo_path) ? $institucion->logoUrl() : null;
+    $texto = fn (string $clave): string => \App\Support\PortalContenido::valor($clave);
+    $imagen = fn (string $clave): string => \App\Support\PortalContenido::imagen($clave);
+    $anioActual = date('Y');
+@endphp
 <!DOCTYPE html>
 <html lang="es">
 <head>

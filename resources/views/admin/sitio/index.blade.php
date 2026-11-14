@@ -6,14 +6,15 @@
     Administración del sitio web institucional.
 
     Qué hace: edita todos los textos e imágenes del portal (identidad,
-    historia, comunidad, útiles, descargas, admisiones y login), además de la
-    línea de tiempo, la lista de útiles y el centro de descargas.
+    historia, comunidad, útiles, descargas, admisiones, login y cabecera del
+    pre-registro), además de la línea de tiempo, la lista de útiles y el
+    centro de descargas.
     Conecta con: Admin\SitioController, PortalContenido, SiteContent,
     HistoriaHito, UtilItem y DescargaDocumento.
     Rutas: GET /admin/sitio y POST/PUT/DELETE /admin/sitio/*.
 --}}
 @php
-    $tabActiva = in_array(request('tab'), ['textos', 'historia', 'utiles', 'descargas'], true)
+    $tabActiva = in_array(request('tab'), ['textos', 'preregistro', 'historia', 'utiles', 'descargas'], true)
         ? request('tab')
         : 'textos';
 @endphp
@@ -50,6 +51,12 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link {{ $tabActiva === 'preregistro' ? 'active' : '' }}" id="tab-preregistro"
+                    data-bs-toggle="tab" data-bs-target="#panel-preregistro" type="button" role="tab">
+                <i class="bi bi-file-earmark-text me-1"></i>Pre-registro
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link {{ $tabActiva === 'historia' ? 'active' : '' }}" id="tab-historia"
                     data-bs-toggle="tab" data-bs-target="#panel-historia" type="button" role="tab">
                 <i class="bi bi-book-half me-1"></i>Historia
@@ -74,6 +81,7 @@
         <div class="tab-pane fade {{ $tabActiva === 'textos' ? 'show active' : '' }}" id="panel-textos"
              role="tabpanel" aria-labelledby="tab-textos" tabindex="0">
             @foreach($grupos as $claveGrupo => $grupo)
+            @continue($claveGrupo === 'preregistro')
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white">
                     <h6 class="mb-0"><i class="bi {{ $grupo['icono'] }} me-1"></i>{{ $grupo['titulo'] }}</h6>
@@ -153,6 +161,43 @@
                 </div>
             </div>
             @endforeach
+        </div>
+
+        {{-- ============ PRE-REGISTRO ============ --}}
+        <div class="tab-pane fade {{ $tabActiva === 'preregistro' ? 'show active' : '' }}" id="panel-preregistro"
+             role="tabpanel" aria-labelledby="tab-preregistro" tabindex="0">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-file-earmark-text me-1"></i>Cabecera del formulario de pre-registro</h6>
+                    <small class="text-muted">
+                        Estos datos aparecen en la parte superior de la solicitud de matrícula en línea y en el PDF.
+                    </small>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ route('admin.sitio.contenido', 'preregistro') }}">
+                        @csrf
+                        <div class="row g-3">
+                            @foreach(\App\Support\PortalContenido::porGrupo('preregistro') as $clave => $campo)
+                            <div class="col-md-6">
+                                <label class="form-label">{{ $campo['etiqueta'] }}</label>
+                                <input type="text" name="campos[{{ $clave }}]" class="form-control"
+                                       maxlength="10000" value="{{ \App\Support\PortalContenido::valor($clave) }}">
+                            </div>
+                            @endforeach
+                        </div>
+                        <div class="alert alert-light border mt-3 mb-0 small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Vista previa del encabezado: la primera línea corresponde al nombre de la institución
+                            y la segunda al título de la solicitud. El período lectivo se toma del sistema.
+                        </div>
+                        <div class="d-flex justify-content-end mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i>Guardar cabecera del pre-registro
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
 
         {{-- ============ HISTORIA ============ --}}

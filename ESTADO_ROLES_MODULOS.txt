@@ -416,9 +416,11 @@ incorporarán después si se requieren.
 
 - Menú lateral exclusivo del ADMIN ....................... (ready)
   Archivo: resources/views/layouts/principal.blade.php
-  Grupos: Administración (Sitio web, Comunidad educativa, Carrusel del portal,
-  Carrusel del login, Circulares, Observaciones, Fechas de subida de notas) y
-  Seguridad y auditoría (Usuarios, Historial de cambios, Configuración).
+  Seccionado por función para no repetir pestañas:
+  - Contenido del portal: Sitio web, Pre-registro, Comunidad educativa,
+    Carruseles, Circulares.
+  - Gestión académica: Observaciones, Fechas de subida de notas.
+  - Seguridad y auditoría: Usuarios, Historial de cambios, Configuración.
 
 - Sitio web (todos los campos del portal) ................ (ready)
   Rutas: GET /admin/sitio,
@@ -427,8 +429,16 @@ incorporarán después si se requieren.
   Controlador: Admin\SitioController
   Catálogo de campos: App\Support\PortalContenido
   Pestañas: Textos e imágenes (identidad, inicio, historia, comunidad, útiles,
-  descargas y admisiones), Historia, Útiles y Descargas. Cada texto, enlace,
-  booleano e imagen del portal es editable desde aquí.
+  descargas y admisiones), Pre-registro, Historia, Útiles y Descargas. Cada
+  texto, enlace, booleano e imagen del portal es editable desde aquí.
+
+- Cabecera del pre-registro ............................... (ready)
+  Rutas: GET /admin/sitio?tab=preregistro,
+         POST /admin/sitio/contenido/preregistro
+  Catálogo: App\Support\PortalContenido (grupo preregistro)
+  Campos: nombre de la institución, congregación, dirección, teléfono, AMIE,
+  correo, ciudad, título de la solicitud, subtítulo e instrucciones. Se usan
+  en el formulario, en la vista de inscripciones cerradas y en el PDF.
 
 - Comunidad educativa .................................... (ready)
   Rutas: CRUD /admin/comunidad
@@ -622,7 +632,8 @@ incorporarán después si se requieren.
 - Acceso al sistema desde el portal ....................... (ready)
   "Iniciar sesión" -> GET /login
   "Solicitar Matrícula" / "Pre-registro" -> GET /pre-registro (según el estado
-  de `pre_registro_activo` de la institución).
+  de `pre_registro_activo` de la institución). El pre-registro usa el mismo
+  navbar, pie y estilos del portal institucional (portal/layout.blade.php).
 
 ===============================================================================
  RESUMEN GENERAL

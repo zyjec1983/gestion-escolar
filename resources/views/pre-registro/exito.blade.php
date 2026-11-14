@@ -1,4 +1,4 @@
-@extends('layouts.public')
+@extends('portal.layout')
 
 @section('titulo', 'Solicitud Enviada')
 

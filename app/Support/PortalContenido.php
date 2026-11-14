@@ -48,6 +48,11 @@ class PortalContenido
             'icono' => 'bi-pencil-square',
             'descripcion' => 'Los tres pasos que se explican en la página de inicio.',
         ],
+        'preregistro' => [
+            'titulo' => 'Cabecera del pre-registro',
+            'icono' => 'bi-file-earmark-text',
+            'descripcion' => 'Nombre de la institución, contacto y títulos que encabezan la solicitud de matrícula.',
+        ],
         'login' => [
             'titulo' => 'Textos del inicio de sesión',
             'icono' => 'bi-box-arrow-in-right',
@@ -196,6 +201,48 @@ class PortalContenido
             'admisiones.paso3_desc' => [
                 'grupo' => 'admisiones', 'etiqueta' => 'Paso 3: descripción', 'tipo' => 'largo',
                 'por_defecto' => 'La institución revisará y aprobará su solicitud. Recibirá un correo electrónico con sus credenciales de acceso al portal.',
+            ],
+
+            // Pre-registro: cabecera de la solicitud de matrícula.
+            'preregistro.cabecera_nombre' => [
+                'grupo' => 'preregistro', 'etiqueta' => 'Nombre de la institución (cabecera)', 'tipo' => 'texto',
+                'por_defecto' => 'UNIDAD EDUCATIVA "FRANCISCANO SALITRE"',
+            ],
+            'preregistro.cabecera_hermandad' => [
+                'grupo' => 'preregistro', 'etiqueta' => 'Congregación / hermandad', 'tipo' => 'texto',
+                'por_defecto' => 'HERMANAS FRANCISCANAS DE MARÍA INMACULADA',
+            ],
+            'preregistro.cabecera_direccion' => [
+                'grupo' => 'preregistro', 'etiqueta' => 'Dirección', 'tipo' => 'texto',
+                'por_defecto' => 'DIR. AVENIDA 27 DE NOVIEMBRE Y AV. REPÚBLICA DE AUSTRIA',
+            ],
+            'preregistro.cabecera_telefono' => [
+                'grupo' => 'preregistro', 'etiqueta' => 'Teléfono', 'tipo' => 'texto',
+                'por_defecto' => 'TELF. 2792-252',
+            ],
+            'preregistro.cabecera_amie' => [
+                'grupo' => 'preregistro', 'etiqueta' => 'Código AMIE', 'tipo' => 'texto',
+                'por_defecto' => 'AMIE: 09H04858',
+            ],
+            'preregistro.cabecera_email' => [
+                'grupo' => 'preregistro', 'etiqueta' => 'Correo electrónico', 'tipo' => 'texto',
+                'por_defecto' => 'EMAIL: franciscanosalitre@hotmail.com',
+            ],
+            'preregistro.cabecera_ciudad' => [
+                'grupo' => 'preregistro', 'etiqueta' => 'Ciudad / país', 'tipo' => 'texto',
+                'por_defecto' => 'Salitre - Ecuador',
+            ],
+            'preregistro.titulo_solicitud' => [
+                'grupo' => 'preregistro', 'etiqueta' => 'Título de la solicitud', 'tipo' => 'texto',
+                'por_defecto' => 'SOLICITUD DE MATRÍCULA',
+            ],
+            'preregistro.subtitulo_solicitud' => [
+                'grupo' => 'preregistro', 'etiqueta' => 'Subtítulo de la solicitud', 'tipo' => 'texto',
+                'por_defecto' => 'DATOS GENERALES, BÁSICOS Y ACTUALIZADOS DEL ESTUDIANTE',
+            ],
+            'preregistro.instrucciones' => [
+                'grupo' => 'preregistro', 'etiqueta' => 'Instrucciones para llenar', 'tipo' => 'texto',
+                'por_defecto' => '(Debe ser llenada en computadora con letra legible, sin tachones ni enmendaduras)',
             ],
 
             // Login.

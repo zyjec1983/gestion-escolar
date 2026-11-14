@@ -22,8 +22,8 @@
 <body>
     <div class="solicitud-id">N° {{ $preRegistro->codigo_solicitud }}</div>
     <div class="header">
-        <h1>Unidad Educativa</h1>
-        <h2>SOLICITUD DE MATRÍCULA</h2>
+        <h1>{{ \App\Support\PortalContenido::valor('preregistro.cabecera_nombre') }}</h1>
+        <h2>{{ \App\Support\PortalContenido::valor('preregistro.titulo_solicitud') }}</h2>
         <span class="badge badge-pendiente">{{ strtoupper($preRegistro->estado) }}</span>
     </div>
 

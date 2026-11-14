@@ -43,12 +43,14 @@
         </li>
         @if($rol === 'ADMIN')
         {{--
-            Menú exclusivo del rol ADMIN.
+            Menú exclusivo del rol ADMIN, seccionado por función.
 
-            Qué hace: agrupa solo los módulos administrables solicitados
-            (sitio, comunidad, carruseles, circulares, observaciones, fechas de
-            notas, usuarios, historial y configuración). Los menús operativos de
-            los demás roles no se muestran aquí.
+            Qué hace: agrupa los módulos administrables en tres bloques para
+            evitar pestañas repetidas:
+            - Contenido del portal: lo que ve el público (sitio, pre-registro,
+              comunidad, carruseles y circulares).
+            - Gestión académica: observaciones y fechas de subida de notas.
+            - Seguridad y auditoría: usuarios, historial y configuración global.
             Conecta con: DashboardController@admin, Admin\SitioController,
             ComunidadController, HeroSlideController, CircularController,
             ObservacionAdminController, VentanaNotaController, UserController,
@@ -58,12 +60,18 @@
                    /admin/usuarios y /admin/historial.
         --}}
         <li class="nav-item mt-3">
-            <span class="text-uppercase text-white-50 small fw-semibold px-2">Administración</span>
+            <span class="text-uppercase text-white-50 small fw-semibold px-2">Contenido del portal</span>
         </li>
         <li class="nav-item mt-1">
             <a href="{{ route('admin.sitio.index') }}"
-               class="nav-link text-white {{ request()->is('admin/sitio*') ? 'active' : '' }}">
+               class="nav-link text-white {{ request()->is('admin/sitio*') && request('tab') !== 'preregistro' ? 'active' : '' }}">
                 <i class="bi bi-globe2 me-2"></i> Sitio web
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.sitio.index', ['tab' => 'preregistro']) }}"
+               class="nav-link text-white {{ request()->is('admin/sitio*') && request('tab') === 'preregistro' ? 'active' : '' }}">
+                <i class="bi bi-file-earmark-text me-2"></i> Pre-registro
             </a>
         </li>
         <li class="nav-item">
@@ -74,14 +82,8 @@
         </li>
         <li class="nav-item">
             <a href="{{ route('admin.configuracion.index', ['tab' => 'carrusel']) }}"
-               class="nav-link text-white {{ request()->is('admin/configuracion*') && request('tab') === 'carrusel' ? 'active' : '' }}">
-                <i class="bi bi-images me-2"></i> Carrusel del portal
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('admin.configuracion.index', ['tab' => 'carrusel-login']) }}"
-               class="nav-link text-white {{ request()->is('admin/configuracion*') && request('tab') === 'carrusel-login' ? 'active' : '' }}">
-                <i class="bi bi-box-arrow-in-right me-2"></i> Carrusel del login
+               class="nav-link text-white {{ request()->is('admin/configuracion*') && in_array(request('tab'), ['carrusel', 'carrusel-login'], true) ? 'active' : '' }}">
+                <i class="bi bi-images me-2"></i> Carruseles
             </a>
         </li>
         <li class="nav-item">
@@ -90,7 +92,11 @@
                 <i class="bi bi-megaphone me-2"></i> Circulares
             </a>
         </li>
-        <li class="nav-item">
+
+        <li class="nav-item mt-3">
+            <span class="text-uppercase text-white-50 small fw-semibold px-2">Gestión académica</span>
+        </li>
+        <li class="nav-item mt-1">
             <a href="{{ route('admin.observaciones.index') }}"
                class="nav-link text-white {{ request()->is('admin/observaciones*') ? 'active' : '' }}">
                 <i class="bi bi-exclamation-triangle me-2"></i> Observaciones
@@ -102,6 +108,7 @@
                 <i class="bi bi-calendar-range me-2"></i> Fechas de subida de notas
             </a>
         </li>
+
         <li class="nav-item mt-3">
             <span class="text-uppercase text-white-50 small fw-semibold px-2">Seguridad y auditoría</span>
         </li>

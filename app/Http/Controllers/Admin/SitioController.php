@@ -18,7 +18,7 @@ use Illuminate\Validation\Rule;
  *
  * Qué hace:
  * - Edita todos los textos e imágenes del portal (identidad, historia,
- *   comunidad, útiles, descargas y admisiones).
+ *   comunidad, útiles, descargas, admisiones y cabecera del pre-registro).
  * - Administra la línea de tiempo, la lista de útiles y los documentos.
  *
  * Conecta con: App\Support\PortalContenido, App\Models\SiteContent,
@@ -127,7 +127,7 @@ class SitioController extends Controller
         );
 
         return redirect()
-            ->route('admin.sitio.index', ['tab' => 'textos'])
+            ->route('admin.sitio.index', ['tab' => $grupo === 'preregistro' ? 'preregistro' : 'textos'])
             ->with('success', "Se guardaron {$guardados} campos de ".PortalContenido::GRUPOS[$grupo]['titulo'].'.');
     }
 

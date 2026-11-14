@@ -8,14 +8,18 @@ use App\Models\Institucion;
 use App\Models\Paralelo;
 use App\Models\PeriodoLectivo;
 use App\Models\PreRegistro;
+use App\Models\SiteContent;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Tests\TestCase;
 
 class PreRegistroTest extends TestCase
 {
     private Institucion $institucion;
+
     private Curso $curso;
+
     private Paralelo $paralelo;
+
     private PeriodoLectivo $periodo;
 
     protected function setUp(): void
@@ -59,6 +63,24 @@ class PreRegistroTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertViewIs('pre-registro.form');
+    }
+
+    public function test_la_cabecera_es_configurable_y_usa_el_navbar_del_sitio(): void
+    {
+        SiteContent::guardar('preregistro.cabecera_nombre', 'UNIDAD EDUCATIVA DE PRUEBA', [
+            'tipo' => 'texto', 'grupo' => 'preregistro', 'etiqueta' => 'Nombre',
+        ]);
+        SiteContent::guardar('preregistro.titulo_solicitud', 'SOLICITUD DE PRUEBA', [
+            'tipo' => 'texto', 'grupo' => 'preregistro', 'etiqueta' => 'Título',
+        ]);
+
+        $this->get('/pre-registro')
+            ->assertOk()
+            ->assertSee('UNIDAD EDUCATIVA DE PRUEBA')
+            ->assertSee('SOLICITUD DE PRUEBA')
+            // El pre-registro comparte el navbar del portal institucional.
+            ->assertSee('navbar-franciscan', false)
+            ->assertSee('Comunidad educativa');
     }
 
     public function test_muestra_cerrado_cuando_toggle_inactivo(): void
@@ -241,7 +263,7 @@ class PreRegistroTest extends TestCase
         // Nombres y apellidos: el navegador rechaza el campo si lleva cifras.
         foreach (['rep_nombres', 'rep_apellidos', 'padre_nombres_apellidos', 'madre_nombres_apellidos', 'facturador_nombre', 'alterno_nombre'] as $campo) {
             $this->assertMatchesRegularExpression(
-                '/<input[^>]*name="' . $campo . '"[^>]*pattern="[^"]*"/',
+                '/<input[^>]*name="'.$campo.'"[^>]*pattern="[^"]*"/',
                 $html,
                 "El campo {$campo} deberia validar con pattern que solo admite letras."
             );
@@ -250,7 +272,7 @@ class PreRegistroTest extends TestCase
         // Cedula y pasaporte: numeros o texto, sin simbolos.
         foreach (['rep_numero_documento', 'alumno_numero_documento', 'alumno_numero_cedula', 'padre_cedula', 'madre_cedula', 'facturador_cedula', 'alterno_cedula'] as $campo) {
             $this->assertMatchesRegularExpression(
-                '/<input[^>]*name="' . $campo . '"[^>]*pattern="\[A-Za-z0-9\]\{5,20\}"/',
+                '/<input[^>]*name="'.$campo.'"[^>]*pattern="\[A-Za-z0-9\]\{5,20\}"/',
                 $html,
                 "El campo {$campo} deberia admitir solo numeros o texto."
             );
@@ -408,7 +430,7 @@ class PreRegistroTest extends TestCase
         $response->assertDontSee('<input type="text" name="alumno_tipo_sangre"', false);
 
         foreach (Alumno::TIPOS_SANGRE as $tipo) {
-            $response->assertSee('<option value="' . $tipo . '"', false);
+            $response->assertSee('<option value="'.$tipo.'"', false);
         }
     }
 
@@ -418,7 +440,7 @@ class PreRegistroTest extends TestCase
 
         foreach (Alumno::TIPOS_SANGRE as $tipo) {
             $data = $this->validFormData();
-            $data['alumno_numero_documento'] = '172345670' . $i++;
+            $data['alumno_numero_documento'] = '172345670'.$i++;
             $data['alumno_tipo_sangre'] = $tipo;
 
             $this->post('/pre-registro', $data)->assertSessionHasNoErrors();
