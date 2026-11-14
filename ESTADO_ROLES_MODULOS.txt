@@ -25,6 +25,11 @@ Nota: el acceso se controla con app/Http/Middleware/RoleMiddleware.php y las
 rutas de routes/web.php. El menú lateral se arma en
 resources/views/layouts/principal.blade.php según el rol.
 
+Multirol: una misma cuenta puede tener un rol principal (users.rol) y varios
+roles adicionales (tabla user_roles). Al iniciar sesión elige un "perfil
+activo"; RoleMiddleware, el dashboard y el menú comparan contra ese perfil.
+La configuración se hace en Administración → Usuarios.
+
 ===============================================================================
  1. ALUMNO (ESTUDIANTE)  ->  VERIFICADO OK
 ===============================================================================
@@ -386,11 +391,18 @@ Conclusión: Vicerrectorado NO tiene módulo propio terminado. Se marca
 
 - Configuración del centro ............................... (ready)
   Rutas: GET /admin/configuracion,
+         POST /admin/configuracion/institucion,
          POST /admin/configuracion/sistema-evaluacion,
          POST /admin/configuracion/zona-horaria,
          POST /admin/configuracion/apariencia
   Controlador: Admin\ConfiguracionController
-  Incluye zona horaria, sistema de evaluación, carrusel y apariencia.
+  Incluye institución, zona horaria, sistema de evaluación, carrusel y apariencia.
+
+- Institución, logo y favicon ............................ (ready)
+  Ruta: POST /admin/configuracion/institucion (pestaña Institución)
+  Controlador: Admin\ConfiguracionController@updateInstitucion
+  El nombre y el logo se aplican al inicio, al login, al menú lateral, al
+  título de las pestañas y como favicon. El logo se guarda en el disco público.
 
 - Apariencia global (10 paletas + tamaño de fuente) ...... (ready)
   Ruta: POST /admin/configuracion/apariencia
@@ -399,9 +411,11 @@ Conclusión: Vicerrectorado NO tiene módulo propio terminado. Se marca
   Paleta por defecto: azul Microsoft Word (#2B579A); seleccionado/hover
   #3E6DB5; letras blancas y negrilla al pasar o seleccionar.
 
-- Carrusel del portal .................................... (ready)
+- Carrusel del portal y del login ........................ (ready)
   Rutas: /admin/hero-slides (crear, editar, eliminar, velocidad)
   Controlador: Admin\HeroSlideController
+  Cada imagen se marca para "Página de inicio", "Inicio de sesión" o "Inicio y
+  login"; el inicio y el login muestran solo su propio carrusel.
 
 - Solicitudes de matrícula / pre-registro ................ (ready)
   Rutas: /admin/pre-registros
@@ -436,9 +450,15 @@ Conclusión: Vicerrectorado NO tiene módulo propio terminado. Se marca
   Controlador: MensajeController
   Puede enviar circulares con aviso por correo y SMS.
 
-- Gestión de usuarios y roles (altas, bajas, permisos) ... (not started)
-  No existe un CRUD de usuarios ni asignación de roles desde la interfaz.
-  Los usuarios se crean por matrícula/pre-registro y por datos de prueba.
+- Gestión de usuarios y roles (multirol) ................. (ready)
+  Rutas: GET /admin/usuarios,
+         GET /admin/usuarios/{user}/editar,
+         PUT /admin/usuarios/{user}
+  Controlador: Admin\UserController
+  Permite buscar cuentas, cambiar el rol principal, marcar roles adicionales
+  y restablecer contraseñas. Protege al sistema para que siempre exista al
+  menos una cuenta ADMIN y nadie pueda quitarse ese rol a sí mismo.
+  Si la persona tiene clases asignadas, el perfil DOCENTE se agrega solo.
 
 - Notificaciones de circulares por correo y SMS .......... (ready)
   Canales: correo (Laravel Notifications) y SMS (driver log o webhook).
@@ -474,6 +494,34 @@ Conclusión: Vicerrectorado NO tiene módulo propio terminado. Se marca
   commit de la base de datos.
 
 ===============================================================================
+ 11. ACCESO, LOGIN Y PERFIL ACTIVO (transversal a todos los roles)
+===============================================================================
+
+- Login rediseñado (dos columnas) ........................ (ready)
+  Ruta: GET /login
+  Vista: resources/views/auth/login.blade.php
+  Columna izquierda con carrusel administrable y columna derecha con el
+  formulario. Usa la paleta y el tamaño de fuente activos, el nombre y el logo
+  institucional y el logo como favicon. Incluye mostrar/ocultar contraseña.
+
+- Selección de perfil al iniciar sesión .................. (ready)
+  Ruta: GET /perfil/seleccionar
+  Vista: resources/views/auth/seleccionar-perfil.blade.php
+  Si la cuenta tiene más de un perfil, se elige con cuál entrar. Si tiene uno
+  solo, entra directo. La elección se guarda como `perfil_activo` en sesión.
+
+- Cambio de perfil sin cerrar sesión ..................... (ready)
+  Ruta: POST /perfil/activo
+  Controlador: Auth\LoginController@seleccionarPerfil
+  Selector en la barra superior y en el menú de usuario. El perfil se valida
+  contra User::perfiles(), así que no se puede falsificar desde el navegador.
+
+- Autorización por perfil activo ......................... (ready)
+  Archivo: app/Http/Middleware/RoleMiddleware.php
+  Compara contra User::perfilActivo() en lugar de users.rol. El dashboard, el
+  menú lateral y el aula virtual también usan el perfil activo.
+
+===============================================================================
  RESUMEN GENERAL
 ===============================================================================
 
@@ -485,16 +533,15 @@ Docente                   (ready) verificado ok
 Inspector (INSPECCION)    (ready) verificado ok
 DECE                      (ready) listo
 Secretaría (SECRETARIA)   (ready) listo
-Rectorado (RECTORA)       (not started) en módulos propios; (started) en accesos
-Vicerrectorado            (not started) en módulos propios; (started) en accesos
-Administrador (ADMIN)     (ready) listo, salvo gestión de usuarios (not started)
+Rectorado (RECTORA)       (started) panel institucional compartido
+Vicerrectorado            (started) panel institucional compartido
+Administrador (ADMIN)     (ready) listo
 
 Pendientes recomendados:
-  1. Crear el panel y los módulos propios de Rectorado.
-  2. Crear el panel y los módulos propios de Vicerrectorado.
-  3. Implementar el CRUD de usuarios y la asignación de roles.
-  4. Configurar un proveedor SMS real (webhook) para producción.
-  5. Agregar pruebas específicas para actas docentes y reportes gerenciales.
+  1. Crear los módulos propios de Rectorado.
+  2. Crear los módulos propios de Vicerrectorado.
+  3. Configurar un proveedor SMS real (webhook) para producción.
+  4. Agregar pruebas específicas para actas docentes y reportes gerenciales.
 
 ===============================================================================
  FIN DEL DOCUMENTO

@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('titulo', 'Sistema de Gestión Escolar') - {{ config('app.name') }}</title>
+    <title>@yield('titulo', 'Sistema de Gestión Escolar') - {{ $institucion->nombre ?? config('app.name') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    @if(!empty($institucion?->logo_path))
+    {{-- El logo institucional también es el favicon de las pestañas. --}}
+    <link rel="icon" href="{{ $institucion->logoUrl() }}">
+    @endif
     @php
         // Apariencia global: la elige el administrador y la comparten todos los roles.
         // Ruta: GET/POST /admin/configuracion (pestaña Apariencia).
@@ -29,11 +33,14 @@
             color: #000;
             font-size: 1rem;
         }
-        /* El área de contenido usa letra negra para que textos y formularios se lean. */
+        /* El área de contenido usa letra negra para que textos y formularios se lean.
+           No se fuerza color en span/label porque rompe los encabezados oscuros
+           (por ejemplo "Estudiantes Inscritos", que usa bg-dark + text-white).
+           Esos elementos heredan el negro del body y respetan sus clases. */
         main,
         main h1, main h2, main h3, main h4, main h5, main h6,
-        main p, main span, main label, main li, main dt, main dd,
-        main .form-label, main .form-check-label, main .form-text,
+        main p, main li, main dt, main dd,
+        main .form-label, main .form-text,
         main .form-control, main .form-select, main textarea,
         main .input-group-text, main .table {
             color: #000;
@@ -157,8 +164,31 @@
                     </button>
                     <span class="navbar-text ms-auto">
                         @auth
-                            <i class="bi bi-person-circle"></i> {{ nombreCorto(auth()->user()->name ?? '') }}
-                            <span class="badge bg-secondary ms-2">{{ auth()->user()->rol }}</span>
+                            @php
+                                // Perfil activo y selector de multirol.
+                                $usuarioActual = auth()->user();
+                                $perfilesDisponibles = $usuarioActual->perfiles();
+                                $perfilActual = $usuarioActual->perfilActivo();
+                            @endphp
+                            <span class="d-inline-flex align-items-center gap-2">
+                                <i class="bi bi-person-circle"></i> {{ nombreCorto($usuarioActual->name ?? '') }}
+
+                                @if(count($perfilesDisponibles) > 1)
+                                    <form method="POST" action="{{ route('perfil.activo') }}" class="d-inline">
+                                        @csrf
+                                        <select name="rol" class="form-select form-select-sm" style="max-width:220px;"
+                                            onchange="this.form.submit()" title="Cambiar de perfil">
+                                            @foreach($perfilesDisponibles as $perfil)
+                                            <option value="{{ $perfil }}" @selected($perfil === $perfilActual)>
+                                                {{ \App\Models\User::etiquetaRol($perfil) }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                    </form>
+                                @else
+                                    <span class="badge bg-secondary">{{ \App\Models\User::etiquetaRol($perfilActual) }}</span>
+                                @endif
+                            </span>
                         @endauth
                     </span>
                 </div>
@@ -169,7 +199,8 @@
             </main>
 
             <footer class="bg-white text-center py-3 border-top mt-auto">
-                <small class="text-muted">&copy; {{ date('Y') }} Sistema de Gestión Escolar. Todos los derechos reservados.</small>
+                <small class="text-muted">&copy; {{ date('Y') }} Sistema de Gestión Escolar. Todos los derechos reservados.</small><br>
+                <small class="text-muted">Christian Rodríguez Rivadeneira</small>
             </footer>
         </div>
     </div>

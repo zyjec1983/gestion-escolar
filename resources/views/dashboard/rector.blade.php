@@ -1,6 +1,6 @@
 @extends('layouts.principal')
 
-@section('titulo', 'Panel de Rectorado')
+@section('titulo', $panel_titulo ?? 'Panel de Rectorado')
 
 @push('styles')
 <style>
@@ -24,7 +24,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-            <h4 class="mb-0"><i class="bi bi-bank me-2"></i>Panel de Rectorado</h4>
+            <h4 class="mb-0"><i class="bi bi-bank me-2"></i>{{ $panel_titulo ?? 'Panel de Rectorado' }}</h4>
             <small class="text-muted">
                 {{ $usuario['nombre_corto'] ?? $usuario['nombre'] ?? '' }} · {{ $usuario['periodo_lectivo'] ?? '' }}
             </small>

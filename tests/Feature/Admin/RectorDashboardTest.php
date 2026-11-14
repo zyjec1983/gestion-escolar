@@ -29,7 +29,7 @@ class RectorDashboardTest extends TestCase
 
         $response->assertOk();
         $response->assertViewIs('dashboard.rector');
-        $response->assertSee('Panel de Rectorado');
+        $response->assertSee('Panel institucional');
         $response->assertSee('Estudiantes matriculados');
         $response->assertSee('Solicitudes pendientes');
         $response->assertSee('Cursos abiertos');

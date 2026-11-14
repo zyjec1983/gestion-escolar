@@ -24,7 +24,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="card-title mb-0">Mensajes</h6>
-                            <h2 class="mb-0">{{ $tarjetas_resumen['mensajes']['contador'] }}</h2>
+                            <h2 class="mb-0 text-white">{{ $tarjetas_resumen['mensajes']['contador'] }}</h2>
                         </div>
                         <i class="bi bi-envelope fs-1 opacity-50"></i>
                     </div>
@@ -38,7 +38,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="card-title mb-0">Clases</h6>
-                            <h2 class="mb-0">{{ $tarjetas_resumen['clases']['contador'] ?? 0 }}</h2>
+                            <h2 class="mb-0 text-white">{{ $tarjetas_resumen['clases']['contador'] ?? 0 }}</h2>
                         </div>
                         <i class="bi bi-book fs-1 opacity-50"></i>
                     </div>
@@ -52,7 +52,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="card-title mb-0">Agendas</h6>
-                            <h2 class="mb-0">{{ $tarjetas_resumen['agendas_activas']['contador'] ?? 0 }}</h2>
+                            <h2 class="mb-0 text-white">{{ $tarjetas_resumen['agendas_activas']['contador'] ?? 0 }}</h2>
                         </div>
                         <i class="bi bi-calendar-check fs-1 opacity-50"></i>
                     </div>
@@ -66,7 +66,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="card-title mb-0">Observaciones</h6>
-                            <h2 class="mb-0">{{ $tarjetas_resumen['observaciones']['contador'] ?? 0 }}</h2>
+                            <h2 class="mb-0 text-white">{{ $tarjetas_resumen['observaciones']['contador'] ?? 0 }}</h2>
                         </div>
                         <i class="bi bi-exclamation-triangle fs-1 opacity-50"></i>
                     </div>

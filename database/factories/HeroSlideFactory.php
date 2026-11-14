@@ -17,6 +17,7 @@ class HeroSlideFactory extends Factory
             'imagen_path' => 'hero-slides/placeholder.jpg',
             'orden' => fake()->numberBetween(0, 10),
             'activo' => true,
+            'ubicacion' => 'inicio',
         ];
     }
 

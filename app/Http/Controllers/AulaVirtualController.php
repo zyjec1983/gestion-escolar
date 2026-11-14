@@ -66,8 +66,8 @@ class AulaVirtualController extends Controller
         $data['tipo_actividades'] = TipoActividad::orderBy('nombre')->get();
         $data['insumos'] = $clase->insumosEvaluacion()->orderBy('nombre')->get();
         $data['alumnos_inscritos'] = $this->alumnosInscritos($clase);
-        $data['es_docente'] = $request->user()->rol === 'DOCENTE';
-        $data['checkbox_estudiantes'] = $request->user()->rol === 'DOCENTE';
+        $data['es_docente'] = $clase->user_id === $request->user()->id;
+        $data['checkbox_estudiantes'] = $clase->user_id === $request->user()->id;
 
         return view('aula.agenda', $data);
     }
@@ -371,7 +371,7 @@ class AulaVirtualController extends Controller
             ->map(fn ($item) => $item + ['active' => ($item['key'] ?? '') === $activo])
             ->all();
 
-        if ($request->user()->rol === 'REPRESENTANTE') {
+        if ($request->user()->perfilActivo() === 'REPRESENTANTE') {
             $data['menu_aula_virtual'] = collect($data['menu_aula_virtual'])
                 ->filter(fn ($item) => in_array($item['key'] ?? '', ['grupos', 'materiales', 'mensajes', 'citas']))
                 ->values()
@@ -379,8 +379,10 @@ class AulaVirtualController extends Controller
         }
 
         $data['layout'] = 'aula';
-        $data['es_docente'] = $request->user()->rol === 'DOCENTE';
-        $data['url_volver'] = $request->user()->rol === 'REPRESENTANTE'
+        // Los controles de escritura dependen de la pertenencia a la clase,
+        // no del rol: un directivo que también dicta clase conserva su aula.
+        $data['es_docente'] = $clase->user_id === $request->user()->id;
+        $data['url_volver'] = $request->user()->perfilActivo() === 'REPRESENTANTE'
             ? route('representante.agendas')
             : '/clases';
 
@@ -402,18 +404,25 @@ class AulaVirtualController extends Controller
 
     private function verificarRolAula(User $user): void
     {
-        abort_unless(in_array($user->rol, ['ADMIN', 'DOCENTE', 'ESTUDIANTE'], true), 403, 'No tienes acceso a esta sección.');
+        abort_unless(
+            in_array($user->perfilActivo(), ['ADMIN', 'DOCENTE', 'ESTUDIANTE'], true),
+            403,
+            'No tienes acceso a esta sección.'
+        );
     }
 
+    /**
+     * La escritura del aula se autoriza por pertenencia: solo quien dicta la
+     * clase puede crear agendas, materiales o grupos.
+     */
     private function verificarDocente(User $user, ClaseDocente $clase): void
     {
-        abort_if($user->rol !== 'DOCENTE', 403, 'Solo el docente puede realizar esta acción.');
         abort_if($clase->user_id !== $user->id, 403, 'No tienes acceso a esta clase.');
     }
 
     public function clasesParausuario(User $user): Collection
     {
-        if ($user->rol === 'DOCENTE') {
+        if ($user->perfilActivo() === 'DOCENTE') {
             return ClaseDocente::with(['curso', 'paralelo', 'materia'])
                 ->where('user_id', $user->id)
                 ->get();
@@ -437,7 +446,7 @@ class AulaVirtualController extends Controller
 
     public function alumnosDelUsuario(User $user): Collection
     {
-        return match ($user->rol) {
+        return match ($user->perfilActivo()) {
             'ESTUDIANTE' => Alumno::with('matriculas')->where('user_id', $user->id)->get(),
             'REPRESENTANTE' => $user->representados()->with('matriculas')->get(),
             default => collect(),
@@ -446,12 +455,12 @@ class AulaVirtualController extends Controller
 
     private function verificarAcceso(ClaseDocente $clase, User $user): void
     {
-        if ($user->rol === 'DOCENTE') {
+        if ($user->perfilActivo() === 'DOCENTE') {
             abort_if($clase->user_id !== $user->id, 403, 'No tienes acceso a esta clase.');
 
             return;
         }
-        if ($user->rol === 'ADMIN') {
+        if ($user->perfilActivo() === 'ADMIN') {
             return;
         }
 

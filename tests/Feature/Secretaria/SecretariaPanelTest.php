@@ -31,7 +31,8 @@ class SecretariaPanelTest extends TestCase
         ]);
 
         $this->secretaria = User::factory()->secretaria()->create();
-        $this->rector = User::factory()->admin()->create();
+        // El rectorado tiene su propio rol; ya no se reutiliza ADMIN.
+        $this->rector = User::factory()->create(['rol' => 'RECTORA']);
     }
 
     /** @test */
@@ -163,9 +164,21 @@ class SecretariaPanelTest extends TestCase
             'rol' => 'SECRETARIA',
         ]);
 
+        // El administrador del sistema, el rectorado y el vicerrectorado
+        // tienen cuentas y roles separados.
+        $this->assertDatabaseHas('users', [
+            'email' => 'admin@fake.edu.ec',
+            'rol' => 'ADMIN',
+        ]);
+
         $this->assertDatabaseHas('users', [
             'email' => 'rector@fake.edu.ec',
-            'rol' => 'ADMIN',
+            'rol' => 'RECTORA',
+        ]);
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'vicerrector@fake.edu.ec',
+            'rol' => 'VICERRECTORA',
         ]);
     }
 

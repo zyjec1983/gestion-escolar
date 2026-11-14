@@ -1,0 +1,14 @@
+USUARIOS DE PRUEBA - SISTEMA DE GESTION ESCOLAR
+Generado por database/seeders/UsuariosPruebaSeeder.php
+
+EMAIL                                  CONTRASENA    ROL
+----------------------------------------------------------------------
+admin@fake.edu.ec                     admin123      ADMIN
+rector@fake.edu.ec                    admin123      RECTORA
+vicerrector@fake.edu.ec               admin123      VICERRECTORA
+secretaria@fake.edu.ec                admin123      SECRETARIA
+inspector@ue.edu.ec                   password      INSPECCION
+dece@fake.edu.ec                      password      DECE
+crodrigue@fake.edu.ec                 password      DOCENTE
+cmendoza@email.com                    password      REPRESENTANTE
+est.0900000001@fake.edu.ec            password      ESTUDIANTE

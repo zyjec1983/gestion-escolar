@@ -2,12 +2,16 @@
 
 namespace App\Http\Resources;
 
+use App\Models\ClaseDocente;
+use App\Models\Unidad;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class InicioClaseResource extends JsonResource
 {
-    public static function unidadesDeClase(\App\Models\ClaseDocente $clase): \Illuminate\Support\Collection
+    public static function unidadesDeClase(ClaseDocente $clase): Collection
     {
         return $clase->materia->unidades()
             ->where(fn ($q) => $q->whereNull('clase_docente_id')->orWhere('clase_docente_id', $clase->id))
@@ -15,11 +19,11 @@ class InicioClaseResource extends JsonResource
             ->get();
     }
 
-    public static function unidadActual(\App\Models\ClaseDocente $clase): ?\App\Models\Unidad
+    public static function unidadActual(ClaseDocente $clase): ?Unidad
     {
         $unidades = self::unidadesDeClase($clase);
 
-        $hoy = \Illuminate\Support\Carbon::today();
+        $hoy = Carbon::today();
 
         $activa = $unidades->first(fn ($u) => $u->fecha_inicio && $u->fecha_fin
             && $u->fecha_inicio->lte($hoy) && $u->fecha_fin->gte($hoy));
@@ -35,7 +39,7 @@ class InicioClaseResource extends JsonResource
 
     private function urlCitas(Request $request): ?string
     {
-        return match ($request->user()?->rol) {
+        return match ($request->user()?->perfilActivo()) {
             'DOCENTE' => route('docente.citas.index'),
             'REPRESENTANTE' => route('representante.citas'),
             default => null,
@@ -70,7 +74,7 @@ class InicioClaseResource extends JsonResource
                 ->where('paralelo_id', $this->paralelo_id)
                 ->with('alumno')
                 ->get()
-                ->sortBy(fn ($m) => mb_strtolower(trim((string) $m->alumno->apellidos) . ' ' . trim((string) $m->alumno->nombres)))
+                ->sortBy(fn ($m) => mb_strtolower(trim((string) $m->alumno->apellidos).' '.trim((string) $m->alumno->nombres)))
                 ->values()
                 ->map(function ($matricula) {
                     return [

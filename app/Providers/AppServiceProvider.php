@@ -7,7 +7,9 @@ use App\Services\Sms\LogSmsSender;
 use App\Services\Sms\SmsSender;
 use App\Services\Sms\WebhookSmsSender;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Throwable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,6 +28,25 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         static::aplicarZonaHorariaDelCentro();
+        static::compartirInstitucion();
+    }
+
+    /**
+     * Comparte nombre, subtítulo y logo con todas las vistas.
+     *
+     * Qué hace: evita repetir `Institucion::first()` en cada controlador y
+     * permite que layouts, login, inicio y favicon usen los datos del admin.
+     * Conecta con: layouts/app, layouts/public, auth/login y welcome.
+     * Ruta: POST /admin/configuracion/institucion.
+     */
+    private static function compartirInstitucion(): void
+    {
+        try {
+            View::share('institucion', Institucion::first());
+        } catch (Throwable) {
+            // La tabla aún no existe (por ejemplo durante `artisan migrate`).
+            View::share('institucion', null);
+        }
     }
 
     /**
@@ -43,7 +64,7 @@ class AppServiceProvider extends ServiceProvider
 
         try {
             $zona = Institucion::first()?->zona_horaria;
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // La tabla aún no existe (instalación nueva, artisan migrate...).
             $zona = null;
         }

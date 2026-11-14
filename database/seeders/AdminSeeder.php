@@ -2,27 +2,21 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
+/**
+ * Antes creaba secretaria@ y rector@ ambos como ADMIN.
+ *
+ * Qué hace ahora: delega en UsuariosPruebaSeeder, que crea una cuenta por rol
+ * y mantiene separado el administrador del sistema del rectorado y del
+ * vicerrectorado.
+ *
+ * Conecta con: UsuariosPruebaSeeder y DatabaseSeeder.
+ */
 class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        User::create([
-            'name' => 'ADMIN SECRETARIA',
-            'email' => 'secretaria@fake.edu.ec',
-            'password' => bcrypt('admin123'),
-            'rol' => 'SECRETARIA',
-            'institucion_id' => 1,
-        ]);
-
-        User::create([
-            'name' => 'RECTOR UNIDAD EDUCATIVA',
-            'email' => 'rector@fake.edu.ec',
-            'password' => bcrypt('admin123'),
-            'rol' => 'ADMIN',
-            'institucion_id' => 1,
-        ]);
+        $this->call(UsuariosPruebaSeeder::class);
     }
 }

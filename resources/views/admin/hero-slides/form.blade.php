@@ -38,11 +38,22 @@
                             value="{{ old('orden', $slide->orden ?? $ultimoOrden ?? 0) }}" min="0">
                         @error('orden')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-8">
                         <label for="subtitulo" class="form-label">Subtítulo</label>
                         <input type="text" name="subtitulo" id="subtitulo" class="form-control @error('subtitulo') is-invalid @enderror"
                             value="{{ old('subtitulo', $slide->subtitulo ?? '') }}" maxlength="255">
                         @error('subtitulo')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-4">
+                        <label for="ubicacion" class="form-label">Mostrar en</label>
+                        <select name="ubicacion" id="ubicacion" class="form-select @error('ubicacion') is-invalid @enderror">
+                            @foreach(\App\Models\HeroSlide::UBICACIONES as $valor => $etiqueta)
+                            <option value="{{ $valor }}" @selected(old('ubicacion', $slide->ubicacion ?? 'inicio') === $valor)>
+                                {{ $etiqueta }}
+                            </option>
+                            @endforeach
+                        </select>
+                        @error('ubicacion')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-12">
                         <label for="link" class="form-label">Enlace (opcional)</label>

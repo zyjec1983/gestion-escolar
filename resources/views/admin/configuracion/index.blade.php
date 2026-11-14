@@ -55,6 +55,12 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-institucion" data-bs-toggle="tab" data-bs-target="#panel-institucion"
+                    type="button" role="tab" aria-controls="panel-institucion" aria-selected="false">
+                <i class="bi bi-building me-1"></i>Institución
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link" id="tab-carrusel" data-bs-toggle="tab" data-bs-target="#panel-carrusel"
                     type="button" role="tab" aria-controls="panel-carrusel" aria-selected="false">
                 <i class="bi bi-images me-1"></i>Carrusel del portal
@@ -146,6 +152,90 @@
             </div>
         </div>
 
+        {{-- ============ PESTAÑA INSTITUCIÓN ============ --}}
+        {{-- Nombre, subtítulo y logo. Ruta: POST /admin/configuracion/institucion --}}
+        <div class="tab-pane fade" id="panel-institucion" role="tabpanel" aria-labelledby="tab-institucion" tabindex="0">
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0"><i class="bi bi-building me-1"></i>Datos de la institución</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">
+                                Este nombre aparece en el inicio, en el login, en el menú lateral y en el título de las pestañas.
+                                El logo se usa también como favicon.
+                            </p>
+
+                            <form method="POST" action="{{ route('admin.configuracion.institucion') }}" enctype="multipart/form-data">
+                                @csrf
+
+                                <div class="mb-3">
+                                    <label for="nombre" class="form-label fw-semibold">Nombre de la institución</label>
+                                    <input type="text" name="nombre" id="nombre" class="form-control"
+                                        value="{{ old('nombre', $institucion->nombre) }}" required maxlength="255">
+                                    @error('nombre')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="subtitulo" class="form-label fw-semibold">Subtítulo</label>
+                                    <input type="text" name="subtitulo" id="subtitulo" class="form-control"
+                                        value="{{ old('subtitulo', $institucion->subtitulo) }}" maxlength="255"
+                                        placeholder="Unidad Educativa Particular Bilingüe">
+                                    @error('subtitulo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="logo" class="form-label fw-semibold">Logo institucional</label>
+                                    <input type="file" name="logo" id="logo" class="form-control"
+                                        accept="image/png,image/jpeg,image/webp">
+                                    <div class="form-text">PNG, JPG o WEBP, máximo 2 MB. Se recomienda un cuadrado.</div>
+                                    @error('logo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                                </div>
+
+                                @if($institucion->logo_path)
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="quitar_logo" id="quitar_logo" value="1">
+                                    <label class="form-check-label" for="quitar_logo">Quitar el logo actual</label>
+                                </div>
+                                @endif
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg me-1"></i>Guardar institución
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0"><i class="bi bi-eye me-1"></i>Vista previa</h6>
+                        </div>
+                        <div class="card-body text-center">
+                            @if($institucion->logo_path)
+                            <img src="{{ $institucion->logoUrl() }}" alt="Logo institucional"
+                                class="img-fluid mb-3" style="max-height:110px;">
+                            @else
+                            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3"
+                                style="width:96px;height:96px;">
+                                <i class="bi bi-mortarboard-fill fs-1 text-secondary"></i>
+                            </div>
+                            @endif
+                            <h5 class="fw-bold mb-1">{{ $institucion->nombre }}</h5>
+                            <p class="text-muted small mb-0">{{ $institucion->subtitulo }}</p>
+                            <hr>
+                            <p class="text-muted small mb-0">
+                                <i class="bi bi-bookmark-star me-1"></i>
+                                Favicon de las pestañas: {{ $institucion->logo_path ? 'logo institucional' : 'icono por defecto' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- ============ PESTAÑA CARRUSEL DEL PORTAL ============ --}}
         <div class="tab-pane fade" id="panel-carrusel" role="tabpanel" aria-labelledby="tab-carrusel" tabindex="0">
             <div class="card shadow-sm mb-4">
@@ -192,6 +282,7 @@
                                     <th style="width:60px;">Orden</th>
                                     <th style="width:120px;">Vista previa</th>
                                     <th>Título</th>
+                                    <th>Mostrar en</th>
                                     <th>Estado</th>
                                     <th style="width:160px;">Acciones</th>
                                 </tr>
@@ -215,6 +306,11 @@
                                         @if($slide->subtitulo)
                                         <br><small class="text-muted">{{ $slide->subtitulo }}</small>
                                         @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info text-dark">
+                                            {{ \App\Models\HeroSlide::UBICACIONES[$slide->ubicacion] ?? 'Página de inicio' }}
+                                        </span>
                                     </td>
                                     <td>
                                         @if($slide->activo)
@@ -333,7 +429,7 @@
                             <div class="card-body">
                                 <div class="apariencia-preview" id="aparienciaPreview">
                                     <div class="preview-aside">
-                                        <div class="fw-bold mb-2"><i class="bi bi-mortarboard-fill me-1"></i>Unidad Educativa</div>
+                                        <div class="fw-bold mb-2"><i class="bi bi-mortarboard-fill me-1"></i>{{ $institucion->nombre }}</div>
                                         <div class="preview-activo mb-1">Dashboard</div>
                                         <div class="small">Mensajes</div>
                                         <div class="small">Configuración</div>
@@ -360,7 +456,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Abre la pestaña correcta cuando se llega desde un ancla (#panel-...).
-        ['carrusel', 'apariencia'].forEach(function (nombre) {
+        ['institucion', 'carrusel', 'apariencia'].forEach(function (nombre) {
             if (window.location.hash === '#panel-' + nombre) {
                 var tab = document.getElementById('tab-' + nombre);
                 if (tab) new bootstrap.Tab(tab).show();

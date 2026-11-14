@@ -45,8 +45,8 @@
 <section class="bg-dark text-white py-5" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);">
     <div class="container text-center py-5">
         <i class="bi bi-mortarboard-fill display-1 text-primary mb-3"></i>
-        <h1 class="display-4 fw-bold">Unidad Educativa</h1>
-        <p class="lead text-secondary mb-4">Formando el futuro de nuestra sociedad</p>
+        <h1 class="display-4 fw-bold">{{ $institucion?->nombre ?? 'Unidad Educativa' }}</h1>
+        <p class="lead text-secondary mb-4">{{ $institucion?->subtitulo ?? 'Formando el futuro de nuestra sociedad' }}</p>
     </div>
 </section>
 @endif

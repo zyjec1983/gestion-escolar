@@ -21,8 +21,10 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        return match ($user->rol) {
-            'ADMIN' => $this->rector($request),
+        return match ($user->perfilActivo()) {
+            // ADMIN, RECTORA y VICERRECTORA comparten el panel institucional,
+            // pero cada rol tiene su propia cuenta y su propio título.
+            'ADMIN', 'RECTORA', 'VICERRECTORA' => $this->rector($request),
             'SECRETARIA' => $this->secretaria($request),
             'REPRESENTANTE' => $this->representante($request),
             'ESTUDIANTE' => $this->estudiante($request),
@@ -47,7 +49,7 @@ class DashboardController extends Controller
             'estudiantes' => $periodoActivo
                 ? Matricula::where('periodo_id', $periodoActivo->id)->count()
                 : Alumno::count(),
-            'docentes' => User::where('rol', 'DOCENTE')->count(),
+            'docentes' => User::docentes()->count(),
             'pendientes' => PreRegistro::pendiente()->count(),
             'cursos' => Curso::count(),
         ];
@@ -56,6 +58,13 @@ class DashboardController extends Controller
             ->latest('created_at')
             ->take(6)
             ->get();
+
+        // Cada rol ve su propio nombre de panel; el contenido es institucional.
+        $data['panel_titulo'] = match ($user->perfilActivo()) {
+            'VICERRECTORA' => 'Panel de Vicerrectorado',
+            'ADMIN' => 'Panel institucional',
+            default => 'Panel de Rectorado',
+        };
 
         return view('dashboard.rector', $data);
     }
@@ -90,7 +99,7 @@ class DashboardController extends Controller
             'solicitudes' => PreRegistro::pendiente()->count(),
             'fichas' => $fichasPorRegularizar,
             'citas' => Cita::pendientes()->count(),
-            'docentes' => User::where('rol', 'DOCENTE')->count(),
+            'docentes' => User::docentes()->count(),
             'circulares' => Circular::count(),
         ];
 

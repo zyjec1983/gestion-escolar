@@ -1,19 +1,60 @@
+@php
+    // Apariencia global elegida en Configuración → Apariencia. Se aplica
+    // también a las páginas públicas y al login.
+    $tema = \App\Support\Tema::actual();
+    $nombreInstitucion = $institucion->nombre ?? 'Unidad Educativa';
+    $subtituloInstitucion = $institucion->subtitulo ?? 'Institución Educativa';
+@endphp
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('titulo', 'Unidad Educativa') - Sistema de Gestión Escolar</title>
+    <title>@yield('titulo', $nombreInstitucion) - {{ $nombreInstitucion }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    @if(!empty($institucion?->logo_path))
+    <link rel="icon" href="{{ $institucion->logoUrl() }}">
+    @endif
+    <style>
+        :root {
+            --brand: {{ $tema['aside'] }};
+            --brand-hover: {{ $tema['hover'] }};
+            --brand-soft: color-mix(in srgb, var(--brand) 12%, white);
+            --brand-contrast: {{ $tema['texto'] }};
+        }
+        .navbar-publica { background: var(--brand); }
+        .btn-primary {
+            --bs-btn-bg: var(--brand);
+            --bs-btn-border-color: var(--brand);
+            --bs-btn-hover-bg: var(--brand-hover);
+            --bs-btn-hover-border-color: var(--brand-hover);
+            --bs-btn-active-bg: var(--brand-hover);
+            --bs-btn-active-border-color: var(--brand-hover);
+        }
+        .btn-outline-primary {
+            --bs-btn-color: var(--brand);
+            --bs-btn-border-color: var(--brand);
+            --bs-btn-hover-bg: var(--brand);
+            --bs-btn-hover-border-color: var(--brand);
+        }
+        .text-primary { color: var(--brand) !important; }
+        .brand-logo { height: 34px; width: auto; object-fit: contain; }
+        .brand-logo-footer { height: 30px; width: auto; object-fit: contain; }
+    </style>
     @stack('styles')
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background: #1a1a2e;">
+<body class="d-flex flex-column min-vh-100">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top navbar-publica">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="/">
-                <i class="bi bi-mortarboard-fill me-2"></i>Unidad Educativa
+            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
+                @if(!empty($institucion?->logo_path))
+                <img src="{{ $institucion->logoUrl() }}" alt="Logo {{ $nombreInstitucion }}" class="brand-logo bg-white rounded p-1">
+                @else
+                <i class="bi bi-mortarboard-fill"></i>
+                @endif
+                <span>{{ $nombreInstitucion }}</span>
             </a>
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarPublic">
                 <span class="navbar-toggler-icon"></span>
@@ -36,7 +77,7 @@
         </div>
     </nav>
 
-    <main>
+    <main class="flex-grow-1">
         @yield('contenido')
     </main>
 
@@ -44,8 +85,15 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-6 mb-3 mb-md-0">
-                    <h6 class="fw-bold"><i class="bi bi-mortarboard-fill me-2"></i>Unidad Educativa</h6>
-                    <p class="small text-secondary mb-0">Formando el futuro de nuestra sociedad.</p>
+                    <h6 class="fw-bold d-flex align-items-center gap-2">
+                        @if(!empty($institucion?->logo_path))
+                        <img src="{{ $institucion->logoUrl() }}" alt="Logo {{ $nombreInstitucion }}" class="brand-logo-footer bg-white rounded p-1">
+                        @else
+                        <i class="bi bi-mortarboard-fill"></i>
+                        @endif
+                        {{ $nombreInstitucion }}
+                    </h6>
+                    <p class="small text-secondary mb-0">{{ $subtituloInstitucion }}</p>
                 </div>
                 <div class="col-md-3 mb-3 mb-md-0">
                     <h6 class="fw-bold">Enlaces</h6>
@@ -65,7 +113,7 @@
             </div>
             <hr class="border-secondary">
             <div class="text-center text-secondary small">
-                &copy; {{ date('Y') }} Unidad Educativa. Todos los derechos reservados.
+                &copy; {{ date('Y') }} {{ $nombreInstitucion }}. Todos los derechos reservados.
             </div>
         </div>
     </footer>

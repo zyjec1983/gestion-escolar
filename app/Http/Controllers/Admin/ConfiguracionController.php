@@ -7,6 +7,7 @@ use App\Models\HeroSlide;
 use App\Models\Institucion;
 use App\Support\Tema;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ConfiguracionController extends Controller
@@ -29,6 +30,53 @@ class ConfiguracionController extends Controller
             'paletas' => Tema::paletas(),
             'fuentes' => Tema::fuentes(),
         ]);
+    }
+
+    /**
+     * Guarda nombre, subtítulo y logo institucional.
+     *
+     * Qué hace: valida los datos y reemplaza el logo en el disco público.
+     * El nombre y el logo alimentan el inicio, el login, el menú lateral y el
+     * favicon de las pestañas (Institucion::logoUrl con cache-busting).
+     * Conecta con: App\Models\Institucion y AppServiceProvider (vista compartida).
+     * Ruta: POST /admin/configuracion/institucion (admin.configuracion.institucion).
+     */
+    public function updateInstitucion(Request $request)
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:255',
+            'subtitulo' => 'nullable|string|max:255',
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
+            'quitar_logo' => 'boolean',
+        ], [
+            'nombre.required' => 'El nombre de la institución es obligatorio.',
+            'logo.image' => 'El logo debe ser una imagen PNG, JPG o WEBP.',
+            'logo.max' => 'El logo no puede superar los 2 MB.',
+        ]);
+
+        $institucion = Institucion::firstOrFail();
+
+        $data = [
+            'nombre' => $validated['nombre'],
+            'subtitulo' => $validated['subtitulo'] ?? null,
+        ];
+
+        if ($request->hasFile('logo')) {
+            if ($institucion->logo_path) {
+                Storage::disk('public')->delete($institucion->logo_path);
+            }
+            $data['logo_path'] = $request->file('logo')->store('institucion', 'public');
+        } elseif ($request->boolean('quitar_logo') && $institucion->logo_path) {
+            Storage::disk('public')->delete($institucion->logo_path);
+            $data['logo_path'] = null;
+        }
+
+        $institucion->update($data);
+
+        return back()->with(
+            'success',
+            'Datos de la institución actualizados. El nombre y el logo se aplican al inicio, al login y a las pestañas.'
+        );
     }
 
     public function updateSistemaEvaluacion(Request $request)

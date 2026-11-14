@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ConfiguracionController;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\MatriculaController;
 use App\Http\Controllers\Admin\PreRegistroController as AdminPreRegistroController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\DashboardController as ApiDashboardController;
 use App\Http\Controllers\AulaVirtualController;
 use App\Http\Controllers\Auth\LoginController;
@@ -45,7 +46,12 @@ use App\Models\Institucion;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    $slides = HeroSlide::where('activo', true)->orderBy('orden')->get();
+    // El inicio usa solo los slides marcados para esta ubicación (o "ambos").
+    $slides = HeroSlide::where('activo', true)
+        ->paraUbicacion('inicio')
+        ->orderBy('orden')
+        ->orderBy('id')
+        ->get();
     $institucion = Institucion::first();
 
     return view('welcome', compact('slides', 'institucion'));
@@ -60,6 +66,10 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Selección y cambio de perfil activo (multirol).
+    Route::get('/perfil/seleccionar', [LoginController::class, 'showPerfilForm'])->name('perfil.seleccionar');
+    Route::post('/perfil/activo', [LoginController::class, 'seleccionarPerfil'])->name('perfil.activo');
 
     Route::middleware(['role:ADMIN,DOCENTE,ESTUDIANTE'])->group(function () {
         Route::get('/clases', [AulaVirtualController::class, 'index'])->name('clases.index');
@@ -160,7 +170,13 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
         Route::post('/velocidad', [HeroSlideController::class, 'updateVelocidad'])->name('velocidad');
     });
 
+    // Usuarios y multirol: solo Administración.
+    Route::get('/usuarios', [AdminUserController::class, 'index'])->name('usuarios.index');
+    Route::get('/usuarios/{user}/editar', [AdminUserController::class, 'edit'])->name('usuarios.edit');
+    Route::put('/usuarios/{user}', [AdminUserController::class, 'update'])->name('usuarios.update');
+
     Route::get('/configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
+    Route::post('/configuracion/institucion', [ConfiguracionController::class, 'updateInstitucion'])->name('configuracion.institucion');
     Route::post('/configuracion/sistema_evaluacion', [ConfiguracionController::class, 'updateSistemaEvaluacion'])->name('configuracion.sistema-evaluacion');
     Route::post('/configuracion/zona_horaria', [ConfiguracionController::class, 'updateZonaHoraria'])->name('configuracion.zona-horaria');
     // Apariencia global: 10 paletas del aside y tamaño de fuente tipo Word.

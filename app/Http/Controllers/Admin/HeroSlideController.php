@@ -34,6 +34,7 @@ class HeroSlideController extends Controller
             'imagen' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'orden' => 'nullable|integer|min:0',
             'activo' => 'boolean',
+            'ubicacion' => 'nullable|in:inicio,login,ambos',
             'link' => 'nullable|url|max:255',
         ]);
 
@@ -45,6 +46,7 @@ class HeroSlideController extends Controller
             'imagen_path' => $path,
             'orden' => $validated['orden'] ?? 0,
             'activo' => $request->boolean('activo', true),
+            'ubicacion' => $validated['ubicacion'] ?? 'inicio',
             'link' => $validated['link'] ?? null,
         ]);
 
@@ -69,6 +71,7 @@ class HeroSlideController extends Controller
             'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'orden' => 'nullable|integer|min:0',
             'activo' => 'boolean',
+            'ubicacion' => 'nullable|in:inicio,login,ambos',
             'link' => 'nullable|url|max:255',
         ]);
 
@@ -77,6 +80,7 @@ class HeroSlideController extends Controller
             'subtitulo' => $validated['subtitulo'] ?? $slide->subtitulo,
             'orden' => $validated['orden'] ?? $slide->orden,
             'activo' => $request->boolean('activo', $slide->activo),
+            'ubicacion' => $validated['ubicacion'] ?? $slide->ubicacion,
             'link' => $validated['link'] ?? $slide->link,
         ];
 

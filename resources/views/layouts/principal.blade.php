@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@php
+    $nombreInstitucion = $institucion->nombre ?? 'Unidad Educativa';
+@endphp
+
 @push('styles')
 <style>
     .chevron-icon { transition: transform 0.2s ease; }
@@ -11,16 +15,22 @@
 {{-- Aside principal: el color lo define la apariencia global (layouts/app). --}}
 <div class="d-flex flex-column p-3 text-white h-100" style="background: var(--aside-bg);">
     <div class="d-flex justify-content-between align-items-center d-lg-none mb-3">
-        <span class="fs-5 fw-bold">Unidad Educativa</span>
+        <span class="fs-5 fw-bold">{{ $nombreInstitucion }}</span>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
     </div>
     <a href="/dashboard" class="d-flex align-items-center mb-3 text-white text-decoration-none d-none d-lg-flex">
+        @if(!empty($institucion?->logo_path))
+        <img src="{{ $institucion->logoUrl() }}" alt="Logo {{ $nombreInstitucion }}"
+            class="bg-white rounded p-1 me-2" style="height:36px;width:36px;object-fit:contain;">
+        @else
         <i class="bi bi-mortarboard-fill fs-4 me-2"></i>
-        <span class="fs-5 fw-bold">Unidad Educativa</span>
+        @endif
+        <span class="fs-5 fw-bold">{{ $nombreInstitucion }}</span>
     </a>
     <hr>
     @php
-        $rol = auth()->user()->rol;
+        // El menú y los permisos se resuelven con el perfil activo (multirol).
+        $rol = auth()->user()->perfilActivo();
         $esDocente = $rol === 'DOCENTE';
         $esRep = $rol === 'REPRESENTANTE';
         $esEstudiante = $rol === 'ESTUDIANTE';
@@ -421,6 +431,11 @@
         @endif
         @if($rol === 'ADMIN')
         <li class="nav-item mt-2">
+            <a href="{{ route('admin.usuarios.index') }}" class="nav-link text-white {{ request()->is('admin/usuarios*') ? 'active' : '' }}">
+                <i class="bi bi-people me-2"></i> Usuarios
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="{{ route('admin.configuracion.index') }}" class="nav-link text-white {{ request()->is('admin/configuracion*') || request()->is('admin/hero-slides*') ? 'active' : '' }}">
                 <i class="bi bi-gear me-2"></i> Configuración
             </a>
@@ -449,6 +464,9 @@
         </a>
         <ul class="dropdown-menu dropdown-menu-dark">
             <li><a class="dropdown-item" href="{{ route('perfil.index') }}">Perfil</a></li>
+            @if(count(auth()->user()->perfiles()) > 1)
+            <li><a class="dropdown-item" href="{{ route('perfil.seleccionar') }}">Cambiar de perfil</a></li>
+            @endif
             <li><hr class="dropdown-divider"></li>
             <li>
                 <form method="POST" action="{{ route('logout') }}">

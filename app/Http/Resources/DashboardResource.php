@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Circular;
+use App\Models\PeriodoLectivo;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -10,7 +12,7 @@ class DashboardResource extends JsonResource
     public function toArray(Request $request): array
     {
         $user = $this->resource;
-        $periodoActivo = \App\Models\PeriodoLectivo::where('activo', true)->first();
+        $periodoActivo = PeriodoLectivo::where('activo', true)->first();
 
         return [
             'institucion' => [
@@ -22,7 +24,7 @@ class DashboardResource extends JsonResource
                 'id' => $user->id,
                 'nombre' => strtoupper($user->name),
                 'nombre_corto' => $this->formatNombre(strtoupper($user->name)),
-                'rol' => $user->rol,
+                'rol' => $user->perfilActivo(),
                 'email' => $user->email,
                 'periodo_lectivo' => $periodoActivo?->nombre ?? '2026 - 2027',
                 'notificaciones_pendientes' => [
@@ -53,7 +55,7 @@ class DashboardResource extends JsonResource
                 ],
             ],
             'circulares' => CircularResource::collection(
-                \App\Models\Circular::latest('fecha_publicacion')->take(10)->get()
+                Circular::latest('fecha_publicacion')->take(10)->get()
             ),
         ];
     }
