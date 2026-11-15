@@ -53,7 +53,6 @@ class RectorDashboardTest extends TestCase
         $response->assertSee('Pre-registro');
         $response->assertSee('Historia');
         $response->assertSee('Comunidad educativa');
-        $response->assertSee('Servicios y descargas');
         $response->assertSee('Útiles escolares');
         $response->assertSee('Descargas');
         $response->assertSee('Control académico');

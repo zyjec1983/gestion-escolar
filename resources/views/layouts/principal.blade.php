@@ -74,9 +74,8 @@
             $enSitio = request()->is('admin/sitio*');
             $tabSitio = $enSitio ? (request('tab') ?: 'textos') : null;
             $enInstitucion = request()->is('admin/configuracion/institucion*');
-            $enContenidoInstitucional = ($enSitio && in_array($tabSitio, ['textos', 'preregistro', 'historia'], true))
+            $enContenidoInstitucional = ($enSitio && in_array($tabSitio, ['textos', 'preregistro', 'historia', 'utiles', 'descargas'], true))
                 || $enInstitucion;
-            $enServicios = $enSitio && in_array($tabSitio, ['utiles', 'descargas'], true);
 
             // Cada sección de configuración es una vista independiente.
             $enConfigGeneral = request()->is('admin/configuracion');
@@ -129,26 +128,6 @@
                             <i class="bi bi-book-half me-2"></i> Historia
                         </a>
                     </li>
-                </ul>
-            </div>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('admin.comunidad.index') }}"
-               class="nav-link text-white {{ request()->is('admin/comunidad*') ? 'active' : '' }}">
-                <i class="bi bi-people-fill me-2"></i> Comunidad educativa
-            </a>
-        </li>
-        <li class="nav-item">
-            <a role="button"
-               class="nav-link text-white d-flex justify-content-between align-items-center {{ $enServicios ? 'active' : '' }}"
-               data-bs-toggle="collapse" href="#submenuServiciosDescargas"
-               aria-expanded="{{ $enServicios ? 'true' : 'false' }}"
-               aria-controls="submenuServiciosDescargas">
-                <span><i class="bi bi-folder2-open me-2"></i> Servicios y descargas</span>
-                <i class="bi bi-chevron-down chevron-icon"></i>
-            </a>
-            <div class="collapse {{ $enServicios ? 'show' : '' }}" id="submenuServiciosDescargas">
-                <ul class="nav nav-pills flex-column ms-3 mt-1">
                     <li class="nav-item">
                         <a href="{{ route('admin.sitio.index', ['tab' => 'utiles']) }}"
                            class="nav-link text-white small py-1 {{ $enSitio && $tabSitio === 'utiles' ? 'active' : '' }}">
@@ -163,6 +142,12 @@
                     </li>
                 </ul>
             </div>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.comunidad.index') }}"
+               class="nav-link text-white {{ request()->is('admin/comunidad*') ? 'active' : '' }}">
+                <i class="bi bi-people-fill me-2"></i> Comunidad educativa
+            </a>
         </li>
 
         <li class="nav-item mt-3">

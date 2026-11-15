@@ -439,8 +439,8 @@ en "Control académico" y "Registros académicos".
   Archivo: resources/views/layouts/principal.blade.php
   Seccionado por función para no repetir pestañas:
   - Portal y contenido: Contenido institucional (chevron con Institución,
-    Textos e imágenes, Pre-registro e Historia), Comunidad educativa y
-    Servicios y descargas (chevron con Útiles escolares y Descargas).
+    Textos e imágenes, Pre-registro, Historia, Útiles escolares y Descargas) y
+    Comunidad educativa.
   - Apariencia: Apariencia del sistema (chevron con General, Carrusel del
     portal, Carrusel del login y Apariencia). Cada opción abre su propia vista,
     sin pestañas ni ?tab=.
