@@ -43,9 +43,10 @@ class RectorDashboardTest extends TestCase
         // Módulos administrables solicitados, agrupados por función.
         $response->assertSee('Portal y contenido');
         $response->assertSee('Apariencia');
-        $response->assertSee('Identidad institucional');
+        $response->assertSee('Institución');
         $response->assertSee('Apariencia del sistema');
-        $response->assertSee('Carrusel principal');
+        $response->assertSee('General');
+        $response->assertSee('Carrusel del portal');
         $response->assertSee('Carrusel del login');
         $response->assertSee('Contenido institucional');
         $response->assertSee('Textos e imágenes');
@@ -58,12 +59,11 @@ class RectorDashboardTest extends TestCase
         $response->assertSee('Control académico');
         $response->assertSee('Usuarios y roles');
         $response->assertSee('Matrículas e inscripciones');
-        $response->assertSee('Ventanas de calificaciones');
+        $response->assertSee('Fecha de Cargar notas');
         $response->assertSee('Circulares y comunicados');
         $response->assertSee('Moderación de observaciones');
         $response->assertSee('Registros académicos');
         $response->assertSee('Historial de cambios');
-        $response->assertSee('Parámetros académicos');
 
         // El ADMIN no agenda citas ni administra DECE.
         $response->assertDontSee('Citas');
@@ -78,10 +78,10 @@ class RectorDashboardTest extends TestCase
     /** @test */
     public function la_gestion_del_carrusel_vive_dentro_de_configuracion()
     {
-        $response = $this->actingAs($this->admin)->get(route('admin.configuracion.index'));
+        $response = $this->actingAs($this->admin)->get(route('admin.configuracion.carrusel'));
 
         $response->assertOk();
-        $response->assertViewIs('admin.configuracion.index');
+        $response->assertViewIs('admin.configuracion.carrusel');
         $response->assertSee('Carrusel del portal');
         $response->assertSee('Velocidad de transición');
     }
@@ -91,7 +91,7 @@ class RectorDashboardTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->get(route('admin.hero-slides.index'));
 
-        $response->assertRedirect(route('admin.configuracion.index'));
+        $response->assertRedirect(route('admin.configuracion.carrusel'));
     }
 
     /** @test */

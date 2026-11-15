@@ -13,29 +13,93 @@ use Illuminate\Validation\Rule;
 class ConfiguracionController extends Controller
 {
     /**
-     * Panel de configuración del centro.
+     * Configuración general del centro.
      *
-     * Qué hace: carga la institución, los desfases horarios, el carrusel y la
-     * apariencia global (paletas del aside y tamaño de fuente).
+     * Qué hace: muestra la zona horaria y el sistema de evaluación. Cada
+     * sección de configuración vive en su propia vista; si llega un enlace
+     * antiguo con ?tab= se redirige a la vista correspondiente.
      * Conecta con: layouts/app (aplica el tema) y layouts/principal (aside).
      * Ruta: GET /admin/configuracion (admin.configuracion.index).
      */
-    public function index()
+    public function index(Request $request)
+    {
+        $destinos = [
+            'institucion' => 'admin.configuracion.institucion',
+            'carrusel' => 'admin.configuracion.carrusel',
+            'carrusel-login' => 'admin.configuracion.carrusel-login',
+            'apariencia' => 'admin.configuracion.apariencia',
+        ];
+
+        $destino = $destinos[$request->query('tab')] ?? null;
+
+        if ($destino !== null) {
+            return redirect()->route($destino);
+        }
+
+        return view('admin.configuracion.index', $this->datosConfiguracion());
+    }
+
+    /**
+     * Datos de la institución: nombre, subtítulo y logo.
+     *
+     * Ruta: GET /admin/configuracion/institucion (admin.configuracion.institucion).
+     */
+    public function institucion()
+    {
+        return view('admin.configuracion.institucion', $this->datosConfiguracion());
+    }
+
+    /**
+     * Carrusel de la portada del portal.
+     *
+     * Ruta: GET /admin/configuracion/carrusel (admin.configuracion.carrusel).
+     */
+    public function carrusel()
+    {
+        return view('admin.configuracion.carrusel', $this->datosConfiguracion());
+    }
+
+    /**
+     * Carrusel de la pantalla de inicio de sesión.
+     *
+     * Ruta: GET /admin/configuracion/carrusel-login (admin.configuracion.carrusel-login).
+     */
+    public function carruselLogin()
+    {
+        return view('admin.configuracion.carrusel-login', $this->datosConfiguracion());
+    }
+
+    /**
+     * Paleta del menú lateral y tamaño de fuente global.
+     *
+     * Ruta: GET /admin/configuracion/apariencia (admin.configuracion.apariencia).
+     */
+    public function apariencia()
+    {
+        return view('admin.configuracion.apariencia', $this->datosConfiguracion());
+    }
+
+    /**
+     * Datos compartidos por las vistas de configuración.
+     *
+     * @return array<string, mixed>
+     */
+    private function datosConfiguracion(): array
     {
         $slides = HeroSlide::orderBy('orden')->orderBy('id')->get();
 
-        return view('admin.configuracion.index', [
+        return [
             'institucion' => Institucion::firstOrFail(),
             'desfases' => desfasesHorariosDisponibles(),
             'slides' => $slides,
             // El portal y el login tienen carruseles independientes; se separan
-            // para que el administrador vea cada pestaña con sus propias imágenes.
+            // para que cada vista muestre sus propias imágenes.
             'slidesInicio' => $slides->whereIn('ubicacion', ['inicio', 'ambos'])->values(),
             'slidesLogin' => $slides->whereIn('ubicacion', ['login', 'ambos'])->values(),
             'tema' => Tema::actual(),
             'paletas' => Tema::paletas(),
             'fuentes' => Tema::fuentes(),
-        ]);
+        ];
     }
 
     /**
@@ -45,7 +109,7 @@ class ConfiguracionController extends Controller
      * El nombre y el logo alimentan el inicio, el login, el menú lateral y el
      * favicon de las pestañas (Institucion::logoUrl con cache-busting).
      * Conecta con: App\Models\Institucion y AppServiceProvider (vista compartida).
-     * Ruta: POST /admin/configuracion/institucion (admin.configuracion.institucion).
+     * Ruta: POST /admin/configuracion/institucion (admin.configuracion.institucion.update).
      */
     public function updateInstitucion(Request $request)
     {

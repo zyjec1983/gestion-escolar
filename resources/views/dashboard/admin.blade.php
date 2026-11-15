@@ -128,7 +128,7 @@
             </a>
         </div>
         <div class="col">
-            <a href="{{ route('admin.configuracion.index', ['tab' => 'carrusel']) }}" class="text-decoration-none">
+            <a href="{{ route('admin.configuracion.carrusel') }}" class="text-decoration-none">
                 <div class="card admin-card shadow-sm h-100">
                     <div class="card-body d-flex gap-3 align-items-start">
                         <span class="admin-icon bg-warning-subtle text-warning"><i class="bi bi-images"></i></span>
@@ -141,7 +141,7 @@
             </a>
         </div>
         <div class="col">
-            <a href="{{ route('admin.configuracion.index', ['tab' => 'carrusel-login']) }}" class="text-decoration-none">
+            <a href="{{ route('admin.configuracion.carrusel-login') }}" class="text-decoration-none">
                 <div class="card admin-card shadow-sm h-100">
                     <div class="card-body d-flex gap-3 align-items-start">
                         <span class="admin-icon bg-info-subtle text-info"><i class="bi bi-box-arrow-in-right"></i></span>
@@ -219,7 +219,7 @@
             </a>
         </div>
         <div class="col">
-            <a href="{{ route('admin.configuracion.index', ['tab' => 'apariencia']) }}" class="text-decoration-none">
+            <a href="{{ route('admin.configuracion.apariencia') }}" class="text-decoration-none">
                 <div class="card admin-card shadow-sm h-100">
                     <div class="card-body d-flex gap-3 align-items-start">
                         <span class="admin-icon bg-info-subtle text-info"><i class="bi bi-palette"></i></span>

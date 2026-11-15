@@ -12,8 +12,11 @@
 --}}
 @php
     $ubicacionInicial = old('ubicacion', $slide->ubicacion ?? $ubicacion ?? 'inicio');
-    $tabDestino = $ubicacionInicial === 'login' ? 'carrusel-login' : 'carrusel';
-    $urlVolver = route('admin.configuracion.index', ['tab' => $tabDestino]);
+    $urlVolver = route(
+        $ubicacionInicial === 'login'
+            ? 'admin.configuracion.carrusel-login'
+            : 'admin.configuracion.carrusel'
+    );
 @endphp
 
 @section('contenido')

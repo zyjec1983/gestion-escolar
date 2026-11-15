@@ -1,9 +1,9 @@
 @extends('layouts.principal')
 
-@section('titulo', 'Fechas de subida de notas')
+@section('titulo', 'Fecha de Cargar notas')
 
 {{--
-    Fechas de subida de notas.
+    Fecha de Cargar notas.
 
     Qué hace: crea, edita, habilita/deshabilita y elimina ventanas por parcial.
     Mientras un parcial tenga una ventana configurada, el docente solo puede
@@ -16,7 +16,7 @@
 <div class="container-fluid">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
-            <h4 class="mb-1"><i class="bi bi-calendar-range me-2"></i>Fechas de subida de notas</h4>
+            <h4 class="mb-1"><i class="bi bi-calendar-range me-2"></i>Fecha de Cargar notas</h4>
             <p class="text-muted small mb-0">
                 Habilite o deshabilite la carga de notas por parcial. Si un parcial no tiene ventana,
                 se mantiene el comportamiento anterior (carga permitida).

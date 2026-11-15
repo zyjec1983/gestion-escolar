@@ -43,20 +43,20 @@
         </li>
         @if($rol === 'ADMIN')
         {{--
-            Menú exclusivo del rol ADMIN, ordenado por función en seis secciones.
+            Menú exclusivo del rol ADMIN, ordenado por función en cinco secciones.
 
             Qué hace: agrupa los módulos administrables para que no existan
             pestañas repetidas ni accesos sueltos al final del menú.
-            - Portal y contenido: textos, pre-registro, historia, comunidad,
-              útiles y descargas. Cada grupo con pestañas usa un chevron para
-              entrar directo a la pestaña correspondiente.
-            - Apariencia: identidad institucional, paleta, carruseles y login.
+            - Portal y contenido: institución, textos, pre-registro, historia,
+              comunidad, útiles y descargas. Cada grupo con pestañas usa un
+              chevron para entrar directo a la vista correspondiente.
+            - Apariencia: "Apariencia del sistema" con chevron para General,
+              Carrusel del portal, Carrusel del login y Apariencia.
             - Usuarios y seguridad: cuentas, roles y contraseñas.
-            - Control académico: matrículas, notas, circulares, observaciones y
-              registros académicos. Aquí se agregará luego "Materias y
-              asignaturas" y la asignación de materias a los docentes.
+            - Control académico: matrículas, fechas de carga de notas, circulares,
+              observaciones y registros académicos. Aquí se agregará luego
+              "Materias y asignaturas" y la asignación de materias a los docentes.
             - Auditoría: historial de cambios.
-            - Configuración del sistema: parámetros académicos y zona horaria.
             Conecta con: DashboardController@admin, Admin\SitioController,
             ComunidadController, HeroSlideController, CircularController,
             ObservacionAdminController, VentanaNotaController, UserController,
@@ -73,11 +73,18 @@
             // menú lateral marque y despliegue el grupo correcto.
             $enSitio = request()->is('admin/sitio*');
             $tabSitio = $enSitio ? (request('tab') ?: 'textos') : null;
-            $enContenidoInstitucional = $enSitio && in_array($tabSitio, ['textos', 'preregistro', 'historia'], true);
+            $enInstitucion = request()->is('admin/configuracion/institucion*');
+            $enContenidoInstitucional = ($enSitio && in_array($tabSitio, ['textos', 'preregistro', 'historia'], true))
+                || $enInstitucion;
             $enServicios = $enSitio && in_array($tabSitio, ['utiles', 'descargas'], true);
 
-            $enConfiguracion = request()->is('admin/configuracion*');
-            $tabConfiguracion = $enConfiguracion ? (request('tab') ?: 'general') : null;
+            // Cada sección de configuración es una vista independiente.
+            $enConfigGeneral = request()->is('admin/configuracion');
+            $enConfigCarrusel = request()->is('admin/configuracion/carrusel');
+            $enConfigCarruselLogin = request()->is('admin/configuracion/carrusel-login*');
+            $enConfigApariencia = request()->is('admin/configuracion/apariencia*');
+            $enAparienciaSistema = $enConfigGeneral || $enConfigCarrusel
+                || $enConfigCarruselLogin || $enConfigApariencia;
 
             $registrosAcademicosActivos = request()->is('notas-extraordinarias*')
                 || request()->is('traslados*')
@@ -98,6 +105,12 @@
             </a>
             <div class="collapse {{ $enContenidoInstitucional ? 'show' : '' }}" id="submenuContenidoInstitucional">
                 <ul class="nav nav-pills flex-column ms-3 mt-1">
+                    <li class="nav-item">
+                        <a href="{{ route('admin.configuracion.institucion') }}"
+                           class="nav-link text-white small py-1 {{ $enInstitucion ? 'active' : '' }}">
+                            <i class="bi bi-building me-2"></i> Institución
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a href="{{ route('admin.sitio.index', ['tab' => 'textos']) }}"
                            class="nav-link text-white small py-1 {{ $enSitio && $tabSitio === 'textos' ? 'active' : '' }}">
@@ -156,28 +169,42 @@
             <span class="text-uppercase text-white-50 small fw-semibold px-2">Apariencia</span>
         </li>
         <li class="nav-item mt-1">
-            <a href="{{ route('admin.configuracion.index', ['tab' => 'institucion']) }}"
-               class="nav-link text-white {{ $enConfiguracion && $tabConfiguracion === 'institucion' ? 'active' : '' }}">
-                <i class="bi bi-building me-2"></i> Identidad institucional
+            <a role="button"
+               class="nav-link text-white d-flex justify-content-between align-items-center {{ $enAparienciaSistema ? 'active' : '' }}"
+               data-bs-toggle="collapse" href="#submenuAparienciaSistema"
+               aria-expanded="{{ $enAparienciaSistema ? 'true' : 'false' }}"
+               aria-controls="submenuAparienciaSistema">
+                <span><i class="bi bi-palette me-2"></i> Apariencia del sistema</span>
+                <i class="bi bi-chevron-down chevron-icon"></i>
             </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('admin.configuracion.index', ['tab' => 'apariencia']) }}"
-               class="nav-link text-white {{ $enConfiguracion && $tabConfiguracion === 'apariencia' ? 'active' : '' }}">
-                <i class="bi bi-palette me-2"></i> Apariencia del sistema
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('admin.configuracion.index', ['tab' => 'carrusel']) }}"
-               class="nav-link text-white {{ $enConfiguracion && $tabConfiguracion === 'carrusel' ? 'active' : '' }}">
-                <i class="bi bi-images me-2"></i> Carrusel principal
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('admin.configuracion.index', ['tab' => 'carrusel-login']) }}"
-               class="nav-link text-white {{ $enConfiguracion && $tabConfiguracion === 'carrusel-login' ? 'active' : '' }}">
-                <i class="bi bi-person-badge me-2"></i> Carrusel del login
-            </a>
+            <div class="collapse {{ $enAparienciaSistema ? 'show' : '' }}" id="submenuAparienciaSistema">
+                <ul class="nav nav-pills flex-column ms-3 mt-1">
+                    <li class="nav-item">
+                        <a href="{{ route('admin.configuracion.index') }}"
+                           class="nav-link text-white small py-1 {{ $enConfigGeneral ? 'active' : '' }}">
+                            <i class="bi bi-sliders me-2"></i> General
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('admin.configuracion.carrusel') }}"
+                           class="nav-link text-white small py-1 {{ $enConfigCarrusel ? 'active' : '' }}">
+                            <i class="bi bi-images me-2"></i> Carrusel del portal
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('admin.configuracion.carrusel-login') }}"
+                           class="nav-link text-white small py-1 {{ $enConfigCarruselLogin ? 'active' : '' }}">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Carrusel del login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('admin.configuracion.apariencia') }}"
+                           class="nav-link text-white small py-1 {{ $enConfigApariencia ? 'active' : '' }}">
+                            <i class="bi bi-palette2 me-2"></i> Apariencia
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
 
         <li class="nav-item mt-3">
@@ -202,7 +229,7 @@
         <li class="nav-item">
             <a href="{{ route('admin.ventanas-notas.index') }}"
                class="nav-link text-white {{ request()->is('admin/ventanas-notas*') ? 'active' : '' }}">
-                <i class="bi bi-calendar-range me-2"></i> Ventanas de calificaciones
+                <i class="bi bi-calendar-range me-2"></i> Fecha de Cargar notas
             </a>
         </li>
         <li class="nav-item">
@@ -256,16 +283,6 @@
             <a href="{{ route('admin.historial.index') }}"
                class="nav-link text-white {{ request()->is('admin/historial*') ? 'active' : '' }}">
                 <i class="bi bi-clock-history me-2"></i> Historial de cambios
-            </a>
-        </li>
-
-        <li class="nav-item mt-3">
-            <span class="text-uppercase text-white-50 small fw-semibold px-2">Configuración del sistema</span>
-        </li>
-        <li class="nav-item mt-1">
-            <a href="{{ route('admin.configuracion.index', ['tab' => 'general']) }}"
-               class="nav-link text-white {{ $enConfiguracion && $tabConfiguracion === 'general' ? 'active' : '' }}">
-                <i class="bi bi-gear me-2"></i> Parámetros académicos
             </a>
         </li>
         @else

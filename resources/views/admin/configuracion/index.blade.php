@@ -1,439 +1,100 @@
 @extends('layouts.principal')
 
-@section('titulo', 'Configuración')
+@section('titulo', 'Configuración general')
 
-@php
-    // Valores por defecto para que la vista también pueda renderizarse aislada
-    // (pruebas o vistas previas). En producción llegan desde ConfiguracionController.
-    $tema = $tema ?? \App\Support\Tema::actual();
-    $paletas = $paletas ?? \App\Support\Tema::paletas();
-    $fuentes = $fuentes ?? \App\Support\Tema::fuentes();
+{{--
+    Configuración general del centro.
 
-    // La pestaña activa puede llegar por ?tab= para que el menú lateral y el
-    // panel de administración enlacen directo a carrusel, login o apariencia.
-    $tabsValidas = ['general', 'institucion', 'carrusel', 'carrusel-login', 'apariencia'];
-    $tabActiva = in_array(request('tab'), $tabsValidas, true) ? request('tab') : 'general';
-@endphp
-
-@push('styles')
-<style>
-    .config-tab .nav-link { color: #6c757d; font-weight: 600; border: 0; border-bottom: 2px solid transparent; }
-    .config-tab .nav-link.active { color: #4361ee; border-bottom-color: #4361ee; background: transparent; }
-    .slide-thumb { width: 100px; height: 60px; object-fit: cover; }
-    .paleta-card { cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
-    .paleta-card:hover { transform: translateY(-2px); box-shadow: 0 .35rem .8rem rgba(0,0,0,.12); }
-    .paleta-card input:checked + .paleta-muestra { outline: 3px solid #0d6efd; outline-offset: 2px; }
-    .paleta-muestra { display: flex; height: 54px; border-radius: .5rem; overflow: hidden; border: 1px solid #dee2e6; }
-    .paleta-muestra span { flex: 1; display: flex; align-items: center; justify-content: center; color: #fff; font-size: .72rem; }
-    .apariencia-preview { border: 1px solid #dee2e6; border-radius: .5rem; overflow: hidden; }
-    .apariencia-preview .preview-aside { background: var(--aside-bg); color: #fff; padding: .75rem; }
-    .apariencia-preview .preview-activo { background: var(--aside-active); color: #fff; font-weight: 700; padding: .35rem .5rem; border-radius: .35rem; }
-    .apariencia-preview .preview-main { background: #fff; color: #000; padding: .75rem; }
-</style>
-@endpush
-
+    Qué hace: define la zona horaria con la que se registran las fechas y
+    muestra el sistema de evaluación activo. Es una vista independiente, sin
+    pestañas, dentro del menú "Apariencia del sistema".
+    Conecta con: Admin\ConfiguracionController, App\Models\Institucion y
+    layouts/principal.blade.php.
+    Ruta: GET /admin/configuracion (admin.configuracion.index).
+--}}
 @section('contenido')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0"><i class="bi bi-gear me-2"></i>Configuración del centro</h4>
+    <div class="mb-4">
+        <h4 class="mb-1"><i class="bi bi-sliders me-2"></i>Configuración general</h4>
+        <p class="text-muted small mb-0">
+            Zona horaria de la institución y sistema de evaluación activo.
+        </p>
     </div>
 
-    @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show py-2">
-        <i class="bi bi-check-circle me-1"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    @endif
+    @include('admin.configuracion._mensajes')
 
-    @if($errors->any())
-    <div class="alert alert-danger alert-dismissible fade show py-2">
-        <i class="bi bi-exclamation-circle me-1"></i>{{ $errors->first() }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    @endif
-
-    <ul class="nav nav-tabs config-tab mb-4" id="configTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link {{ $tabActiva === 'general' ? 'active' : '' }}" id="tab-general" data-bs-toggle="tab" data-bs-target="#panel-general"
-                    type="button" role="tab" aria-controls="panel-general" aria-selected="{{ $tabActiva === 'general' ? 'true' : 'false' }}">
-                <i class="bi bi-sliders me-1"></i>General
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link {{ $tabActiva === 'institucion' ? 'active' : '' }}" id="tab-institucion" data-bs-toggle="tab" data-bs-target="#panel-institucion"
-                    type="button" role="tab" aria-controls="panel-institucion" aria-selected="{{ $tabActiva === 'institucion' ? 'true' : 'false' }}">
-                <i class="bi bi-building me-1"></i>Institución
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link {{ $tabActiva === 'carrusel' ? 'active' : '' }}" id="tab-carrusel" data-bs-toggle="tab" data-bs-target="#panel-carrusel"
-                    type="button" role="tab" aria-controls="panel-carrusel" aria-selected="{{ $tabActiva === 'carrusel' ? 'true' : 'false' }}">
-                <i class="bi bi-images me-1"></i>Carrusel del portal
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link {{ $tabActiva === 'carrusel-login' ? 'active' : '' }}" id="tab-carrusel-login" data-bs-toggle="tab" data-bs-target="#panel-carrusel-login"
-                    type="button" role="tab" aria-controls="panel-carrusel-login" aria-selected="{{ $tabActiva === 'carrusel-login' ? 'true' : 'false' }}">
-                <i class="bi bi-box-arrow-in-right me-1"></i>Carrusel del login
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link {{ $tabActiva === 'apariencia' ? 'active' : '' }}" id="tab-apariencia" data-bs-toggle="tab" data-bs-target="#panel-apariencia"
-                    type="button" role="tab" aria-controls="panel-apariencia" aria-selected="{{ $tabActiva === 'apariencia' ? 'true' : 'false' }}">
-                <i class="bi bi-palette me-1"></i>Apariencia
-            </button>
-        </li>
-    </ul>
-
-    <div class="tab-content" id="configTabsContent">
-        {{-- ============ PESTAÑA GENERAL ============ --}}
-        <div class="tab-pane fade {{ $tabActiva === 'general' ? 'show active' : '' }}" id="panel-general" role="tabpanel" aria-labelledby="tab-general" tabindex="0">
-            <div class="row g-4">
-                <div class="col-lg-7">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-white">
-                            <h6 class="mb-0"><i class="bi bi-clock-history me-1"></i>Zona horaria</h6>
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted small mb-3">
-                                Define la hora con la que la institución registra sus fechas: envíos de mensajes,
-                                consultas y demás registros con hora. Si el programa se instala en otro país,
-                                basta con elegir la zona de ese lugar.
-                            </p>
-
-                            <form method="POST" action="{{ route('admin.configuracion.zona-horaria') }}">
-                                @csrf
-                                <div class="mb-2">
-                                    <label for="zona_horaria" class="form-label fw-semibold">Desfase respecto a UTC</label>
-                                    <select name="zona_horaria" id="zona_horaria" class="form-select">
-                                        @foreach($desfases as $desfase)
-                                            @php($valor = valorDesfaseHorario($desfase['minutos']))
-                                            <option value="{{ $valor }}" {{ $institucion->zona_horaria === $valor ? 'selected' : '' }}>
-                                                {{ formatearDesfase($desfase['minutos']) }} — {{ $desfase['ciudades'] }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('zona_horaria')
-                                        <div class="text-danger small mt-1">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <p class="text-muted small mb-3">
-                                    Elige las horas que lleva tu centro respecto a UTC. Son 23 desfases, de
-                                    UTC-11:00 a UTC+11:00. Si no hay horario de verano donde está el centro,
-                                    el valor sirve todo el año igual.
-                                </p>
-
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-check-lg me-1"></i>Guardar zona horaria
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-5">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-white">
-                            <h6 class="mb-0"><i class="bi bi-info-circle me-1"></i>Estado actual</h6>
-                        </div>
-                        <div class="card-body small">
-                            <dl class="row mb-0">
-                                <dt class="col-5">Desfase configurado</dt>
-                                <dd class="col-7">{{ formatearDesfase(minutosDesfaseZona($institucion->zona_horaria)) }}</dd>
-
-                                <dt class="col-5">Hora actual del centro</dt>
-                                <dd class="col-7 mb-0">{{ now()->format('d/m/Y H:i:s') }}</dd>
-                            </dl>
-                        </div>
-                    </div>
-
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-white">
-                            <h6 class="mb-0"><i class="bi bi-sliders me-1"></i>Registro</h6>
-                        </div>
-                        <div class="card-body small">
-                            <p class="mb-0 text-muted">
-                                Sistema de evaluación:
-                                <strong>{{ $institucion->sistema_evaluacion === 'trimestre' ? 'Trimestre' : 'Quimestre' }}</strong>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- ============ PESTAÑA INSTITUCIÓN ============ --}}
-        {{-- Nombre, subtítulo y logo. Ruta: POST /admin/configuracion/institucion --}}
-        <div class="tab-pane fade {{ $tabActiva === 'institucion' ? 'show active' : '' }}" id="panel-institucion" role="tabpanel" aria-labelledby="tab-institucion" tabindex="0">
-            <div class="row g-4">
-                <div class="col-lg-7">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-white">
-                            <h6 class="mb-0"><i class="bi bi-building me-1"></i>Datos de la institución</h6>
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted small mb-3">
-                                Este nombre aparece en el inicio, en el login, en el menú lateral y en el título de las pestañas.
-                                El logo se usa también como favicon.
-                            </p>
-
-                            <form method="POST" action="{{ route('admin.configuracion.institucion') }}" enctype="multipart/form-data">
-                                @csrf
-
-                                <div class="mb-3">
-                                    <label for="nombre" class="form-label fw-semibold">Nombre de la institución</label>
-                                    <input type="text" name="nombre" id="nombre" class="form-control"
-                                        value="{{ old('nombre', $institucion->nombre) }}" required maxlength="255">
-                                    @error('nombre')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="subtitulo" class="form-label fw-semibold">Subtítulo</label>
-                                    <input type="text" name="subtitulo" id="subtitulo" class="form-control"
-                                        value="{{ old('subtitulo', $institucion->subtitulo) }}" maxlength="255"
-                                        placeholder="Unidad Educativa Particular Bilingüe">
-                                    @error('subtitulo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="logo" class="form-label fw-semibold">Logo institucional</label>
-                                    <input type="file" name="logo" id="logo" class="form-control"
-                                        accept="image/png,image/jpeg,image/webp">
-                                    <div class="form-text">PNG, JPG o WEBP, máximo 2 MB. Se recomienda un cuadrado.</div>
-                                    @error('logo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                                </div>
-
-                                @if($institucion->logo_path)
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="quitar_logo" id="quitar_logo" value="1">
-                                    <label class="form-check-label" for="quitar_logo">Quitar el logo actual</label>
-                                </div>
-                                @endif
-
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-check-lg me-1"></i>Guardar institución
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-5">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-white">
-                            <h6 class="mb-0"><i class="bi bi-eye me-1"></i>Vista previa</h6>
-                        </div>
-                        <div class="card-body text-center">
-                            @if($institucion->logo_path)
-                            <img src="{{ $institucion->logoUrl() }}" alt="Logo institucional"
-                                class="img-fluid mb-3" style="max-height:110px;">
-                            @else
-                            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3"
-                                style="width:96px;height:96px;">
-                                <i class="bi bi-mortarboard-fill fs-1 text-secondary"></i>
-                            </div>
-                            @endif
-                            <h5 class="fw-bold mb-1">{{ $institucion->nombre }}</h5>
-                            <p class="text-muted small mb-0">{{ $institucion->subtitulo }}</p>
-                            <hr>
-                            <p class="text-muted small mb-0">
-                                <i class="bi bi-bookmark-star me-1"></i>
-                                Favicon de las pestañas: {{ $institucion->logo_path ? 'logo institucional' : 'icono por defecto' }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- ============ PESTAÑA CARRUSEL DEL PORTAL ============ --}}
-        <div class="tab-pane fade {{ $tabActiva === 'carrusel' ? 'show active' : '' }}" id="panel-carrusel" role="tabpanel" aria-labelledby="tab-carrusel" tabindex="0">
-            <div class="card shadow-sm mb-4">
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-speedometer2 me-1"></i>Configuración del carrusel</h6>
+                    <h6 class="mb-0"><i class="bi bi-clock-history me-1"></i>Zona horaria</h6>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('admin.hero-slides.velocidad') }}" class="row g-3 align-items-end">
+                    <p class="text-muted small mb-3">
+                        Define la hora con la que la institución registra sus fechas: envíos de mensajes,
+                        consultas y demás registros con hora. Si el programa se instala en otro país,
+                        basta con elegir la zona de ese lugar.
+                    </p>
+
+                    <form method="POST" action="{{ route('admin.configuracion.zona-horaria') }}">
                         @csrf
-                        <div class="col-auto">
-                            <label for="carousel_interval" class="form-label">Velocidad de transición</label>
-                            <div class="input-group">
-                                <input type="number" name="carousel_interval" id="carousel_interval"
-                                    class="form-control" value="{{ old('carousel_interval', $institucion->carousel_interval ?? 2000) }}"
-                                    min="1000" max="30000" step="500">
-                                <span class="input-group-text">ms</span>
-                            </div>
+                        <div class="mb-2">
+                            <label for="zona_horaria" class="form-label fw-semibold">Desfase respecto a UTC</label>
+                            <select name="zona_horaria" id="zona_horaria" class="form-select">
+                                @foreach($desfases as $desfase)
+                                    @php($valor = valorDesfaseHorario($desfase['minutos']))
+                                    <option value="{{ $valor }}" {{ $institucion->zona_horaria === $valor ? 'selected' : '' }}>
+                                        {{ formatearDesfase($desfase['minutos']) }} — {{ $desfase['ciudades'] }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('zona_horaria')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
-                        <div class="col-auto">
-                            <button type="submit" class="btn btn-outline-primary">
-                                <i class="bi bi-check-lg me-1"></i>Actualizar
-                            </button>
-                        </div>
-                        <div class="col-auto">
-                            <small class="text-muted">1 segundo = 1000 ms. Mínimo 1000, máximo 30000.</small>
-                        </div>
+
+                        <p class="text-muted small mb-3">
+                            Elige las horas que lleva tu centro respecto a UTC. Son 23 desfases, de
+                            UTC-11:00 a UTC+11:00. Si no hay horario de verano donde está el centro,
+                            el valor sirve todo el año igual.
+                        </p>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>Guardar zona horaria
+                        </button>
                     </form>
                 </div>
             </div>
-
-            @include('admin.configuracion._slides-tabla', [
-                'lista' => $slidesInicio ?? $slides,
-                'titulo' => 'Slides del portal',
-                'ubicacion' => 'inicio',
-            ])
         </div>
 
-        {{-- ============ PESTAÑA CARRUSEL DEL LOGIN ============ --}}
-        {{-- Imágenes independientes para el panel visual del inicio de sesión. --}}
-        <div class="tab-pane fade {{ $tabActiva === 'carrusel-login' ? 'show active' : '' }}" id="panel-carrusel-login" role="tabpanel" aria-labelledby="tab-carrusel-login" tabindex="0">
-            <div class="alert alert-light border small mb-4">
-                <i class="bi bi-info-circle me-1 text-primary"></i>
-                Estas imágenes se muestran en el carrusel del login. Si no hay ninguna,
-                el login usa el logo o la imagen institucional de respaldo.
+        <div class="col-lg-5">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-1"></i>Estado actual</h6>
+                </div>
+                <div class="card-body small">
+                    <dl class="row mb-0">
+                        <dt class="col-5">Desfase configurado</dt>
+                        <dd class="col-7">{{ formatearDesfase(minutosDesfaseZona($institucion->zona_horaria)) }}</dd>
+
+                        <dt class="col-5">Hora actual del centro</dt>
+                        <dd class="col-7 mb-0">{{ now()->format('d/m/Y H:i:s') }}</dd>
+                    </dl>
+                </div>
             </div>
 
-            @include('admin.configuracion._slides-tabla', [
-                'lista' => $slidesLogin ?? collect(),
-                'titulo' => 'Slides del login',
-                'ubicacion' => 'login',
-            ])
-        </div>
-
-        {{-- ============ PESTAÑA APARIENCIA ============ --}}
-        {{-- Paletas y tamaño de fuente globales. Ruta: POST /admin/configuracion/apariencia --}}
-        <div class="tab-pane fade {{ $tabActiva === 'apariencia' ? 'show active' : '' }}" id="panel-apariencia" role="tabpanel" aria-labelledby="tab-apariencia" tabindex="0">
-            <form method="POST" action="{{ route('admin.configuracion.apariencia') }}">
-                @csrf
-                <div class="row g-4">
-                    <div class="col-lg-8">
-                        <div class="card shadow-sm h-100">
-                            <div class="card-header bg-white">
-                                <h6 class="mb-0"><i class="bi bi-palette me-1"></i>Color del menú lateral</h6>
-                            </div>
-                            <div class="card-body">
-                                <p class="text-muted small mb-3">
-                                    Elige una de las 10 combinaciones. El cambio se aplica a todos los roles
-                                    (alumnos, representantes, docentes, inspectores, DECE, secretaría, rectorado,
-                                    vicerrectorado y administración). Las letras del menú son blancas y se
-                                    muestran en negrilla al pasar el cursor o al seleccionar una opción.
-                                </p>
-
-                                <div class="row g-3">
-                                    @foreach($paletas as $clave => $paleta)
-                                    <div class="col-sm-6 col-xl-4">
-                                        <label class="paleta-card d-block mb-0">
-                                            <input type="radio" name="tema" value="{{ $clave }}"
-                                                   class="d-none" {{ $tema['clave'] === $clave ? 'checked' : '' }}
-                                                   data-aside="{{ $paleta['aside'] }}"
-                                                   data-activo="{{ $paleta['activo'] }}"
-                                                   data-hover="{{ $paleta['hover'] }}">
-                                            <div class="paleta-muestra" title="{{ $paleta['nombre'] }}">
-                                                <span style="background: {{ $paleta['aside'] }};">Menú</span>
-                                                <span style="background: {{ $paleta['activo'] }};">Activo</span>
-                                            </div>
-                                            <div class="small fw-semibold mt-1">{{ $paleta['nombre'] }}</div>
-                                        </label>
-                                    </div>
-                                    @endforeach
-                                </div>
-                                @error('tema')
-                                    <div class="text-danger small mt-2">{{ $message }}</div>
-                                @enderror
-
-                                <hr class="my-4">
-
-                                <div class="row g-3 align-items-end">
-                                    <div class="col-md-6">
-                                        <label for="fuente_pt" class="form-label fw-semibold">Tamaño de fuente</label>
-                                        <select name="fuente_pt" id="fuente_pt" class="form-select">
-                                            @foreach($fuentes as $valor => $etiqueta)
-                                                <option value="{{ $valor }}" {{ $tema['fuente_pt'] === (string) $valor ? 'selected' : '' }}>
-                                                    {{ $etiqueta }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <div class="form-text">
-                                            Igual que en Microsoft Word: 11 pt es el tamaño predeterminado.
-                                        </div>
-                                        @error('fuente_pt')
-                                            <div class="text-danger small mt-1">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                    <div class="col-md-6">
-                                        <button type="submit" class="btn btn-primary w-100">
-                                            <i class="bi bi-check-lg me-1"></i>Guardar apariencia
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-4">
-                        <div class="card shadow-sm h-100">
-                            <div class="card-header bg-white">
-                                <h6 class="mb-0"><i class="bi bi-eye me-1"></i>Vista previa</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="apariencia-preview" id="aparienciaPreview">
-                                    <div class="preview-aside">
-                                        <div class="fw-bold mb-2"><i class="bi bi-mortarboard-fill me-1"></i>{{ $institucion->nombre }}</div>
-                                        <div class="preview-activo mb-1">Dashboard</div>
-                                        <div class="small">Mensajes</div>
-                                        <div class="small">Configuración</div>
-                                    </div>
-                                    <div class="preview-main">
-                                        <div class="fw-semibold mb-1">Contenido principal</div>
-                                        <p class="small mb-2">Texto y formularios con letra negra para una lectura clara.</p>
-                                        <input type="text" class="form-control form-control-sm" value="Ejemplo de formulario" readonly>
-                                    </div>
-                                </div>
-                                <p class="text-muted small mt-3 mb-0">
-                                    La apariencia se guarda en la configuración global y se mantiene al
-                                    iniciar sesión con cualquier rol.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-sliders me-1"></i>Registro</h6>
                 </div>
-            </form>
+                <div class="card-body small">
+                    <p class="mb-0 text-muted">
+                        Sistema de evaluación:
+                        <strong>{{ $institucion->sistema_evaluacion === 'trimestre' ? 'Trimestre' : 'Quimestre' }}</strong>
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Abre la pestaña correcta cuando se llega desde un ancla (#panel-...).
-        ['institucion', 'carrusel', 'apariencia'].forEach(function (nombre) {
-            if (window.location.hash === '#panel-' + nombre) {
-                var tab = document.getElementById('tab-' + nombre);
-                if (tab) new bootstrap.Tab(tab).show();
-            }
-        });
-
-        // Vista previa inmediata del aside y del tamaño de fuente seleccionados.
-        var preview = document.getElementById('aparienciaPreview');
-        var fuente = document.getElementById('fuente_pt');
-
-        function pintarPreview() {
-            if (!preview) return;
-            var elegida = document.querySelector('input[name="tema"]:checked');
-            if (elegida) {
-                preview.style.setProperty('--aside-bg', elegida.dataset.aside);
-                preview.style.setProperty('--aside-active', elegida.dataset.activo);
-                preview.style.setProperty('--aside-hover', elegida.dataset.hover);
-            }
-            if (fuente) {
-                preview.style.fontSize = fuente.value + 'pt';
-            }
-        }
-
-        document.querySelectorAll('input[name="tema"]').forEach(function (radio) {
-            radio.addEventListener('change', pintarPreview);
-        });
-        if (fuente) fuente.addEventListener('change', pintarPreview);
-        pintarPreview();
-    });
-</script>
 @endsection

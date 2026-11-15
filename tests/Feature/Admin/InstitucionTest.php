@@ -30,7 +30,7 @@ class InstitucionTest extends TestCase
         $institucion = Institucion::factory()->create(['nombre' => 'Nombre anterior']);
         $admin = User::factory()->admin()->create(['institucion_id' => $institucion->id]);
 
-        $response = $this->actingAs($admin)->post(route('admin.configuracion.institucion'), [
+        $response = $this->actingAs($admin)->post(route('admin.configuracion.institucion.update'), [
             'nombre' => 'Unidad Educativa Nueva',
             'subtitulo' => 'Bilingüe',
             'logo' => UploadedFile::fake()->image('logo.png', 200, 200),
@@ -76,7 +76,7 @@ class InstitucionTest extends TestCase
         $admin = User::factory()->admin()->create(['institucion_id' => $institucion->id]);
         Storage::disk('public')->put($institucion->logo_path, 'logo');
 
-        $this->actingAs($admin)->post(route('admin.configuracion.institucion'), [
+        $this->actingAs($admin)->post(route('admin.configuracion.institucion.update'), [
             'nombre' => $institucion->nombre,
             'quitar_logo' => '1',
         ])->assertRedirect();
@@ -92,7 +92,7 @@ class InstitucionTest extends TestCase
         Institucion::factory()->create();
 
         $this->actingAs($admin)
-            ->post(route('admin.configuracion.institucion'), ['nombre' => ''])
+            ->post(route('admin.configuracion.institucion.update'), ['nombre' => ''])
             ->assertSessionHasErrors('nombre');
     }
 
@@ -103,7 +103,7 @@ class InstitucionTest extends TestCase
         Institucion::factory()->create();
 
         $this->actingAs($docente)
-            ->post(route('admin.configuracion.institucion'), ['nombre' => 'Otro nombre'])
+            ->post(route('admin.configuracion.institucion.update'), ['nombre' => 'Otro nombre'])
             ->assertForbidden();
     }
 
@@ -159,7 +159,7 @@ class InstitucionTest extends TestCase
         HeroSlide::factory()->create(['titulo' => 'Slide login', 'ubicacion' => 'login']);
 
         $this->actingAs($admin)
-            ->get(route('admin.configuracion.index'))
+            ->get(route('admin.configuracion.carrusel-login'))
             ->assertOk()
             ->assertSee('Mostrar en')
             ->assertSee('Inicio de sesión');

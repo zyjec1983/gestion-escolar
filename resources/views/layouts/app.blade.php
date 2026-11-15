@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        // Aplica el aside oculto antes de pintar para evitar el salto visual.
+        try {
+            if (localStorage.getItem('sidebarOculto') === '1') {
+                document.documentElement.classList.add('sidebar-oculto');
+            }
+        } catch (error) {}
+    </script>
     <title>@yield('titulo', 'Sistema de Gestión Escolar') - {{ $institucion->nombre ?? config('app.name') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -13,7 +21,7 @@
     @endif
     @php
         // Apariencia global: la elige el administrador y la comparten todos los roles.
-        // Ruta: GET/POST /admin/configuracion (pestaña Apariencia).
+        // Ruta: GET/POST /admin/configuracion/apariencia.
         $tema = \App\Support\Tema::actual();
     @endphp
     <style>
@@ -124,6 +132,41 @@
         .app-content-column > main {
             min-width: 0;
         }
+        /* Tablas: desplazamiento vertical y horizontal con barras visibles.
+           Aplica a todas las tablas envueltas en .table-responsive del panel. */
+        main .table-responsive {
+            overflow-x: auto !important;
+            overflow-y: auto !important;
+            max-height: 70vh;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #adb5bd #f1f3f5;
+        }
+        main .table-responsive::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        main .table-responsive::-webkit-scrollbar-track {
+            background: #f1f3f5;
+            border-radius: 10px;
+        }
+        main .table-responsive::-webkit-scrollbar-thumb {
+            background: #adb5bd;
+            border-radius: 10px;
+            border: 2px solid #f1f3f5;
+        }
+        main .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #6c757d;
+        }
+        /* Botón para ocultar el aside en pantallas grandes o laptops pequeñas. */
+        @media (min-width: 992px) {
+            html.sidebar-oculto #sidebarOffcanvas {
+                display: none !important;
+            }
+            html.sidebar-oculto .app-content-column {
+                width: 100%;
+            }
+        }
         main img,
         main video,
         main iframe {
@@ -161,6 +204,11 @@
                 <div class="container-fluid">
                     <button class="btn btn-outline-secondary d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
                         <i class="bi bi-list"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary d-none d-lg-inline-flex align-items-center me-2" type="button"
+                            id="toggleSidebar" title="Ocultar menú lateral" aria-label="Ocultar menú lateral"
+                            aria-controls="sidebarOffcanvas" aria-expanded="true">
+                        <i class="bi bi-layout-sidebar"></i>
                     </button>
                     <span class="navbar-text ms-auto">
                         @auth
@@ -312,6 +360,44 @@
                     timerProgressBar: true,
                 });
             }
+        });
+    </script>
+    <script>
+        /*
+         * Oculta o muestra el menú lateral en pantallas grandes.
+         *
+         * Qué hace: guarda la preferencia en localStorage para conservarla entre
+         * páginas. En móviles el aside sigue funcionando como offcanvas.
+         * Conecta con: layouts/app.blade.php y #sidebarOffcanvas.
+         */
+        document.addEventListener('DOMContentLoaded', function () {
+            var boton = document.getElementById('toggleSidebar');
+            if (!boton) return;
+
+            function actualizarBoton() {
+                var oculto = document.documentElement.classList.contains('sidebar-oculto');
+                var titulo = oculto ? 'Mostrar menú lateral' : 'Ocultar menú lateral';
+
+                boton.title = titulo;
+                boton.setAttribute('aria-label', titulo);
+                boton.setAttribute('aria-expanded', oculto ? 'false' : 'true');
+                boton.innerHTML = '<i class="bi ' + (oculto ? 'bi-layout-sidebar-inset' : 'bi-layout-sidebar') + '"></i>';
+            }
+
+            boton.addEventListener('click', function () {
+                document.documentElement.classList.toggle('sidebar-oculto');
+
+                try {
+                    localStorage.setItem(
+                        'sidebarOculto',
+                        document.documentElement.classList.contains('sidebar-oculto') ? '1' : '0'
+                    );
+                } catch (error) {}
+
+                actualizarBoton();
+            });
+
+            actualizarBoton();
         });
     </script>
     @if(request()->is('mensajes*', 'observaciones*', 'docente/observaciones*'))

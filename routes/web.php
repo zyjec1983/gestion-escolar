@@ -218,8 +218,13 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
     // Historial de cambios del sistema.
     Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
 
+    // Cada sección de configuración es una vista independiente, sin pestañas.
     Route::get('/configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
-    Route::post('/configuracion/institucion', [ConfiguracionController::class, 'updateInstitucion'])->name('configuracion.institucion');
+    Route::get('/configuracion/institucion', [ConfiguracionController::class, 'institucion'])->name('configuracion.institucion');
+    Route::get('/configuracion/carrusel', [ConfiguracionController::class, 'carrusel'])->name('configuracion.carrusel');
+    Route::get('/configuracion/carrusel-login', [ConfiguracionController::class, 'carruselLogin'])->name('configuracion.carrusel-login');
+    Route::get('/configuracion/apariencia', [ConfiguracionController::class, 'apariencia'])->name('configuracion.apariencia');
+    Route::post('/configuracion/institucion', [ConfiguracionController::class, 'updateInstitucion'])->name('configuracion.institucion.update');
     Route::post('/configuracion/sistema_evaluacion', [ConfiguracionController::class, 'updateSistemaEvaluacion'])->name('configuracion.sistema-evaluacion');
     Route::post('/configuracion/zona_horaria', [ConfiguracionController::class, 'updateZonaHoraria'])->name('configuracion.zona-horaria');
     // Apariencia global: 10 paletas del aside y tamaño de fuente tipo Word.

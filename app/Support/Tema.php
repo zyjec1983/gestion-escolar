@@ -20,7 +20,7 @@ use Throwable;
  *   usan `var(--aside-bg)` en el aside.
  *
  * Rutas:
- * - GET  /admin/configuracion              (admin.configuracion.index)
+ * - GET  /admin/configuracion/apariencia   (admin.configuracion.apariencia)
  * - POST /admin/configuracion/apariencia   (admin.configuracion.apariencia)
  */
 class Tema

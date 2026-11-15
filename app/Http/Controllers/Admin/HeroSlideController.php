@@ -12,8 +12,8 @@ class HeroSlideController extends Controller
 {
     public function index()
     {
-        // La gestión del carrusel vive ahora dentro de Configuración.
-        return redirect()->route('admin.configuracion.index');
+        // La gestión del carrusel vive ahora en Configuración del sistema.
+        return redirect()->route('admin.configuracion.carrusel');
     }
 
     public function create()
@@ -123,18 +123,21 @@ class HeroSlideController extends Controller
     }
 
     /**
-     * Devuelve la pestaña de Configuración que corresponde a una ubicación.
+     * Devuelve la vista de Configuración que corresponde a una ubicación.
      *
-     * Qué hace: los slides de inicio y de login se administran en pestañas
-     * distintas; tras crear, editar o eliminar volvemos a la pestaña correcta.
-     * Conecta con: admin.configuracion.index y Admin\ConfiguracionController.
-     * Ruta: GET /admin/configuracion?tab=carrusel|carrusel-login.
+     * Qué hace: los slides de inicio y de login se administran en vistas
+     * independientes; tras crear, editar o eliminar volvemos a la correcta.
+     * Conecta con: admin.configuracion.carrusel y
+     * admin.configuracion.carrusel-login.
+     * Rutas: GET /admin/configuracion/carrusel|carrusel-login.
      */
     private function urlConfiguracion(?string $ubicacion): string
     {
-        $tab = $ubicacion === 'login' ? 'carrusel-login' : 'carrusel';
+        $ruta = $ubicacion === 'login'
+            ? 'admin.configuracion.carrusel-login'
+            : 'admin.configuracion.carrusel';
 
-        return route('admin.configuracion.index', ['tab' => $tab]);
+        return route($ruta);
     }
 
     public function updateVelocidad(Request $request)

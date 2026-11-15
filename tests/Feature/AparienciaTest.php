@@ -45,7 +45,7 @@ class AparienciaTest extends TestCase
             ->assertRedirect();
 
         $this->actingAs($admin)
-            ->get(route('admin.configuracion.index'))
+            ->get(route('admin.configuracion.apariencia'))
             ->assertOk()
             ->assertSee('Apariencia')
             ->assertSee('Vino tinto')

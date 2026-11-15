@@ -438,20 +438,24 @@ en "Control académico" y "Registros académicos".
 - Menú lateral exclusivo del ADMIN ....................... (ready)
   Archivo: resources/views/layouts/principal.blade.php
   Seccionado por función para no repetir pestañas:
-  - Portal y contenido: Contenido institucional (chevron con Textos e
-    imágenes, Pre-registro e Historia), Comunidad educativa y Servicios y
-    descargas (chevron con Útiles escolares y Descargas).
-  - Apariencia: Identidad institucional, Apariencia del sistema, Carrusel
-    principal y Carrusel del login.
+  - Portal y contenido: Contenido institucional (chevron con Institución,
+    Textos e imágenes, Pre-registro e Historia), Comunidad educativa y
+    Servicios y descargas (chevron con Útiles escolares y Descargas).
+  - Apariencia: Apariencia del sistema (chevron con General, Carrusel del
+    portal, Carrusel del login y Apariencia). Cada opción abre su propia vista,
+    sin pestañas ni ?tab=.
   - Usuarios y seguridad: Usuarios y roles.
-  - Control académico: Matrículas e inscripciones, Ventanas de calificaciones,
+  - Control académico: Matrículas e inscripciones, Fecha de Cargar notas,
     Circulares y comunicados, Moderación de observaciones y Registros
     académicos (corrección de notas, bitácora, traslados y actualización de
     datos). Aquí se agregará luego Materias y asignaturas, junto con la
     asignación de materias a los docentes.
   - Auditoría: Historial de cambios.
-  - Configuración del sistema: Parámetros académicos.
   Citas y DECE no aparecen en el menú del ADMIN.
+  El botón del navbar oculta/muestra el aside en pantallas grandes y guarda la
+  preferencia en localStorage (sidebarOculto). En móvil el aside es offcanvas.
+  Las tablas envueltas en .table-responsive tienen desplazamiento vertical y
+  horizontal con barras visibles.
 
 - Sitio web (todos los campos del portal) ................ (ready)
   Rutas: GET /admin/sitio,
@@ -555,35 +559,46 @@ en "Control académico" y "Registros académicos".
   Usuarios y roles. El login acepta correo electrónico o cédula.
 
 - Configuración del centro ............................... (ready)
-  Rutas: GET /admin/configuracion,
+  Rutas GET (una vista independiente por sección, sin pestañas):
+         GET /admin/configuracion              (General)
+         GET /admin/configuracion/institucion  (Institución)
+         GET /admin/configuracion/carrusel     (Carrusel del portal)
+         GET /admin/configuracion/carrusel-login (Carrusel del login)
+         GET /admin/configuracion/apariencia   (Apariencia)
+  Rutas POST:
          POST /admin/configuracion/institucion,
          POST /admin/configuracion/sistema-evaluacion,
          POST /admin/configuracion/zona-horaria,
          POST /admin/configuracion/apariencia
   Controlador: Admin\ConfiguracionController
-  Pestañas: Institución, Sistema de evaluación, Zona horaria, Carrusel del
-  portal, Carrusel del login y Apariencia.
+  Las vistas comparten el encabezado y los avisos de
+  admin/configuracion/_mensajes.blade.php. Los enlaces antiguos con
+  ?tab=institucion|carrusel|carrusel-login|apariencia se redirigen a la vista
+  correspondiente.
 
 - Institución, logo y favicon ............................ (ready)
-  Ruta: POST /admin/configuracion/institucion (pestaña Institución)
-  Controlador: Admin\ConfiguracionController@updateInstitucion
+  Rutas: GET /admin/configuracion/institucion (vista Institución)
+         POST /admin/configuracion/institucion (admin.configuracion.institucion.update)
+  Controlador: Admin\ConfiguracionController@institucion / @updateInstitucion
+  La vista se abre desde el grupo "Contenido institucional" del menú.
   El nombre y el logo se aplican al inicio, al login, al menú lateral, al
   título de las pestañas y como favicon. El logo se guarda en el disco público.
 
 - Apariencia global (10 paletas + tamaño de fuente) ...... (ready)
-  Ruta: POST /admin/configuracion/apariencia
+  Rutas: GET/POST /admin/configuracion/apariencia
   Clase: App\Support\Tema
   Aplica el color del aside y el tamaño de letra a TODOS los roles y al login.
   Paleta por defecto: azul Microsoft Word (#2B579A); seleccionado/hover
   #3E6DB5; letras blancas y negrilla al pasar o seleccionar.
 
 - Carrusel del portal y del login ........................ (ready)
-  Rutas: /admin/hero-slides (crear, editar, eliminar, velocidad)
+  Rutas GET: /admin/configuracion/carrusel y /admin/configuracion/carrusel-login
+  Rutas CRUD: /admin/hero-slides (crear, editar, eliminar, velocidad)
   Controlador: Admin\HeroSlideController
-  Dos pestañas independientes dentro de Configuración ("Carrusel del portal" y
-  "Carrusel del login"). Cada imagen se marca para "Página de inicio", "Inicio
-  de sesión" o "Inicio y login". El botón "Nuevo Slide" de la pestaña del login
-  preselecciona esa ubicación.
+  Dos vistas independientes ("Carrusel del portal" y "Carrusel del login").
+  Cada imagen se marca para "Página de inicio", "Inicio de sesión" o "Inicio y
+  login". El botón "Nuevo Slide" del carrusel del login preselecciona esa
+  ubicación y, al guardar o volver, regresa a su vista.
 
 - Solicitudes de matrícula / pre-registro ................ (ready)
   Rutas: /admin/pre-registros
