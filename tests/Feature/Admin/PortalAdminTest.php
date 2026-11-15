@@ -9,6 +9,7 @@ use App\Models\DescargaDocumento;
 use App\Models\HistoriaHito;
 use App\Models\HistorialCambio;
 use App\Models\Institucion;
+use App\Models\ListaUtil;
 use App\Models\Observacion;
 use App\Models\SiteContent;
 use App\Models\TipoObservacion;
@@ -192,11 +193,19 @@ class PortalAdminTest extends TestCase
             'descripcion' => 'Inicio de la obra educativa.',
         ])->assertRedirect(route('admin.sitio.index', ['tab' => 'historia']));
 
-        $this->actingAs($admin)->post(route('admin.sitio.utiles.store'), [
-            'nivel' => 'superior',
-            'nombre' => 'Calculadora científica',
-            'area' => 'Matemáticas',
-        ])->assertRedirect(route('admin.sitio.index', ['tab' => 'utiles']));
+        $this->actingAs($admin)->post(route('admin.sitio.utiles.listas.store'), [
+            'nombre' => 'Octavo',
+        ])->assertRedirect();
+
+        $lista = ListaUtil::firstOrFail();
+
+        $this->actingAs($admin)->put(route('admin.sitio.utiles.listas.update', $lista), [
+            'nombre' => 'Octavo',
+            'finalizada' => '1',
+            'items' => [
+                ['cantidad' => '1', 'articulo' => 'Calculadora científica', 'materia' => 'Matemáticas'],
+            ],
+        ])->assertRedirect(route('admin.sitio.index', ['tab' => 'utiles', 'lista' => $lista->id]));
 
         $this->actingAs($admin)->post(route('admin.sitio.descargas.store'), [
             'categoria' => 'convivencia',

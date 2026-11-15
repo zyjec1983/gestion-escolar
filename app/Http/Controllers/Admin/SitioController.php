@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\DescargaDocumento;
 use App\Models\HistoriaHito;
 use App\Models\HistorialCambio;
+use App\Models\ListaUtil;
 use App\Models\SiteContent;
 use App\Models\UtilItem;
 use App\Support\PortalContenido;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Administración del sitio web institucional.
@@ -22,26 +25,38 @@ use Illuminate\Validation\Rule;
  * - Administra la línea de tiempo, la lista de útiles y los documentos.
  *
  * Conecta con: App\Support\PortalContenido, App\Models\SiteContent,
- * HistoriaHito, UtilItem, DescargaDocumento y welcome.blade.php.
+ * HistoriaHito, ListaUtil, UtilItem, DescargaDocumento y welcome.blade.php.
  *
  * Rutas:
  * - GET  /admin/sitio                         (admin.sitio.index)
  * - POST /admin/sitio/contenido/{grupo}       (admin.sitio.contenido)
  * - CRUD /admin/sitio/historia                (admin.sitio.historia.*)
- * - CRUD /admin/sitio/utiles                  (admin.sitio.utiles.*)
+ * - CRUD /admin/sitio/utiles/listas           (admin.sitio.utiles.listas.*)
  * - CRUD /admin/sitio/descargas               (admin.sitio.descargas.*)
  */
 class SitioController extends Controller
 {
     public function index()
     {
+        $listas = ListaUtil::with('items')
+            ->orderBy('orden')
+            ->orderBy('id')
+            ->get();
+
+        $listaSeleccionada = null;
+        $idLista = (int) request('lista');
+
+        if ($idLista > 0) {
+            $listaSeleccionada = $listas->firstWhere('id', $idLista);
+        }
+
         return view('admin.sitio.index', [
             'grupos' => PortalContenido::GRUPOS,
             'campos' => PortalContenido::campos(),
             'hitos' => HistoriaHito::orderBy('orden')->orderBy('id')->get(),
-            'utiles' => UtilItem::orderBy('nivel')->orderBy('orden')->orderBy('id')->get()->groupBy('nivel'),
+            'listas' => $listas,
+            'listaSeleccionada' => $listaSeleccionada,
             'descargas' => DescargaDocumento::orderBy('categoria')->orderBy('orden')->orderBy('id')->get()->groupBy('categoria'),
-            'niveles' => UtilItem::NIVELES,
             'categorias' => DescargaDocumento::CATEGORIAS,
         ]);
     }
@@ -157,28 +172,169 @@ class SitioController extends Controller
         return redirect()->route('admin.sitio.index', ['tab' => 'historia'])->with('success', 'Hito histórico eliminado.');
     }
 
-    public function storeUtil(Request $request)
+    /**
+     * Crea una lista de útiles para un nivel o curso.
+     *
+     * Qué hace: recibe el nombre visible (por ejemplo "Octavo" o
+     * "1ro Ciencias"), crea la lista vacía y abre el editor tipo Excel para
+     * que el administrador agregue las filas.
+     * Ruta: POST /admin/sitio/utiles/listas.
+     */
+    public function storeLista(Request $request)
     {
-        $item = UtilItem::create($this->validarUtil($request));
-        HistorialCambio::registrar('Sitio web', 'crear', "Útil agregado: {$item->nombre}", ['id' => $item->id]);
+        $validated = $request->validate([
+            'nombre' => ['required', 'string', 'max:120', Rule::unique('listas_utiles', 'nombre')],
+        ], [
+            'nombre.required' => 'Escribe el nivel o curso de la lista.',
+            'nombre.unique' => 'Ya existe una lista con ese nivel o curso.',
+        ]);
 
-        return redirect()->route('admin.sitio.index', ['tab' => 'utiles'])->with('success', 'Artículo agregado a la lista de útiles.');
+        $orden = ((int) ListaUtil::max('orden')) + 1;
+
+        $lista = ListaUtil::create([
+            'nombre' => trim($validated['nombre']),
+            'finalizada' => false,
+            'orden' => $orden,
+        ]);
+
+        HistorialCambio::registrar(
+            'Sitio web',
+            'crear',
+            "Lista de útiles creada: {$lista->nombre}",
+            ['id' => $lista->id]
+        );
+
+        return redirect()
+            ->route('admin.sitio.index', ['tab' => 'utiles', 'lista' => $lista->id])
+            ->with('success', 'Lista creada. Agrega los artículos y presiona Terminar.');
     }
 
-    public function updateUtil(Request $request, UtilItem $item)
+    /**
+     * Guarda las filas de una lista y la marca como terminada.
+     *
+     * Qué hace: reemplaza los artículos de la lista con las filas recibidas,
+     * actualiza el nombre del curso y cambia el estado a finalizada. Las filas
+     * sin artículo se descartan y se exige al menos un artículo para terminar.
+     * Ruta: PUT /admin/sitio/utiles/listas/{lista}.
+     */
+    public function updateLista(Request $request, ListaUtil $lista)
     {
-        $item->update($this->validarUtil($request));
-        HistorialCambio::registrar('Sitio web', 'actualizar', "Útil actualizado: {$item->nombre}", ['id' => $item->id]);
+        $validated = $request->validate([
+            'nombre' => [
+                'required', 'string', 'max:120',
+                Rule::unique('listas_utiles', 'nombre')->ignore($lista->id),
+            ],
+            'finalizada' => ['nullable', 'boolean'],
+            'items' => ['nullable', 'array'],
+            'items.*.cantidad' => ['nullable', 'string', 'max:60'],
+            'items.*.articulo' => ['nullable', 'string', 'max:255'],
+            'items.*.materia' => ['nullable', 'string', 'max:120'],
+            'items.*.especificacion' => ['nullable', 'string', 'max:255'],
+        ], [
+            'nombre.required' => 'El nivel o curso no puede quedar vacío.',
+            'nombre.unique' => 'Ya existe una lista con ese nivel o curso.',
+        ]);
 
-        return redirect()->route('admin.sitio.index', ['tab' => 'utiles'])->with('success', 'Artículo actualizado.');
+        $filas = collect($validated['items'] ?? [])
+            ->map(function (array $fila) {
+                return [
+                    'cantidad' => trim((string) ($fila['cantidad'] ?? '')),
+                    'nombre' => trim((string) ($fila['articulo'] ?? '')),
+                    'materia' => trim((string) ($fila['materia'] ?? '')),
+                    'especificacion' => trim((string) ($fila['especificacion'] ?? '')),
+                ];
+            })
+            ->filter(fn (array $fila) => $fila['nombre'] !== '')
+            ->values();
+
+        $finalizada = $request->boolean('finalizada');
+
+        if ($finalizada && $filas->isEmpty()) {
+            throw ValidationException::withMessages([
+                'items' => 'Agrega al menos un artículo antes de terminar la lista.',
+            ]);
+        }
+
+        DB::transaction(function () use ($lista, $validated, $filas, $finalizada) {
+            $lista->update([
+                'nombre' => trim($validated['nombre']),
+                'finalizada' => $finalizada,
+            ]);
+
+            $lista->items()->delete();
+
+            foreach ($filas as $indice => $fila) {
+                $lista->items()->create([
+                    'nivel' => 'lista',
+                    'nombre' => $fila['nombre'],
+                    'especificacion' => $fila['especificacion'] !== '' ? $fila['especificacion'] : null,
+                    'cantidad' => $fila['cantidad'] !== '' ? $fila['cantidad'] : null,
+                    'materia' => $fila['materia'] !== '' ? $fila['materia'] : null,
+                    'area' => $fila['materia'] !== '' ? $fila['materia'] : null,
+                    'orden' => $indice + 1,
+                ]);
+            }
+        });
+
+        HistorialCambio::registrar(
+            'Sitio web',
+            $finalizada ? 'finalizar' : 'actualizar',
+            "Lista de útiles actualizada: {$lista->nombre}",
+            ['id' => $lista->id, 'articulos' => $filas->count(), 'finalizada' => $finalizada]
+        );
+
+        return redirect()
+            ->route('admin.sitio.index', ['tab' => 'utiles', 'lista' => $lista->id])
+            ->with('success', $finalizada
+                ? 'Lista terminada. Ya está publicada en el portal.'
+                : 'Lista actualizada.');
     }
 
-    public function destroyUtil(UtilItem $item)
+    /**
+     * Habilita nuevamente la edición de una lista terminada.
+     *
+     * Ruta: POST /admin/sitio/utiles/listas/{lista}/reabrir.
+     */
+    public function reabrirLista(ListaUtil $lista)
     {
-        HistorialCambio::registrar('Sitio web', 'eliminar', "Útil eliminado: {$item->nombre}", ['id' => $item->id]);
-        $item->delete();
+        $lista->update(['finalizada' => false]);
 
-        return redirect()->route('admin.sitio.index', ['tab' => 'utiles'])->with('success', 'Artículo eliminado.');
+        HistorialCambio::registrar(
+            'Sitio web',
+            'reabrir',
+            "Lista de útiles habilitada para edición: {$lista->nombre}",
+            ['id' => $lista->id]
+        );
+
+        return redirect()
+            ->route('admin.sitio.index', ['tab' => 'utiles', 'lista' => $lista->id])
+            ->with('success', 'Lista habilitada para edición.');
+    }
+
+    /**
+     * Elimina una lista completa con todos sus artículos.
+     *
+     * Ruta: DELETE /admin/sitio/utiles/listas/{lista}.
+     */
+    public function destroyLista(ListaUtil $lista)
+    {
+        $nombre = $lista->nombre;
+
+        DB::transaction(function () use ($lista) {
+            $lista->items()->delete();
+            $lista->delete();
+        });
+
+        HistorialCambio::registrar(
+            'Sitio web',
+            'eliminar',
+            "Lista de útiles eliminada: {$nombre}",
+            ['id' => $lista->id]
+        );
+
+        return redirect()
+            ->route('admin.sitio.index', ['tab' => 'utiles'])
+            ->with('success', "Lista de {$nombre} eliminada.");
     }
 
     public function storeDescarga(Request $request)
@@ -231,19 +387,6 @@ class SitioController extends Controller
             'anio' => 'required|string|max:40',
             'titulo' => 'required|string|max:255',
             'descripcion' => 'nullable|string|max:2000',
-            'orden' => 'nullable|integer|min:0|max:999',
-        ]);
-    }
-
-    /** @return array<string, mixed> */
-    private function validarUtil(Request $request): array
-    {
-        return $request->validate([
-            'nivel' => ['required', Rule::in(array_keys(UtilItem::NIVELES))],
-            'nombre' => 'required|string|max:255',
-            'especificacion' => 'nullable|string|max:255',
-            'cantidad' => 'nullable|string|max:60',
-            'area' => 'nullable|string|max:80',
             'orden' => 'nullable|integer|min:0|max:999',
         ]);
     }

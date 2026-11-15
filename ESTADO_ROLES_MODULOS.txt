@@ -456,12 +456,28 @@ en "Control académico" y "Registros académicos".
 - Sitio web (todos los campos del portal) ................ (ready)
   Rutas: GET /admin/sitio,
          POST /admin/sitio/contenido/{grupo},
-         CRUD /admin/sitio/historia, /admin/sitio/utiles, /admin/sitio/descargas
+         CRUD /admin/sitio/historia, /admin/sitio/utiles/listas,
+         /admin/sitio/descargas
   Controlador: Admin\SitioController
   Catálogo de campos: App\Support\PortalContenido
   Pestañas: Textos e imágenes (identidad, inicio, historia, comunidad, útiles,
   descargas y admisiones), Pre-registro, Historia, Útiles y Descargas. Cada
   texto, enlace, booleano e imagen del portal es editable desde aquí.
+
+- Listas de útiles escolares tipo Excel ................... (ready)
+  Ruta: GET /admin/sitio?tab=utiles
+  Parcial: resources/views/admin/sitio/_utiles.blade.php
+  Modelos: App\Models\ListaUtil y App\Models\UtilItem
+  Primero se pide el nivel o curso (por ejemplo "Octavo" o "1ro Ciencias").
+  Al crearlo se abre una hoja con filas de cantidad, artículo/descripción y
+  materia/asignatura; debajo están "Agregar fila" y "Terminar". Al terminar,
+  la lista se publica en /utiles y queda en modo lectura con "Editar lista"
+  (la reabre), imprimir, copiar y eliminar. Las listas antiguas se migraron
+  automáticamente desde los artículos agrupados por nivel.
+  Rutas: POST   /admin/sitio/utiles/listas             (crear nivel o curso)
+         PUT    /admin/sitio/utiles/listas/{lista}     (guardar y terminar)
+         POST   /admin/sitio/utiles/listas/{lista}/reabrir
+         DELETE /admin/sitio/utiles/listas/{lista}
 
 - Cabecera del pre-registro ............................... (ready)
   Rutas: GET /admin/sitio?tab=preregistro,

@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\ComunidadMiembro;
 use App\Models\DescargaDocumento;
 use App\Models\HistoriaHito;
+use App\Models\ListaUtil;
 use App\Models\SiteContent;
 use App\Models\UtilItem;
 use App\Support\PortalContenido;
@@ -116,11 +117,22 @@ class PortalContenidoSeeder extends Seeder
             ],
         ];
 
-        foreach ($niveles as $nivel => $items) {
+        foreach ($niveles as $ordenLista => $items) {
+            $lista = ListaUtil::updateOrCreate(
+                ['nombre' => UtilItem::NIVELES[$ordenLista]],
+                ['finalizada' => true, 'orden' => $ordenLista]
+            );
+
             foreach ($items as $i => [$nombre, $especificacion, $cantidad, $area]) {
                 UtilItem::updateOrCreate(
-                    ['nivel' => $nivel, 'nombre' => $nombre, 'especificacion' => $especificacion],
-                    ['cantidad' => $cantidad, 'area' => $area, 'orden' => $i + 1]
+                    ['lista_id' => $lista->id, 'nombre' => $nombre, 'especificacion' => $especificacion],
+                    [
+                        'nivel' => 'lista',
+                        'cantidad' => $cantidad,
+                        'materia' => $area,
+                        'area' => $area,
+                        'orden' => $i + 1,
+                    ]
                 );
             }
         }

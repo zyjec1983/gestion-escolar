@@ -195,9 +195,10 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
         Route::post('/historia', [SitioController::class, 'storeHito'])->name('historia.store');
         Route::put('/historia/{hito}', [SitioController::class, 'updateHito'])->name('historia.update');
         Route::delete('/historia/{hito}', [SitioController::class, 'destroyHito'])->name('historia.destroy');
-        Route::post('/utiles', [SitioController::class, 'storeUtil'])->name('utiles.store');
-        Route::put('/utiles/{item}', [SitioController::class, 'updateUtil'])->name('utiles.update');
-        Route::delete('/utiles/{item}', [SitioController::class, 'destroyUtil'])->name('utiles.destroy');
+        Route::post('/utiles/listas', [SitioController::class, 'storeLista'])->name('utiles.listas.store');
+        Route::put('/utiles/listas/{lista}', [SitioController::class, 'updateLista'])->name('utiles.listas.update');
+        Route::post('/utiles/listas/{lista}/reabrir', [SitioController::class, 'reabrirLista'])->name('utiles.listas.reabrir');
+        Route::delete('/utiles/listas/{lista}', [SitioController::class, 'destroyLista'])->name('utiles.listas.destroy');
         Route::post('/descargas', [SitioController::class, 'storeDescarga'])->name('descargas.store');
         Route::put('/descargas/{documento}', [SitioController::class, 'updateDescarga'])->name('descargas.update');
         Route::delete('/descargas/{documento}', [SitioController::class, 'destroyDescarga'])->name('descargas.destroy');

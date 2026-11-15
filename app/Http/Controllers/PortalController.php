@@ -8,6 +8,7 @@ use App\Models\DescargaDocumento;
 use App\Models\HeroSlide;
 use App\Models\HistoriaHito;
 use App\Models\Institucion;
+use App\Models\ListaUtil;
 use App\Models\UtilItem;
 use App\Support\PortalContenido;
 
@@ -70,11 +71,48 @@ class PortalController extends Controller
         ]);
     }
 
-    /** Página "Lista de útiles": materiales agrupados por nivel. */
+    /**
+     * Página "Lista de útiles": listas nuevas y artículos antiguos por nivel.
+     *
+     * Qué hace: muestra primero las listas creadas desde el editor tipo Excel
+     * y después los artículos que todavía no tienen lista (registros previos),
+     * agrupados por su nivel. Así el portal no pierde el contenido existente.
+     * Conecta con: ListaUtil, UtilItem y portal/utiles.blade.php.
+     */
     public function utiles()
     {
+        $listas = ListaUtil::with('items')
+            ->orderBy('orden')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (ListaUtil $lista) => $lista->items->isNotEmpty())
+            ->values();
+
+        $legacy = UtilItem::whereNull('lista_id')
+            ->orderBy('nivel')
+            ->orderBy('orden')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('nivel');
+
+        $grupos = collect();
+
+        foreach ($listas as $lista) {
+            $grupos->push([
+                'nombre' => $lista->nombre,
+                'items' => $lista->items,
+            ]);
+        }
+
+        foreach ($legacy as $nivel => $items) {
+            $grupos->push([
+                'nombre' => UtilItem::NIVELES[$nivel] ?? ucfirst((string) $nivel),
+                'items' => $items,
+            ]);
+        }
+
         return view('portal.utiles', $this->datosBase() + [
-            'utiles' => UtilItem::orderBy('orden')->orderBy('id')->get()->groupBy('nivel'),
+            'grupos' => $grupos,
         ]);
     }
 
