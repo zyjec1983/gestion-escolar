@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ComunidadMiembro;
 use App\Models\HistorialCambio;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -21,12 +22,15 @@ use Illuminate\Support\Facades\Storage;
  * - POST   /admin/comunidad                (admin.comunidad.store)
  * - PUT    /admin/comunidad/{miembro}      (admin.comunidad.update)
  * - DELETE /admin/comunidad/{miembro}      (admin.comunidad.destroy)
+ * - POST   /admin/comunidad/areas/reordenar
+ *                                          (admin.comunidad.areas.reordenar)
  */
 class ComunidadController extends Controller
 {
     public function index()
     {
-        $miembros = ComunidadMiembro::orderBy('area')
+        $miembros = ComunidadMiembro::orderBy('area_orden')
+            ->orderBy('area')
             ->orderBy('orden')
             ->orderBy('id')
             ->get();
@@ -40,6 +44,7 @@ class ComunidadController extends Controller
     public function store(Request $request)
     {
         $validated = $this->validar($request);
+        $validated['area_orden'] = $this->ordenDeArea($validated['area']);
 
         if ($request->hasFile('foto')) {
             $validated['foto_path'] = $request->file('foto')->store('portal/comunidad', 'public');
@@ -61,6 +66,7 @@ class ComunidadController extends Controller
     public function update(Request $request, ComunidadMiembro $miembro)
     {
         $validated = $this->validar($request);
+        $validated['area_orden'] = $this->ordenDeArea($validated['area'], $miembro);
 
         if ($request->hasFile('foto')) {
             $this->borrarFoto($miembro->foto_path);
@@ -98,6 +104,82 @@ class ComunidadController extends Controller
 
         return redirect()->route('admin.comunidad.index')
             ->with('success', 'Integrante eliminado de la comunidad educativa.');
+    }
+
+    /**
+     * Guarda el orden de los bloques de área que el administrador arrastra.
+     *
+     * Qué hace: recibe las áreas en el orden visual y actualiza `area_orden` en
+     * todos sus integrantes. Las áreas que no lleguen en la lista se conservan
+     * al final para no perder ningún grupo.
+     * Conecta con: ComunidadMiembro y HistorialCambio.
+     * Ruta: POST /admin/comunidad/areas/reordenar.
+     */
+    public function reordenarAreas(Request $request)
+    {
+        $validated = $request->validate([
+            'areas' => 'required|array|min:1',
+            'areas.*' => 'required|string|max:120|distinct',
+        ], [
+            'areas.required' => 'No se recibió el orden de las áreas.',
+        ]);
+
+        $ordenadas = array_values(array_unique($validated['areas']));
+
+        $restantes = ComunidadMiembro::query()
+            ->whereNotIn('area', $ordenadas)
+            ->distinct()
+            ->orderBy('area')
+            ->pluck('area')
+            ->all();
+
+        $areas = array_merge($ordenadas, $restantes);
+
+        DB::transaction(function () use ($areas) {
+            foreach ($areas as $indice => $area) {
+                ComunidadMiembro::where('area', $area)->update(['area_orden' => $indice]);
+            }
+        });
+
+        HistorialCambio::registrar(
+            'Comunidad educativa',
+            'reordenar',
+            'Se actualizó el orden de las áreas: '.implode(', ', $areas),
+            ['areas' => $areas]
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'areas' => $areas]);
+        }
+
+        return redirect()->route('admin.comunidad.index')
+            ->with('success', 'Orden de las áreas actualizado.');
+    }
+
+    /**
+     * Devuelve el orden que corresponde a un área.
+     *
+     * Si el área ya existe reutiliza su número; si es nueva la coloca al final.
+     * Al editar un integrante sin cambiar de área conserva el orden actual.
+     */
+    private function ordenDeArea(string $area, ?ComunidadMiembro $actual = null): int
+    {
+        if ($actual && $actual->area === $area) {
+            return $actual->area_orden;
+        }
+
+        $existente = ComunidadMiembro::query()
+            ->where('area', $area)
+            ->when($actual, fn ($consulta) => $consulta->whereKeyNot($actual->getKey()))
+            ->value('area_orden');
+
+        if ($existente !== null) {
+            return (int) $existente;
+        }
+
+        $maximo = ComunidadMiembro::max('area_orden');
+
+        return $maximo === null ? 0 : ((int) $maximo) + 1;
     }
 
     /** @return array<string, mixed> */

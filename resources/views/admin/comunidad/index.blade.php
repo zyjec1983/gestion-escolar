@@ -2,13 +2,25 @@
 
 @section('titulo', 'Comunidad educativa')
 
+@push('styles')
+<style>
+    /* Los bloques de área se pueden arrastrar desde el asa del encabezado. */
+    .area-drag-handle { cursor: grab; }
+    .area-drag-handle:active { cursor: grabbing; }
+    .area-grupo-ghost { opacity: .45; }
+    .area-grupo-chosen .card { box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15); }
+</style>
+@endpush
+
 {{--
     Administración de la Comunidad Educativa.
 
     Qué hace: permite agregar, editar y eliminar integrantes con cargo, foto,
-    nombres, responsabilidad y área. El portal agrupa las tarjetas por área.
+    nombres, responsabilidad y área. El portal agrupa las tarjetas por área y
+    el administrador puede arrastrar los bloques para cambiar el orden.
     Conecta con: Admin\ComunidadController y welcome.blade.php.
-    Rutas: POST/PUT/DELETE /admin/comunidad.
+    Rutas: POST/PUT/DELETE /admin/comunidad y
+           POST /admin/comunidad/areas/reordenar.
 --}}
 @section('contenido')
 <div class="container-fluid">
@@ -17,7 +29,8 @@
             <h4 class="mb-1"><i class="bi bi-people-fill me-2"></i>Comunidad educativa</h4>
             <p class="text-muted small mb-0">
                 Cargue cargo, fotografía, nombres y responsabilidad. Las tarjetas se agrupan por área
-                (Rectorado, DECE, Matemáticas, Inglés, etc.).
+                (Rectorado, DECE, Matemáticas, Inglés, etc.). Arrastre el asa
+                <i class="bi bi-grip-vertical"></i> de cada bloque para cambiar el orden de los grupos.
             </p>
         </div>
         <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#formNuevoMiembro"
@@ -62,99 +75,108 @@
         </div>
     </div>
 
+    <div id="gruposComunidad">
     @forelse($miembros->groupBy('area') as $area => $integrantes)
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="bi bi-diagram-3 me-1"></i>{{ $area ?: 'Sin área' }}</h6>
-            <span class="badge bg-light text-dark border">{{ $integrantes->count() }} integrante(s)</span>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width:64px;">Foto</th>
-                        <th>Cargo / nombres</th>
-                        <th>Responsabilidad</th>
-                        <th style="width:90px;">Orden</th>
-                        <th style="width:100px;">Estado</th>
-                        <th class="text-end" style="width:150px;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($integrantes->sortBy('orden') as $miembro)
-                    <tr>
-                        <td>
-                            @if($miembro->fotoUrl())
-                            <img src="{{ $miembro->fotoUrl() }}" alt="{{ $miembro->nombre }}"
-                                class="rounded-circle border" style="width:44px;height:44px;object-fit:cover;">
-                            @else
-                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light border text-muted"
-                                style="width:44px;height:44px;"><i class="bi bi-person"></i></span>
-                            @endif
-                        </td>
-                        <td>
-                            <strong>{{ $miembro->nombre }}</strong><br>
-                            <small class="text-muted">{{ $miembro->cargo }}</small>
-                        </td>
-                        <td><small>{{ \Illuminate\Support\Str::limit($miembro->responsabilidad, 120) ?: '—' }}</small></td>
-                        <td><span class="badge bg-secondary">{{ $miembro->orden }}</span></td>
-                        <td>
-                            @if($miembro->activo)
-                            <span class="badge bg-success">Visible</span>
-                            @else
-                            <span class="badge bg-secondary">Oculto</span>
-                            @endif
-                        </td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
-                                    data-bs-target="#editarMiembro{{ $miembro->id }}">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <form method="POST" action="{{ route('admin.comunidad.destroy', $miembro) }}"
-                                class="d-inline" onsubmit="return confirm('¿Eliminar a {{ $miembro->nombre }} de la comunidad?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-trash"></i>
+    <div class="area-grupo" data-area="{{ $area }}">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="area-drag-handle text-secondary" title="Arrastrar para cambiar el orden del grupo"
+                          aria-label="Mover grupo {{ $area ?: 'Sin área' }}">
+                        <i class="bi bi-grip-vertical fs-5"></i>
+                    </span>
+                    <h6 class="mb-0"><i class="bi bi-diagram-3 me-1"></i>{{ $area ?: 'Sin área' }}</h6>
+                </div>
+                <span class="badge bg-light text-dark border">{{ $integrantes->count() }} integrante(s)</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:64px;">Foto</th>
+                            <th>Cargo / nombres</th>
+                            <th>Responsabilidad</th>
+                            <th style="width:90px;">Orden</th>
+                            <th style="width:100px;">Estado</th>
+                            <th class="text-end" style="width:150px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($integrantes->sortBy('orden') as $miembro)
+                        <tr>
+                            <td>
+                                @if($miembro->fotoUrl())
+                                <img src="{{ $miembro->fotoUrl() }}" alt="{{ $miembro->nombre }}"
+                                    class="rounded-circle border" style="width:44px;height:44px;object-fit:cover;">
+                                @else
+                                <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light border text-muted"
+                                    style="width:44px;height:44px;"><i class="bi bi-person"></i></span>
+                                @endif
+                            </td>
+                            <td>
+                                <strong>{{ $miembro->nombre }}</strong><br>
+                                <small class="text-muted">{{ $miembro->cargo }}</small>
+                            </td>
+                            <td><small>{{ \Illuminate\Support\Str::limit($miembro->responsabilidad, 120) ?: '—' }}</small></td>
+                            <td><span class="badge bg-secondary">{{ $miembro->orden }}</span></td>
+                            <td>
+                                @if($miembro->activo)
+                                <span class="badge bg-success">Visible</span>
+                                @else
+                                <span class="badge bg-secondary">Oculto</span>
+                                @endif
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                        data-bs-target="#editarMiembro{{ $miembro->id }}">
+                                    <i class="bi bi-pencil"></i>
                                 </button>
-                            </form>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    {{-- Modales de edición: uno por integrante. --}}
-    @foreach($integrantes as $miembro)
-    <div class="modal fade" id="editarMiembro{{ $miembro->id }}" tabindex="-1"
-         aria-labelledby="editarMiembroLabel{{ $miembro->id }}" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <form method="POST" action="{{ route('admin.comunidad.update', $miembro) }}" enctype="multipart/form-data">
-                    @csrf
-                    @method('PUT')
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="editarMiembroLabel{{ $miembro->id }}">
-                            <i class="bi bi-pencil-square me-1"></i>Editar integrante
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                    </div>
-                    <div class="modal-body">
-                        @include('admin.comunidad._form', ['miembro' => $miembro])
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-1"></i>Guardar cambios
-                        </button>
-                    </div>
-                </form>
+                                <form method="POST" action="{{ route('admin.comunidad.destroy', $miembro) }}"
+                                    class="d-inline" data-confirm="¿Eliminar a {{ $miembro->nombre }} de la comunidad?">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
         </div>
+
+        {{-- Modales de edición: uno por integrante. --}}
+        @foreach($integrantes as $miembro)
+        <div class="modal fade" id="editarMiembro{{ $miembro->id }}" tabindex="-1"
+             aria-labelledby="editarMiembroLabel{{ $miembro->id }}" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form method="POST" action="{{ route('admin.comunidad.update', $miembro) }}" enctype="multipart/form-data">
+                        @csrf
+                        @method('PUT')
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editarMiembroLabel{{ $miembro->id }}">
+                                <i class="bi bi-pencil-square me-1"></i>Editar integrante
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                        </div>
+                        <div class="modal-body">
+                            @include('admin.comunidad._form', ['miembro' => $miembro])
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i>Guardar cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        @endforeach
     </div>
-    @endforeach
     @empty
     <div class="card shadow-sm">
         <div class="card-body text-center py-5">
@@ -166,5 +188,61 @@
         </div>
     </div>
     @endforelse
+    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var contenedor = document.getElementById('gruposComunidad');
+    if (!contenedor || typeof Sortable === 'undefined') return;
+
+    var urlReordenar = @json(route('admin.comunidad.areas.reordenar'));
+
+    Sortable.create(contenedor, {
+        animation: 180,
+        handle: '.area-drag-handle',
+        draggable: '.area-grupo',
+        ghostClass: 'area-grupo-ghost',
+        chosenClass: 'area-grupo-chosen',
+        onEnd: function () {
+            var areas = Array.prototype.map.call(
+                contenedor.querySelectorAll('.area-grupo'),
+                function (grupo) { return grupo.dataset.area; }
+            );
+
+            fetch(urlReordenar, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ areas: areas }),
+            }).then(function (respuesta) {
+                if (!respuesta.ok) throw new Error();
+                return respuesta.json();
+            }).then(function () {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Orden de los grupos actualizado',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2200,
+                    timerProgressBar: true,
+                });
+            }).catch(function () {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'No se pudo guardar el orden',
+                    text: 'Recargue la página e inténtelo de nuevo.',
+                });
+            });
+        },
+    });
+});
+</script>
+@endpush

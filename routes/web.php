@@ -206,6 +206,7 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
     // Comunidad educativa: cargo, foto, nombres, responsabilidad y área.
     Route::get('/comunidad', [ComunidadController::class, 'index'])->name('comunidad.index');
     Route::post('/comunidad', [ComunidadController::class, 'store'])->name('comunidad.store');
+    Route::post('/comunidad/areas/reordenar', [ComunidadController::class, 'reordenarAreas'])->name('comunidad.areas.reordenar');
     Route::put('/comunidad/{miembro}', [ComunidadController::class, 'update'])->name('comunidad.update');
     Route::delete('/comunidad/{miembro}', [ComunidadController::class, 'destroy'])->name('comunidad.destroy');
 

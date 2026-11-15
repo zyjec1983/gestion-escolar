@@ -227,7 +227,8 @@
     @if($preRegistro->estado === 'pendiente')
     <div class="row g-3 mt-4">
         <div class="col-md-6">
-            <form method="POST" action="{{ route('admin.pre-registros.aprobar', $preRegistro->id) }}">
+            <form method="POST" action="{{ route('admin.pre-registros.aprobar', $preRegistro->id) }}"
+                  data-confirm="¿Aprobar esta solicitud? Se creará el usuario representante automáticamente.">
                 @csrf
                 <label class="form-label small">Fecha de nacimiento del representante <span class="text-danger">*</span></label>
                 <input type="date" name="rep_fecha_nacimiento"
@@ -235,7 +236,7 @@
                        value="{{ old('rep_fecha_nacimiento', $preRegistro->rep_fecha_nacimiento?->format('Y-m-d')) }}" required>
                 <small class="text-muted">Debe ser mayor de edad. Las solicitudes anteriores a este dato se completan aqui.</small>
                 @error('rep_fecha_nacimiento') <small class="text-danger d-block">{{ $message }}</small> @enderror
-                <button type="submit" class="btn btn-success w-100 py-3 mt-2" onclick="return confirm('¿Aprobar esta solicitud? Se creará el usuario representante automáticamente.')">
+                <button type="submit" class="btn btn-success w-100 py-3 mt-2">
                     <i class="bi bi-check-circle me-2"></i>Aprobar Solicitud
                 </button>
             </form>

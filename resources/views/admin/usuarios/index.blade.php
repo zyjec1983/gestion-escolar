@@ -15,7 +15,7 @@
             <i class="bi bi-person-plus me-1"></i>Nueva cuenta
         </a>
         <form method="POST" action="{{ route('admin.usuarios.generar-cuentas') }}" class="d-inline"
-              onsubmit="return confirm('¿Generar cuentas familiares para todos los estudiantes sin cuenta? El usuario y la contraseña inicial serán la cédula del alumno.')">
+              data-confirm="¿Generar cuentas familiares para todos los estudiantes sin cuenta? El usuario y la contraseña inicial serán la cédula del alumno.">
             @csrf
             <button type="submit" class="btn btn-outline-primary">
                 <i class="bi bi-people me-1"></i>Generar cuentas de estudiantes

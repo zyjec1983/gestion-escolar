@@ -75,7 +75,7 @@
                                 <i class="bi bi-pencil"></i>
                             </a>
                             <form method="POST" action="{{ route('admin.hero-slides.destroy', $slide->id) }}"
-                                class="d-inline" onsubmit="return confirm('¿Eliminar este slide?')">
+                                class="d-inline" data-confirm="¿Eliminar este slide?">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger">

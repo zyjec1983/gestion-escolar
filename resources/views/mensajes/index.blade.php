@@ -286,15 +286,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (ayuda) ayuda.textContent = '';
     }
 
-    function enlazarPanel() {
-        panel.querySelectorAll('form.p-eliminar-hilo').forEach(function (form) {
-            form.addEventListener('submit', function (e) {
-                var msg = form.dataset.confirm || '';
-                if (msg && !confirm(msg)) e.preventDefault();
-            });
-        });
-    }
-
     function esMovil() {
         return window.matchMedia('(max-width: 991.98px)').matches;
     }
@@ -326,7 +317,6 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (r) { if (!r.ok) throw new Error(); return r.text(); })
             .then(function (html) {
                 panel.innerHTML = html;
-                enlazarPanel();
                 document.querySelectorAll('.thread-cell').forEach(function (celda) {
                     var cb = celda.querySelector('input.sel-hilo');
                     if (cb && String(cb.value) === String(hiloId)) celda.classList.add('thread-active');
@@ -355,16 +345,21 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('btnEliminarSel').addEventListener('click', function () {
         var seleccion = document.querySelectorAll('.sel-hilo:checked');
         if (!seleccion.length) return;
-        if (!confirm('¿Eliminar ' + seleccion.length + ' mensaje(s) de tu bandeja? El otro participante conservará su copia.')) return;
-        eliminarHiloForm.querySelectorAll('input[name="ids[]"]').forEach(function (i) { i.remove(); });
-        seleccion.forEach(function (cb) {
-            var inp = document.createElement('input');
-            inp.type = 'hidden';
-            inp.name = 'ids[]';
-            inp.value = cb.value;
-            eliminarHiloForm.appendChild(inp);
-        });
-        eliminarHiloForm.submit();
+
+        window.confirmarAccion('¿Eliminar ' + seleccion.length + ' mensaje(s) de tu bandeja? El otro participante conservará su copia.')
+            .then(function (confirmado) {
+                if (!confirmado) return;
+
+                eliminarHiloForm.querySelectorAll('input[name="ids[]"]').forEach(function (i) { i.remove(); });
+                seleccion.forEach(function (cb) {
+                    var inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = 'ids[]';
+                    inp.value = cb.value;
+                    eliminarHiloForm.appendChild(inp);
+                });
+                eliminarHiloForm.submit();
+            });
     });
 
     var selTodos = document.getElementById('selTodos');
@@ -381,8 +376,6 @@ document.addEventListener('DOMContentLoaded', function () {
         var n = document.querySelectorAll('.sel-hilo:checked').length;
         document.getElementById('btnEliminarSel').disabled = n === 0;
     }
-
-    enlazarPanel();
 
     var btnVolver = document.getElementById('btnVolverLista');
     if (btnVolver) btnVolver.addEventListener('click', volverALista);

@@ -207,6 +207,83 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        /*
+         * Confirmaciones con SweetAlert2 para todas las vistas.
+         *
+         * Qué hace: cualquier formulario con data-confirm="mensaje" pide
+         * confirmación con SweetAlert antes de enviarse. Los enlaces o botones
+         * con data-confirm fuera de un formulario también la piden.
+         * Conecta con: layouts/app.blade.php y SweetAlert2.
+         */
+        window.confirmarAccion = function (mensaje, opciones) {
+            opciones = opciones || {};
+            return Swal.fire({
+                icon: opciones.icon || 'warning',
+                title: opciones.title || '¿Confirmar acción?',
+                text: mensaje,
+                showCancelButton: true,
+                confirmButtonText: opciones.confirmButtonText || 'Sí, continuar',
+                cancelButtonText: opciones.cancelButtonText || 'Cancelar',
+                confirmButtonColor: '#2b579a',
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true,
+                focusCancel: true,
+            }).then(function (resultado) {
+                return resultado.isConfirmed;
+            });
+        };
+
+        document.addEventListener('submit', function (evento) {
+            var formulario = evento.target;
+            if (!(formulario instanceof HTMLFormElement)) return;
+
+            var mensaje = formulario.dataset.confirm;
+            if (!mensaje || formulario.dataset.confirmado === '1') return;
+
+            evento.preventDefault();
+
+            window.confirmarAccion(mensaje, {
+                title: formulario.dataset.confirmTitle || '¿Confirmar acción?',
+                confirmButtonText: formulario.dataset.confirmOk || 'Sí, continuar',
+            }).then(function (confirmado) {
+                if (!confirmado) return;
+
+                formulario.dataset.confirmado = '1';
+
+                if (typeof formulario.requestSubmit === 'function') {
+                    formulario.requestSubmit();
+                    window.setTimeout(function () {
+                        delete formulario.dataset.confirmado;
+                    }, 0);
+                } else {
+                    formulario.submit();
+                }
+            });
+        });
+
+        document.addEventListener('click', function (evento) {
+            var elemento = evento.target.closest ? evento.target.closest('[data-confirm]') : null;
+            if (!elemento || elemento.closest('form')) return;
+            if (!(elemento instanceof HTMLAnchorElement || elemento instanceof HTMLButtonElement)) return;
+            if (elemento.dataset.confirmado === '1') return;
+
+            evento.preventDefault();
+
+            window.confirmarAccion(elemento.dataset.confirm, {
+                title: elemento.dataset.confirmTitle || '¿Confirmar acción?',
+                confirmButtonText: elemento.dataset.confirmOk || 'Sí, continuar',
+            }).then(function (confirmado) {
+                if (!confirmado) return;
+
+                elemento.dataset.confirmado = '1';
+                elemento.click();
+                window.setTimeout(function () {
+                    delete elemento.dataset.confirmado;
+                }, 0);
+            });
+        });
+    </script>
     @stack('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {

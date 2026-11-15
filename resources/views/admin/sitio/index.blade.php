@@ -257,7 +257,7 @@
                                     <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
                                             data-bs-target="#editarHito{{ $hito->id }}"><i class="bi bi-pencil"></i></button>
                                     <form method="POST" action="{{ route('admin.sitio.historia.destroy', $hito) }}"
-                                          class="d-inline" onsubmit="return confirm('¿Eliminar este hito?')">
+                                          class="d-inline" data-confirm="¿Eliminar este hito?">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
@@ -385,7 +385,7 @@
                                     <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
                                             data-bs-target="#editarUtil{{ $item->id }}"><i class="bi bi-pencil"></i></button>
                                     <form method="POST" action="{{ route('admin.sitio.utiles.destroy', $item) }}"
-                                          class="d-inline" onsubmit="return confirm('¿Eliminar este artículo?')">
+                                          class="d-inline" data-confirm="¿Eliminar este artículo?">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
@@ -543,7 +543,7 @@
                                     <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
                                             data-bs-target="#editarDescarga{{ $documento->id }}"><i class="bi bi-pencil"></i></button>
                                     <form method="POST" action="{{ route('admin.sitio.descargas.destroy', $documento) }}"
-                                          class="d-inline" onsubmit="return confirm('¿Eliminar este documento?')">
+                                          class="d-inline" data-confirm="¿Eliminar este documento?">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>

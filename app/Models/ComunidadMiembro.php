@@ -19,7 +19,7 @@ class ComunidadMiembro extends Model
     protected $table = 'comunidad_miembros';
 
     protected $fillable = [
-        'cargo', 'nombre', 'responsabilidad', 'area', 'foto_path', 'orden', 'activo',
+        'cargo', 'nombre', 'responsabilidad', 'area', 'area_orden', 'foto_path', 'orden', 'activo',
     ];
 
     protected function casts(): array
@@ -27,6 +27,7 @@ class ComunidadMiembro extends Model
         return [
             'activo' => 'boolean',
             'orden' => 'integer',
+            'area_orden' => 'integer',
         ];
     }
 

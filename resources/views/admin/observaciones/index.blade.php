@@ -103,7 +103,7 @@
                         <td class="text-end">
                             <form method="POST" action="{{ route('admin.observaciones.destroy', $observacion) }}"
                                 class="d-flex gap-1 justify-content-end"
-                                onsubmit="return confirm('¿Eliminar definitivamente esta observación?')">
+                                data-confirm="¿Eliminar definitivamente esta observación?">
                                 @csrf
                                 @method('DELETE')
                                 <input type="text" name="motivo" class="form-control form-control-sm"

@@ -147,7 +147,7 @@
                             <td class="text-end">
                                 @if ($puedeEditar)
                                     <div class="btn-group btn-group-sm">
-                                        <form method="POST" action="{{ route('inspeccion.observaciones.tipos.toggle', $tipo->id) }}" onsubmit="return confirm('{{ $tipo->activo ? 'Deshabilitar este tipo hará que deje de aparecer en los selects. ¿Continuar?' : 'Habilitar este tipo hará que vuelva a aparecer en los selects. ¿Continuar?' }}')">
+                                        <form method="POST" action="{{ route('inspeccion.observaciones.tipos.toggle', $tipo->id) }}" data-confirm="{{ $tipo->activo ? 'Deshabilitar este tipo hará que deje de aparecer en los selects. ¿Continuar?' : 'Habilitar este tipo hará que vuelva a aparecer en los selects. ¿Continuar?' }}">
                                             @csrf
                                             @method('PATCH')
                                             <button type="submit" class="btn btn-outline-{{ $tipo->activo ? 'warning' : 'success' }}">

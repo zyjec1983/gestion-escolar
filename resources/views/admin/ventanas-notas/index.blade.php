@@ -117,7 +117,7 @@
                                 </button>
                             </form>
                             <form method="POST" action="{{ route('admin.ventanas-notas.destroy', $ventana) }}"
-                                class="d-inline" onsubmit="return confirm('¿Eliminar esta ventana de notas?')">
+                                class="d-inline" data-confirm="¿Eliminar esta ventana de notas?">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">

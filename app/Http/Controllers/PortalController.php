@@ -61,6 +61,7 @@ class PortalController extends Controller
     {
         return view('portal.comunidad', $this->datosBase() + [
             'miembros' => ComunidadMiembro::where('activo', true)
+                ->orderBy('area_orden')
                 ->orderBy('area')
                 ->orderBy('orden')
                 ->orderBy('id')

@@ -35,6 +35,10 @@ usuario y contraseña inicial, con perfiles REPRESENTANTE y ESTUDIANTE. Para el
 resto del personal, el ADMIN crea la cuenta y también usa la cédula como
 usuario.
 
+Confirmaciones: todas las vistas usan SweetAlert2 en lugar de alert(), confirm()
+o prompt() nativos. Los formularios declaran data-confirm="mensaje" y
+layouts/app.blade.php muestra el diálogo antes de enviarlos.
+
 ===============================================================================
  1. ALUMNO (ESTUDIANTE)  ->  VERIFICADO OK
 ===============================================================================
@@ -465,10 +469,14 @@ en "Control académico y operativo" y "Registros académicos".
   en el formulario, en la vista de inscripciones cerradas y en el PDF.
 
 - Comunidad educativa .................................... (ready)
-  Rutas: CRUD /admin/comunidad
+  Rutas: CRUD /admin/comunidad,
+         POST /admin/comunidad/areas/reordenar
   Controlador: Admin\ComunidadController
   Cargo, foto, nombres, responsabilidad y área (Rectorado, DECE, Matemáticas,
-  Inglés, etc.). Filas ilimitadas y agrupación por área en el portal.
+  Inglés, etc.). Filas ilimitadas y agrupación por área en el portal. El
+  administrador arrastra el asa de cada bloque para cambiar el orden de los
+  grupos; el orden se guarda en `area_orden` y el portal lo respeta. Un área
+  nueva se coloca automáticamente al final.
 
 - Circulares institucionales ............................. (ready)
   Rutas: GET/POST/DELETE /admin/circulares

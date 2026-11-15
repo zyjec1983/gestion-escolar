@@ -14,9 +14,10 @@
                 <i class="bi bi-file-earmark-pdf me-1"></i>PDF
             </a>
             @if(!$atencion->estaCerrada())
-            <form method="POST" action="{{ route('dece.atenciones.cerrar', $atencion) }}">
+            <form method="POST" action="{{ route('dece.atenciones.cerrar', $atencion) }}"
+                  data-confirm="¿Cerrar esta atención?">
                 @csrf
-                <button class="btn btn-outline-success" onclick="return confirm('¿Cerrar esta atención?')">
+                <button class="btn btn-outline-success">
                     <i class="bi bi-check2-circle me-1"></i>Cerrar atención
                 </button>
             </form>
