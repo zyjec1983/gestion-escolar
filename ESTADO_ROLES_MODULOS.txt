@@ -421,11 +421,11 @@ Conclusión: Vicerrectorado tiene panel institucional compartido y circulares
  9. ADMINISTRADOR (ADMIN)  ->  LISTO
 ===============================================================================
 
-El rol ADMIN tiene panel y menú propios. El menú se organiza en cinco
+El rol ADMIN tiene panel y menú propios. El menú se organiza en seis
 secciones funcionales y no incluye Citas ni DECE: el ADMIN no agenda citas ni
 tiene relación con Consejería Estudiantil. Las funciones operativas que sí
 administra (matrículas, notas, traslados, actualización de datos) se agrupan
-en "Control académico y operativo" y "Registros académicos".
+en "Control académico" y "Registros académicos".
 
 - Panel de Administración ................................ (ready)
   Ruta: GET /dashboard
@@ -438,15 +438,18 @@ en "Control académico y operativo" y "Registros académicos".
 - Menú lateral exclusivo del ADMIN ....................... (ready)
   Archivo: resources/views/layouts/principal.blade.php
   Seccionado por función para no repetir pestañas:
-  - Portal y apariencia: Identidad y apariencia, Carrusel principal, Carrusel
-    del login, Contenido institucional, Comunidad educativa, Servicios y
-    descargas.
+  - Portal y contenido: Contenido institucional (chevron con Textos e
+    imágenes, Pre-registro e Historia), Comunidad educativa y Servicios y
+    descargas (chevron con Útiles escolares y Descargas).
+  - Apariencia: Identidad institucional, Apariencia del sistema, Carrusel
+    principal y Carrusel del login.
   - Usuarios y seguridad: Usuarios y roles.
-  - Control académico y operativo: Matrículas e inscripciones, Ventanas de
-    calificaciones, Circulares y comunicados, Moderación de observaciones y
-    Registros académicos (corrección de notas, bitácora, traslados y
-    actualización de datos).
-  - Auditoría y respaldo: Historial de cambios.
+  - Control académico: Matrículas e inscripciones, Ventanas de calificaciones,
+    Circulares y comunicados, Moderación de observaciones y Registros
+    académicos (corrección de notas, bitácora, traslados y actualización de
+    datos). Aquí se agregará luego Materias y asignaturas, junto con la
+    asignación de materias a los docentes.
+  - Auditoría: Historial de cambios.
   - Configuración del sistema: Parámetros académicos.
   Citas y DECE no aparecen en el menú del ADMIN.
 

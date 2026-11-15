@@ -41,12 +41,21 @@ class RectorDashboardTest extends TestCase
         $response = $this->actingAs($this->admin)->get('/dashboard');
 
         // Módulos administrables solicitados, agrupados por función.
-        $response->assertSee('Identidad y apariencia');
+        $response->assertSee('Portal y contenido');
+        $response->assertSee('Apariencia');
+        $response->assertSee('Identidad institucional');
+        $response->assertSee('Apariencia del sistema');
         $response->assertSee('Carrusel principal');
         $response->assertSee('Carrusel del login');
         $response->assertSee('Contenido institucional');
+        $response->assertSee('Textos e imágenes');
+        $response->assertSee('Pre-registro');
+        $response->assertSee('Historia');
         $response->assertSee('Comunidad educativa');
         $response->assertSee('Servicios y descargas');
+        $response->assertSee('Útiles escolares');
+        $response->assertSee('Descargas');
+        $response->assertSee('Control académico');
         $response->assertSee('Usuarios y roles');
         $response->assertSee('Matrículas e inscripciones');
         $response->assertSee('Ventanas de calificaciones');
