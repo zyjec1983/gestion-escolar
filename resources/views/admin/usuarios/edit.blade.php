@@ -45,6 +45,20 @@
                                     value="{{ old('apellidos', $usuario->apellidos) }}">
                                 @error('apellidos')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
+                            <div class="col-md-8">
+                                <label class="form-label" for="titulo">Título profesional / especialidad</label>
+                                <input type="text" id="titulo" name="titulo" class="form-control @error('titulo') is-invalid @enderror"
+                                    value="{{ old('titulo', $usuario->titulo) }}">
+                                @error('titulo')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="horas_contrato">Contrato</label>
+                                <select id="horas_contrato" name="horas_contrato" class="form-select @error('horas_contrato') is-invalid @enderror">
+                                    <option value="40" @selected((int) old('horas_contrato', $usuario->horas_contrato) === 40)>40 h reloj</option>
+                                    <option value="20" @selected((int) old('horas_contrato', $usuario->horas_contrato) === 20)>20 h reloj</option>
+                                </select>
+                                @error('horas_contrato')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
                             <div class="col-md-4">
                                 <label class="form-label" for="numero_cedula">Cédula</label>
                                 <input type="text" id="numero_cedula" name="numero_cedula" class="form-control @error('numero_cedula') is-invalid @enderror"
@@ -103,6 +117,11 @@
                         @error('rol')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         <div class="form-text">
                             ADMIN solo puede ser rol principal. Los demás roles pueden sumarse como adicionales.
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label" for="estado_cuenta">Estado de la cuenta</label>
+                            <input type="text" id="estado_cuenta" class="form-control bg-light fw-semibold text-secondary"
+                                value="{{ $usuario->estaBloqueado() ? 'BLOQUEADA' : 'ACTIVO' }}" readonly>
                         </div>
                     </div>
                 </div>

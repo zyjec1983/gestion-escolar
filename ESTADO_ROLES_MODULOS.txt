@@ -445,17 +445,19 @@ en "Control académico" y "Registros académicos".
     portal, Carrusel del login y Apariencia). Cada opción abre su propia vista,
     sin pestañas ni ?tab=.
   - Usuarios y seguridad: Usuarios y roles.
+  - Gestión académica: Malla curricular (materias por año, períodos de 40
+    minutos y bloqueo de años/materias) y Distributivo docente (asignación de
+    materias de la malla y cálculo de carga horaria).
   - Control académico: Matrículas e inscripciones, Fecha de Cargar notas,
     Circulares y comunicados, Moderación de observaciones y Registros
     académicos (corrección de notas, bitácora, traslados y actualización de
-    datos). Aquí se agregará luego Materias y asignaturas, junto con la
-    asignación de materias a los docentes.
+    datos).
   - Auditoría: Historial de cambios.
   Citas y DECE no aparecen en el menú del ADMIN.
   El botón del navbar oculta/muestra el aside en pantallas grandes y guarda la
   preferencia en localStorage (sidebarOculto). En móvil el aside es offcanvas.
-  Las tablas envueltas en .table-responsive tienen desplazamiento vertical y
-  horizontal con barras visibles.
+  Las tablas se envuelven en .table-responsive y solo desplazan en horizontal;
+  el desplazamiento vertical lo hace la ventana.
 
 - Sitio web (todos los campos del portal) ................ (ready)
   Rutas: GET /admin/sitio,
@@ -540,6 +542,41 @@ en "Control académico" y "Registros académicos".
   única y sirve como usuario para iniciar sesión. Protege al sistema para que
   siempre exista al menos una cuenta ADMIN y nadie pueda quitarse ese rol a sí
   mismo. Si la persona tiene clases asignadas, el perfil DOCENTE se agrega solo.
+  El formulario de cuentas registra cédula, nombres, apellidos, título
+  profesional, contrato de 40 o 20 horas, correo, teléfono, rol y contraseña
+  temporal con opciones de ver y generar. El botón "Guardar y pasar a asignar
+  materias" continúa en el distributivo cuando la cuenta tiene perfil DOCENTE.
+
+- Malla curricular por año de educación ................... (ready)
+  Rutas: GET /admin/materias,
+         POST /admin/materias/catalogo,
+         PUT /admin/materias/catalogo/{materia},
+         POST /admin/materias/catalogo/{materia}/estado,
+         POST /admin/materias/{curso}/malla,
+         PUT /admin/materias/{curso}/malla/{cursoMateria},
+         DELETE /admin/materias/{curso}/malla/{cursoMateria},
+         POST /admin/cursos/{curso}/estado
+  Controlador: Admin\MateriaController
+  Modelos: App\Models\Materia, App\Models\CursoMateria y App\Models\Curso
+  Catálogo de materias con nombre, área, código y estado. Cada año de
+  educación tiene su malla con períodos semanales de 40 minutos y el total de
+  horas reloj. Bloquear un año o una materia deja de ofertarla sin borrar
+  notas, clases ni matrículas históricas; no se crean ni editan años ni
+  paralelos desde este módulo.
+
+- Distributivo docente y carga horaria .................... (ready)
+  Rutas: GET /admin/asignaciones, POST /admin/asignaciones,
+         PUT /admin/asignaciones/{clase},
+         DELETE /admin/asignaciones/{clase},
+         PUT /admin/asignaciones/docente/{user}/carga
+  Controlador: Admin\AsignacionDocenteController
+  Servicio: App\Services\CargaHorariaDocente
+  Asigna materias de la malla del año a un docente y paralelo, cambia el
+  paralelo y calcula la carga: períodos de 40 minutos, horas reloj de plantel,
+  horas autónomas y disponible. Contrato de 40 h = 30 h de plantel + 10 h
+  autónomas; contrato de 20 h = 15 h + 5 h. No se puede retirar una asignación
+  con notas, asistencias, agendas, materiales, unidades, foros o auditorías:
+  el historial se conserva y se recomienda bloquear el año o la materia.
 
 - Cuentas familiares por cédula del alumno ................ (ready)
   Ruta: POST /admin/usuarios/generar-cuentas-estudiantes

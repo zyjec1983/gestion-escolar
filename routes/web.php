@@ -11,6 +11,8 @@ use App\Http\Controllers\Admin\PreRegistroController as AdminPreRegistroControll
 use App\Http\Controllers\Admin\SitioController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\VentanaNotaController;
+use App\Http\Controllers\Admin\AsignacionDocenteController;
+use App\Http\Controllers\Admin\MateriaController;
 use App\Http\Controllers\Api\DashboardController as ApiDashboardController;
 use App\Http\Controllers\AulaVirtualController;
 use App\Http\Controllers\Auth\LoginController;
@@ -187,6 +189,26 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
     Route::get('/usuarios/{user}/contrasena', [AdminUserController::class, 'password'])->name('usuarios.password');
     Route::post('/usuarios/{user}/contrasena', [AdminUserController::class, 'updatePassword'])->name('usuarios.password.update');
     Route::post('/usuarios/{user}/desbloquear', [AdminUserController::class, 'desbloquear'])->name('usuarios.desbloquear');
+
+    // Gestión académica: malla curricular y distributivo docente.
+    Route::prefix('materias')->name('materias.')->group(function () {
+        Route::get('/', [MateriaController::class, 'index'])->name('index');
+        Route::post('/catalogo', [MateriaController::class, 'storeMateria'])->name('catalogo.store');
+        Route::put('/catalogo/{materia}', [MateriaController::class, 'updateMateria'])->name('catalogo.update');
+        Route::post('/catalogo/{materia}/estado', [MateriaController::class, 'estadoMateria'])->name('catalogo.estado');
+        Route::post('/{curso}/malla', [MateriaController::class, 'storeMalla'])->name('malla.store');
+        Route::put('/{curso}/malla/{cursoMateria}', [MateriaController::class, 'updateMalla'])->name('malla.update');
+        Route::delete('/{curso}/malla/{cursoMateria}', [MateriaController::class, 'destroyMalla'])->name('malla.destroy');
+    });
+    Route::post('/cursos/{curso}/estado', [MateriaController::class, 'estadoCurso'])->name('cursos.estado');
+
+    Route::prefix('asignaciones')->name('asignaciones.')->group(function () {
+        Route::get('/', [AsignacionDocenteController::class, 'index'])->name('index');
+        Route::post('/', [AsignacionDocenteController::class, 'store'])->name('store');
+        Route::put('/docente/{user}/carga', [AsignacionDocenteController::class, 'updateCarga'])->name('carga');
+        Route::put('/{clase}', [AsignacionDocenteController::class, 'update'])->name('update');
+        Route::delete('/{clase}', [AsignacionDocenteController::class, 'destroy'])->name('destroy');
+    });
 
     // Sitio web institucional: todos los textos, imágenes e ítems del portal.
     Route::prefix('sitio')->name('sitio.')->group(function () {

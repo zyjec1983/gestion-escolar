@@ -206,6 +206,32 @@
             </a>
         </div>
         <div class="col">
+            <a href="{{ route('admin.materias.index') }}" class="text-decoration-none">
+                <div class="card admin-card shadow-sm h-100">
+                    <div class="card-body d-flex gap-3 align-items-start">
+                        <span class="admin-icon bg-primary-subtle text-primary"><i class="bi bi-diagram-3"></i></span>
+                        <div>
+                            <h6 class="mb-1 text-dark">Malla curricular</h6>
+                            <p class="text-muted small mb-0">Materias por año y períodos semanales de 40 minutos.</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ route('admin.asignaciones.index') }}" class="text-decoration-none">
+                <div class="card admin-card shadow-sm h-100">
+                    <div class="card-body d-flex gap-3 align-items-start">
+                        <span class="admin-icon bg-info-subtle text-info"><i class="bi bi-person-workspace"></i></span>
+                        <div>
+                            <h6 class="mb-1 text-dark">Distributivo docente</h6>
+                            <p class="text-muted small mb-0">Asigne materias y controle la carga horaria.</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col">
             <a href="{{ route('admin.historial.index') }}" class="text-decoration-none">
                 <div class="card admin-card shadow-sm h-100">
                     <div class="card-body d-flex gap-3 align-items-start">

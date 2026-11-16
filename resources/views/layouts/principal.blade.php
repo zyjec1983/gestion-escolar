@@ -54,9 +54,10 @@
             - Apariencia: "Apariencia del sistema" con chevron para General,
               Carrusel del portal, Carrusel del login y Apariencia.
             - Usuarios y seguridad: cuentas, roles y contraseñas.
+            - Gestión académica: malla curricular (materias por año) y
+              distributivo docente (asignación de materias y carga horaria).
             - Control académico: matrículas, fechas de carga de notas, circulares,
-              observaciones y registros académicos. Aquí se agregará luego
-              "Materias y asignaturas" y la asignación de materias a los docentes.
+              observaciones y registros académicos.
             - Auditoría: historial de cambios.
             Conecta con: DashboardController@admin, Admin\SitioController,
             ComunidadController, HeroSlideController, CircularController,
@@ -217,6 +218,22 @@
             <a href="{{ route('admin.usuarios.index') }}"
                class="nav-link text-white {{ request()->is('admin/usuarios*') ? 'active' : '' }}">
                 <i class="bi bi-person-gear me-2"></i> Usuarios y roles
+            </a>
+        </li>
+
+        <li class="nav-item mt-3">
+            <span class="text-uppercase text-white-50 small fw-semibold px-2">Gestión académica</span>
+        </li>
+        <li class="nav-item mt-1">
+            <a href="{{ route('admin.materias.index') }}"
+               class="nav-link text-white {{ request()->is('admin/materias*') ? 'active' : '' }}">
+                <i class="bi bi-diagram-3 me-2"></i> Malla curricular
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.asignaciones.index') }}"
+               class="nav-link text-white {{ request()->is('admin/asignaciones*') ? 'active' : '' }}">
+                <i class="bi bi-person-workspace me-2"></i> Distributivo docente
             </a>
         </li>
 

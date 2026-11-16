@@ -59,7 +59,14 @@ class Curso extends Model
         'Informática',
     ];
 
-    protected $fillable = ['nombre', 'codigo'];
+    protected $fillable = ['nombre', 'codigo', 'activo'];
+
+    protected function casts(): array
+    {
+        return [
+            'activo' => 'boolean',
+        ];
+    }
 
     public function scopeEnOrdenEscolar(Builder $query): Builder
     {
@@ -174,5 +181,20 @@ class Curso extends Model
     public function matriculas()
     {
         return $this->hasMany(Matricula::class);
+    }
+
+    /** Filas de la malla curricular del año. */
+    public function malla()
+    {
+        return $this->hasMany(CursoMateria::class);
+    }
+
+    /** Materias que se dictan en el año, con sus períodos semanales. */
+    public function materias()
+    {
+        return $this->belongsToMany(Materia::class, 'curso_materias')
+            ->withPivot(['periodos_semanales', 'orden'])
+            ->withTimestamps()
+            ->orderByPivot('orden');
     }
 }

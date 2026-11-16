@@ -175,6 +175,11 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'apellidos' => 'nullable|string|max:255',
+            'titulo' => 'nullable|string|max:255',
+            'horas_contrato' => ['nullable', Rule::in([20, 40])],
+            'periodos_atencion_padres' => 'nullable|integer|min:0|max:20',
+            'periodos_reunion_area' => 'nullable|integer|min:0|max:20',
+            'periodos_tutoria' => 'nullable|integer|min:0|max:20',
             'email' => 'required|email|max:255|unique:users,email',
             'numero_cedula' => 'nullable|string|max:20|unique:users,numero_cedula',
             'telefono' => 'nullable|string|max:30',
@@ -186,6 +191,7 @@ class UserController extends Controller
             'name.required' => 'El nombre es obligatorio.',
             'email.unique' => 'Ya existe otra cuenta con ese correo.',
             'rol.in' => 'El rol principal seleccionado no es válido.',
+            'horas_contrato.in' => 'El contrato debe ser de 20 o 40 horas reloj.',
             'password.required' => 'Defina una contraseña inicial.',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
             'password.confirmed' => 'La confirmación de la contraseña no coincide.',
@@ -194,6 +200,11 @@ class UserController extends Controller
         $user = User::create([
             'name' => $validated['name'],
             'apellidos' => $validated['apellidos'] ?? null,
+            'titulo' => $validated['titulo'] ?? null,
+            'horas_contrato' => (int) ($validated['horas_contrato'] ?? 40),
+            'periodos_atencion_padres' => (int) ($validated['periodos_atencion_padres'] ?? 0),
+            'periodos_reunion_area' => (int) ($validated['periodos_reunion_area'] ?? 0),
+            'periodos_tutoria' => (int) ($validated['periodos_tutoria'] ?? 0),
             'email' => $validated['email'],
             'telefono' => $validated['telefono'] ?? null,
             'numero_cedula' => $validated['numero_cedula'] ?? null,
@@ -217,6 +228,21 @@ class UserController extends Controller
             "Cuenta creada: {$user->nombreCompleto()} ({$user->email})",
             ['id' => $user->id, 'rol' => $user->rol, 'adicionales' => $adicionales->all()]
         );
+
+        // El template permite guardar y seguir de inmediato al distributivo.
+        if ($request->input('destino') === 'asignaciones') {
+            $user->load('rolesAdicionales');
+
+            if (in_array('DOCENTE', $user->perfiles(), true)) {
+                return redirect()
+                    ->route('admin.asignaciones.index', ['docente' => $user->id])
+                    ->with('success', 'Cuenta creada. Ahora asigne las materias del docente.');
+            }
+
+            return redirect()
+                ->route('admin.usuarios.index')
+                ->with('warning', 'La cuenta se creó, pero no tiene perfil docente. Asigne el rol DOCENTE para usar el distributivo.');
+        }
 
         return redirect()->route('admin.usuarios.index')
             ->with('success', 'Cuenta creada correctamente. Comparta las credenciales con la persona.');
@@ -282,6 +308,11 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'apellidos' => 'nullable|string|max:255',
+            'titulo' => 'nullable|string|max:255',
+            'horas_contrato' => ['nullable', Rule::in([20, 40])],
+            'periodos_atencion_padres' => 'nullable|integer|min:0|max:20',
+            'periodos_reunion_area' => 'nullable|integer|min:0|max:20',
+            'periodos_tutoria' => 'nullable|integer|min:0|max:20',
             'email' => [
                 'required',
                 'email',
@@ -304,6 +335,7 @@ class UserController extends Controller
             'email.unique' => 'Ya existe otra cuenta con ese correo.',
             'rol.in' => 'El rol principal seleccionado no es válido.',
             'roles_adicionales.*.in' => 'Uno de los roles adicionales no es válido.',
+            'horas_contrato.in' => 'El contrato debe ser de 20 o 40 horas reloj.',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
             'password.confirmed' => 'La confirmación de la contraseña no coincide.',
         ]);
@@ -338,6 +370,11 @@ class UserController extends Controller
         $user->fill([
             'name' => $validated['name'],
             'apellidos' => $validated['apellidos'] ?? null,
+            'titulo' => $validated['titulo'] ?? $user->titulo,
+            'horas_contrato' => (int) ($validated['horas_contrato'] ?? $user->horas_contrato),
+            'periodos_atencion_padres' => (int) ($validated['periodos_atencion_padres'] ?? $user->periodos_atencion_padres),
+            'periodos_reunion_area' => (int) ($validated['periodos_reunion_area'] ?? $user->periodos_reunion_area),
+            'periodos_tutoria' => (int) ($validated['periodos_tutoria'] ?? $user->periodos_tutoria),
             'email' => $validated['email'],
             'telefono' => $validated['telefono'] ?? null,
             'numero_cedula' => $validated['numero_cedula'] ?? null,
