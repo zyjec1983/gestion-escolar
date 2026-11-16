@@ -155,7 +155,7 @@ class AsignacionesDocenteTest extends TestCase
         $this->assertSame(11, $carga['periodos_clase']);
         $this->assertSame(15, $carga['total_periodos']);
         $this->assertSame(10.0, $carga['horas_plantel']);
-        $this->assertSame(30, $carga['max_horas_plantel']);
+        $this->assertSame(30.0, $carga['max_horas_plantel']);
         $this->assertSame(20.0, $carga['horas_contingencia']);
         $this->assertFalse($carga['excede']);
     }
@@ -169,9 +169,24 @@ class AsignacionesDocenteTest extends TestCase
 
         $carga = CargaHorariaDocente::calcular($docente);
 
-        $this->assertSame(15, $carga['max_horas_plantel']);
-        $this->assertSame(5, $carga['horas_autonomas']);
+        $this->assertSame(15.0, $carga['max_horas_plantel']);
+        $this->assertSame(5.0, $carga['horas_autonomas']);
         $this->assertSame(22.5, $carga['max_periodos']);
+    }
+
+    /** @test */
+    public function un_contrato_de_30_horas_calcula_la_carga_proporcional()
+    {
+        $docente = User::factory()->docente()->create([
+            'horas_contrato' => 30,
+        ]);
+
+        $carga = CargaHorariaDocente::calcular($docente);
+
+        $this->assertSame(22.5, $carga['max_horas_plantel']);
+        $this->assertSame(7.5, $carga['horas_autonomas']);
+        $this->assertSame(33.75, $carga['max_periodos']);
+        $this->assertSame('22,5', CargaHorariaDocente::formatearHoras($carga['max_horas_plantel']));
     }
 
     /** @test */
@@ -266,7 +281,8 @@ class AsignacionesDocenteTest extends TestCase
 
         $this->actingAs($admin)
             ->put(route('admin.asignaciones.carga', $docente), [
-                'horas_contrato' => 20,
+                'horas_contrato' => 30,
+                'es_tutor' => '1',
                 'periodos_atencion_padres' => 3,
                 'periodos_reunion_area' => 2,
                 'periodos_tutoria' => 1,
@@ -276,7 +292,8 @@ class AsignacionesDocenteTest extends TestCase
 
         $docente->refresh();
 
-        $this->assertSame(20, $docente->horas_contrato);
+        $this->assertSame(30, $docente->horas_contrato);
+        $this->assertTrue($docente->es_tutor);
         $this->assertSame(3, $docente->periodos_atencion_padres);
         $this->assertSame(2, $docente->periodos_reunion_area);
         $this->assertSame(1, $docente->periodos_tutoria);

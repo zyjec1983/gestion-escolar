@@ -219,4 +219,74 @@ class UsuariosAdminTest extends TestCase
         $this->assertNull($alumno->fresh()->user_id);
         $this->assertNotNull($existente->fresh());
     }
+
+    /** @test */
+    public function el_admin_edita_el_contrato_numerico_y_la_carga_docente()
+    {
+        $admin = User::factory()->admin()->create();
+        $objetivo = User::factory()->docente()->create();
+
+        $this->actingAs($admin)->put(route('admin.usuarios.update', $objetivo), [
+            'name' => $objetivo->name,
+            'email' => $objetivo->email,
+            'rol' => 'DOCENTE',
+            'horas_contrato' => 30,
+            'es_tutor' => '1',
+            'periodos_atencion_padres' => 2,
+            'periodos_reunion_area' => 3,
+            'periodos_tutoria' => 1,
+        ])->assertRedirect(route('admin.usuarios.index'));
+
+        $objetivo->refresh();
+
+        $this->assertSame(30, $objetivo->horas_contrato);
+        $this->assertTrue($objetivo->es_tutor);
+        $this->assertSame(2, $objetivo->periodos_atencion_padres);
+        $this->assertSame(3, $objetivo->periodos_reunion_area);
+        $this->assertSame(1, $objetivo->periodos_tutoria);
+    }
+
+    /** @test */
+    public function el_contrato_debe_ser_un_numero_entre_1_y_60()
+    {
+        $admin = User::factory()->admin()->create();
+        $objetivo = User::factory()->docente()->create();
+
+        $this->actingAs($admin)->put(route('admin.usuarios.update', $objetivo), [
+            'name' => $objetivo->name,
+            'email' => $objetivo->email,
+            'rol' => 'DOCENTE',
+            'horas_contrato' => 0,
+        ])->assertSessionHasErrors('horas_contrato');
+
+        $this->actingAs($admin)->put(route('admin.usuarios.update', $objetivo), [
+            'name' => $objetivo->name,
+            'email' => $objetivo->email,
+            'rol' => 'DOCENTE',
+            'horas_contrato' => 61,
+        ])->assertSessionHasErrors('horas_contrato');
+
+        $this->assertSame(40, $objetivo->fresh()->horas_contrato);
+    }
+
+    /** @test */
+    public function el_formulario_de_edicion_muestra_el_contrato_y_la_carga_academica()
+    {
+        $admin = User::factory()->admin()->create();
+        $objetivo = User::factory()->docente()->create([
+            'horas_contrato' => 30,
+            'es_tutor' => true,
+            'periodos_reunion_area' => 2,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.usuarios.edit', $objetivo))
+            ->assertOk()
+            ->assertSee('Contrato (horas reloj)')
+            ->assertSee('Docente tutor')
+            ->assertSee('Atención a padres')
+            ->assertSee('Reunión de área')
+            ->assertSee('value="30"', false)
+            ->assertSee('value="2"', false);
+    }
 }

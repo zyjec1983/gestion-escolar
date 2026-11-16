@@ -55,23 +55,11 @@
                                 @error('apellidos')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
-                            <div class="col-md-7">
+                            <div class="col-md-12">
                                 <label for="titulo" class="form-label">Título profesional / especialidad</label>
                                 <input type="text" id="titulo" name="titulo" class="form-control @error('titulo') is-invalid @enderror"
                                     value="{{ old('titulo') }}" placeholder="Ej. Lcdo. en Ciencias de la Educación - Física y Matemática">
                                 @error('titulo')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                            </div>
-                            <div class="col-md-5">
-                                <label for="horas_contrato" class="form-label">Tipo de contrato / jornada</label>
-                                <select id="horas_contrato" name="horas_contrato" class="form-select @error('horas_contrato') is-invalid @enderror">
-                                    <option value="40" @selected(old('horas_contrato', '40') == 40)>
-                                        Tiempo completo — 40 h reloj (30 h plantel + 10 h autónomas)
-                                    </option>
-                                    <option value="20" @selected(old('horas_contrato') == 20)>
-                                        Medio tiempo — 20 h reloj (15 h plantel + 5 h autónomas)
-                                    </option>
-                                </select>
-                                @error('horas_contrato')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
                             <div class="col-md-6">
@@ -105,6 +93,8 @@
                                     value="ACTIVO" readonly>
                             </div>
                         </div>
+
+                        @include('admin.usuarios._carga_academica')
 
                         <hr class="my-4">
 

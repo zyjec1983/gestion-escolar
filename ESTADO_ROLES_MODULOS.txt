@@ -544,9 +544,12 @@ en "Control académico" y "Registros académicos".
   siempre exista al menos una cuenta ADMIN y nadie pueda quitarse ese rol a sí
   mismo. Si la persona tiene clases asignadas, el perfil DOCENTE se agrega solo.
   El formulario de cuentas registra cédula, nombres, apellidos, título
-  profesional, contrato de 40 o 20 horas, correo, teléfono, rol y contraseña
-  temporal con opciones de ver y generar. El botón "Guardar y pasar a asignar
-  materias" continúa en el distributivo cuando la cuenta tiene perfil DOCENTE.
+  profesional, contrato en horas reloj (se escribe la cantidad, de 1 a 60 h),
+  correo, teléfono, rol y contraseña temporal con opciones de ver y generar.
+  Si la cuenta es docente se marca "Docente tutor" y se registran los períodos
+  de atención a padres, reunión de área y tutoría, siempre como horas
+  académicas de 40 minutos. El botón "Guardar y pasar a asignar materias"
+  continúa en el distributivo cuando la cuenta tiene perfil DOCENTE.
 
 - Malla curricular por año de educación ................... (ready)
   Rutas: GET /admin/materias,
@@ -581,10 +584,14 @@ en "Control académico" y "Registros académicos".
   Servicio: App\Services\CargaHorariaDocente
   Asigna materias de la malla del año a un docente y paralelo, cambia el
   paralelo y calcula la carga: períodos de 40 minutos, horas reloj de plantel,
-  horas autónomas y disponible. Contrato de 40 h = 30 h de plantel + 10 h
-  autónomas; contrato de 20 h = 15 h + 5 h. No se puede retirar una asignación
-  con notas, asistencias, agendas, materiales, unidades, foros o auditorías:
-  el historial se conserva y se recomienda bloquear el año o la materia.
+  horas autónomas y disponible. El contrato se escribe en horas reloj y se
+  reparte 75 % de plantel y 25 % autónomas: 40 h = 30 h + 10 h; 20 h = 15 h +
+  5 h; 30 h = 22,5 h + 7,5 h. El docente puede marcarse como tutor y sus
+  períodos de atención a padres, reunión de área y tutoría se suman a la carga
+  de clases como horas académicas de 40 minutos. No se puede retirar una
+  asignación con notas, asistencias, agendas, materiales, unidades, foros o
+  auditorías: el historial se conserva y se recomienda bloquear el año o la
+  materia.
 
 - Cuentas familiares por cédula del alumno ................ (ready)
   Ruta: POST /admin/usuarios/generar-cuentas-estudiantes

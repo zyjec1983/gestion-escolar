@@ -12,7 +12,6 @@ use App\Models\Paralelo;
 use App\Models\User;
 use App\Services\CargaHorariaDocente;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 /**
  * Distributivo docente: materias ya cargadas en la malla asignadas a docentes.
@@ -234,18 +233,27 @@ class AsignacionDocenteController extends Controller
     public function updateCarga(Request $request, User $user)
     {
         $validated = $request->validate([
-            'horas_contrato' => ['required', Rule::in([20, 40])],
-            'periodos_atencion_padres' => 'required|integer|min:0|max:20',
-            'periodos_reunion_area' => 'required|integer|min:0|max:20',
-            'periodos_tutoria' => 'required|integer|min:0|max:20',
+            'horas_contrato' => ['required', 'integer', 'min:1', 'max:60'],
+            'es_tutor' => ['nullable', 'boolean'],
+            'periodos_atencion_padres' => 'required|integer|min:0|max:40',
+            'periodos_reunion_area' => 'required|integer|min:0|max:40',
+            'periodos_tutoria' => 'required|integer|min:0|max:40',
         ], [
-            'horas_contrato.in' => 'El contrato debe ser de 20 o 40 horas reloj.',
-            'periodos_atencion_padres.max' => 'Los períodos de atención a padres no pueden superar 20.',
-            'periodos_reunion_area.max' => 'Los períodos de reunión de área no pueden superar 20.',
-            'periodos_tutoria.max' => 'Los períodos de tutoría no pueden superar 20.',
+            'horas_contrato.integer' => 'Escriba el contrato como un número entero de horas reloj.',
+            'horas_contrato.min' => 'El contrato debe ser de al menos 1 hora reloj.',
+            'horas_contrato.max' => 'El contrato no puede superar 60 horas reloj.',
+            'periodos_atencion_padres.max' => 'La atención a padres no puede superar 40 períodos de 40 minutos.',
+            'periodos_reunion_area.max' => 'La reunión de área no puede superar 40 períodos de 40 minutos.',
+            'periodos_tutoria.max' => 'La tutoría no puede superar 40 períodos de 40 minutos.',
         ]);
 
-        $user->update($validated);
+        $user->update([
+            'horas_contrato' => (int) $validated['horas_contrato'],
+            'es_tutor' => $request->boolean('es_tutor'),
+            'periodos_atencion_padres' => (int) $validated['periodos_atencion_padres'],
+            'periodos_reunion_area' => (int) $validated['periodos_reunion_area'],
+            'periodos_tutoria' => (int) $validated['periodos_tutoria'],
+        ]);
 
         HistorialCambio::registrar(
             'Distributivo docente',

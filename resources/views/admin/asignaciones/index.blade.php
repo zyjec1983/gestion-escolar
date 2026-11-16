@@ -116,6 +116,11 @@
                                 <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">
                                     Jornada {{ $docenteSeleccionado->horas_contrato }} h reloj
                                 </span>
+                                @if($docenteSeleccionado->es_tutor)
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                    <i class="bi bi-person-check me-1"></i>Tutor
+                                </span>
+                                @endif
                                 <span class="badge bg-primary">{{ \App\Models\User::etiquetaRol($docenteSeleccionado->rol) }}</span>
                             </div>
                             @if($docenteSeleccionado->titulo)
@@ -140,7 +145,7 @@
                             <strong>Sobrecarga horaria.</strong>
                             El docente tiene {{ $carga['total_periodos'] }} períodos
                             ({{ number_format($carga['horas_plantel'], 2, ',', '.') }} h reloj en plantel)
-                            y el máximo para su contrato es {{ $carga['max_horas_plantel'] }} h reloj.
+                            y el máximo para su contrato es {{ \App\Services\CargaHorariaDocente::formatearHoras($carga['max_horas_plantel']) }} h reloj.
                             Reduzca paralelos o actividades complementarias.
                         </div>
                     </div>
@@ -150,8 +155,8 @@
                         <div class="small text-secondary">
                             Cada período dura <strong>40 minutos</strong>. Un contrato de
                             {{ $docenteSeleccionado->horas_contrato }} h reloj admite
-                            <strong>{{ $carga['max_horas_plantel'] }} h de plantel</strong>
-                            + {{ $carga['horas_autonomas'] }} h autónomas.
+                            <strong>{{ \App\Services\CargaHorariaDocente::formatearHoras($carga['max_horas_plantel']) }} h de plantel</strong>
+                            + {{ \App\Services\CargaHorariaDocente::formatearHoras($carga['horas_autonomas']) }} h autónomas.
                         </div>
                         <span class="badge bg-success-subtle text-success border border-success-subtle ms-auto text-nowrap">Carga válida</span>
                     </div>
@@ -178,7 +183,7 @@
                                 <div class="text-primary small text-uppercase">Horas reloj plantel</div>
                                 <div class="h5 mb-0 font-monospace text-primary">
                                     {{ number_format($carga['horas_plantel'], 2, ',', '.') }}
-                                    <span class="fs-6 fw-normal">/ {{ $carga['max_horas_plantel'] }} h</span>
+                                    <span class="fs-6 fw-normal">/ {{ \App\Services\CargaHorariaDocente::formatearHoras($carga['max_horas_plantel']) }} h</span>
                                 </div>
                                 <div class="text-primary-emphasis" style="font-size:.72rem;">{{ $carga['total_periodos'] }} × 40 min ÷ 60</div>
                             </div>
@@ -200,7 +205,7 @@
                                     {{ number_format($carga['total_horas_jornada'], 2, ',', '.') }}
                                     <span class="fs-6 fw-normal text-muted">/ {{ $docenteSeleccionado->horas_contrato }} h</span>
                                 </div>
-                                <div class="text-muted" style="font-size:.72rem;">Incluye {{ $carga['horas_autonomas'] }} h autónomas</div>
+                                <div class="text-muted" style="font-size:.72rem;">Incluye {{ \App\Services\CargaHorariaDocente::formatearHoras($carga['horas_autonomas']) }} h autónomas</div>
                             </div>
                         </div>
                     </div>
@@ -209,7 +214,7 @@
                         <div class="d-flex justify-content-between small mb-1">
                             <span class="fw-semibold text-secondary">Ocupación de horas presenciales ({{ $porcentaje }}%)</span>
                             <span class="font-monospace text-muted">
-                                {{ number_format($carga['horas_plantel'], 2, ',', '.') }} h de {{ $carga['max_horas_plantel'] }} h reloj
+                                {{ number_format($carga['horas_plantel'], 2, ',', '.') }} h de {{ \App\Services\CargaHorariaDocente::formatearHoras($carga['max_horas_plantel']) }} h reloj
                             </span>
                         </div>
                         <div class="progress" style="height:10px;">
@@ -226,39 +231,60 @@
                         <div class="col-12">
                             <h6 class="mb-0"><i class="bi bi-sliders me-1"></i>Carga complementaria y contrato</h6>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <label class="form-label small fw-semibold" for="horas_contrato">Contrato</label>
-                            <select id="horas_contrato" name="horas_contrato" class="form-select form-select-sm">
-                                <option value="40" @selected((int) $docenteSeleccionado->horas_contrato === 40)>40 h reloj</option>
-                                <option value="20" @selected((int) $docenteSeleccionado->horas_contrato === 20)>20 h reloj</option>
-                            </select>
+                            <div class="input-group input-group-sm">
+                                <input type="number" id="horas_contrato" name="horas_contrato"
+                                    class="form-control text-center" min="1" max="60" step="1"
+                                    value="{{ $docenteSeleccionado->horas_contrato }}" required>
+                                <span class="input-group-text">h</span>
+                            </div>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <label class="form-label small fw-semibold" for="periodos_atencion_padres">Atención a padres</label>
-                            <input type="number" id="periodos_atencion_padres" name="periodos_atencion_padres"
-                                class="form-control form-control-sm text-center" min="0" max="20"
-                                value="{{ $docenteSeleccionado->periodos_atencion_padres }}">
+                            <div class="input-group input-group-sm">
+                                <input type="number" id="periodos_atencion_padres" name="periodos_atencion_padres"
+                                    class="form-control text-center" min="0" max="40"
+                                    value="{{ $docenteSeleccionado->periodos_atencion_padres }}">
+                                <span class="input-group-text">per.</span>
+                            </div>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <label class="form-label small fw-semibold" for="periodos_reunion_area">Reunión de área</label>
-                            <input type="number" id="periodos_reunion_area" name="periodos_reunion_area"
-                                class="form-control form-control-sm text-center" min="0" max="20"
-                                value="{{ $docenteSeleccionado->periodos_reunion_area }}">
+                            <div class="input-group input-group-sm">
+                                <input type="number" id="periodos_reunion_area" name="periodos_reunion_area"
+                                    class="form-control text-center" min="0" max="40"
+                                    value="{{ $docenteSeleccionado->periodos_reunion_area }}">
+                                <span class="input-group-text">per.</span>
+                            </div>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <label class="form-label small fw-semibold" for="periodos_tutoria">Tutoría</label>
                             <div class="input-group input-group-sm">
                                 <input type="number" id="periodos_tutoria" name="periodos_tutoria"
-                                    class="form-control text-center" min="0" max="20"
+                                    class="form-control text-center" min="0" max="40"
                                     value="{{ $docenteSeleccionado->periodos_tutoria }}">
-                                <button type="submit" class="btn btn-outline-primary" title="Guardar carga complementaria">
-                                    <i class="bi bi-save"></i>
-                                </button>
+                                <span class="input-group-text">per.</span>
                             </div>
+                        </div>
+                        <div class="col-6 col-md-2 d-flex align-items-center">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" name="es_tutor" id="es_tutor"
+                                    value="1" @checked($docenteSeleccionado->es_tutor)>
+                                <label class="form-check-label small fw-semibold" for="es_tutor">Tutor</label>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-outline-primary btn-sm w-100"
+                                title="Guardar carga complementaria">
+                                <i class="bi bi-save me-1"></i>Guardar
+                            </button>
                         </div>
                         <div class="col-12">
                             <div class="form-text mb-0">
-                                Los períodos de atención, reunión y tutoría se suman a la carga de clases para calcular las horas de plantel.
+                                Cada período es una hora académica de <strong>40 minutos</strong>.
+                                El contrato se escribe en horas reloj: el 75 % es plantel y el 25 % autónomas.
+                                Atención, reunión y tutoría se suman a la carga de clases.
                             </div>
                         </div>
                     </form>

@@ -45,19 +45,11 @@
                                     value="{{ old('apellidos', $usuario->apellidos) }}">
                                 @error('apellidos')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
-                            <div class="col-md-8">
+                            <div class="col-md-12">
                                 <label class="form-label" for="titulo">Título profesional / especialidad</label>
                                 <input type="text" id="titulo" name="titulo" class="form-control @error('titulo') is-invalid @enderror"
                                     value="{{ old('titulo', $usuario->titulo) }}">
                                 @error('titulo')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label" for="horas_contrato">Contrato</label>
-                                <select id="horas_contrato" name="horas_contrato" class="form-select @error('horas_contrato') is-invalid @enderror">
-                                    <option value="40" @selected((int) old('horas_contrato', $usuario->horas_contrato) === 40)>40 h reloj</option>
-                                    <option value="20" @selected((int) old('horas_contrato', $usuario->horas_contrato) === 20)>20 h reloj</option>
-                                </select>
-                                @error('horas_contrato')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label" for="numero_cedula">Cédula</label>
@@ -78,6 +70,8 @@
                                 @error('telefono')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
+
+                        @include('admin.usuarios._carga_academica')
 
                         <hr class="my-4">
 

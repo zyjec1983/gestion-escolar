@@ -14,8 +14,12 @@ use App\Models\User;
  * `curso_materias`.
  *
  * Regla del template:
- * - Contrato de 40 h: 30 h de plantel + 10 h autónomas (45 períodos).
- * - Contrato de 20 h: 15 h de plantel + 5 h autónomas (22,5 períodos).
+ * - El contrato se escribe en horas reloj (40, 30, 20...), no en una lista fija.
+ * - El 75 % del contrato es carga de plantel y el 25 % horas autónomas.
+ *   Un contrato de 40 h admite 30 h de plantel + 10 h autónomas; uno de 20 h
+ *   admite 15 h + 5 h; uno de 30 h admite 22,5 h + 7,5 h.
+ * - Las horas de reunión de área, atención a padres y tutoría son horas
+ *   académicas de 40 minutos y se suman a la carga de clases.
  */
 class CargaHorariaDocente
 {
@@ -29,8 +33,8 @@ class CargaHorariaDocente
      *     periodos_tutoria: int,
      *     total_periodos: int,
      *     horas_plantel: float,
-     *     max_horas_plantel: int,
-     *     horas_autonomas: int,
+     *     max_horas_plantel: float,
+     *     horas_autonomas: float,
      *     max_periodos: float,
      *     horas_contingencia: float,
      *     periodos_disponibles: float,
@@ -47,9 +51,9 @@ class CargaHorariaDocente
 
         $totalPeriodos = $periodosClase + $periodosAtencion + $periodosReunion + $periodosTutoria;
         $horasPlantel = static::horasReloj($totalPeriodos);
-        $contrato = (int) $docente->horas_contrato === 20 ? 20 : 40;
-        $maxHorasPlantel = $contrato === 40 ? 30 : 15;
-        $horasAutonomas = $contrato === 40 ? 10 : 5;
+        $contrato = max(1, (int) $docente->horas_contrato);
+        $maxHorasPlantel = round($contrato * 0.75, 2);
+        $horasAutonomas = round($contrato * 0.25, 2);
         $maxPeriodos = ($maxHorasPlantel * 60) / static::MINUTOS_PERIODO;
 
         return [
@@ -84,5 +88,13 @@ class CargaHorariaDocente
     public static function horasReloj(int $periodos): float
     {
         return round(($periodos * static::MINUTOS_PERIODO) / 60, 2);
+    }
+
+    /** Formatea horas reloj sin ceros innecesarios: 30, 22,5 o 7,25. */
+    public static function formatearHoras(float $horas): string
+    {
+        $texto = number_format($horas, 2, ',', '.');
+
+        return rtrim(rtrim($texto, '0'), ',');
     }
 }

@@ -65,7 +65,7 @@ class User extends Authenticatable
         'rol', 'institucion_id', 'telefono', 'numero_cedula', 'fecha_nacimiento',
         'intentos_fallidos', 'bloqueado_hasta', 'bloqueos_consecutivos', 'requiere_desbloqueo',
         'titulo', 'horas_contrato', 'periodos_atencion_padres',
-        'periodos_reunion_area', 'periodos_tutoria',
+        'periodos_reunion_area', 'periodos_tutoria', 'es_tutor',
     ];
 
     protected $hidden = [
@@ -84,6 +84,7 @@ class User extends Authenticatable
             'periodos_atencion_padres' => 'integer',
             'periodos_reunion_area' => 'integer',
             'periodos_tutoria' => 'integer',
+            'es_tutor' => 'boolean',
         ];
     }
 
