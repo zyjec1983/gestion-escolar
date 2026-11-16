@@ -251,7 +251,8 @@
     <div class="modal fade" id="rechazarModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="POST" action="{{ route('admin.pre-registros.rechazar', $preRegistro->id) }}">
+                <form method="POST" action="{{ route('admin.pre-registros.rechazar', $preRegistro->id) }}"
+                      data-confirm="¿Rechazar esta solicitud de matrícula? Se notificará al representante.">
                     @csrf
                     <div class="modal-header">
                         <h6 class="modal-title">Rechazar Solicitud</h6>

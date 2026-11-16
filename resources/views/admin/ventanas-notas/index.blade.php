@@ -109,7 +109,8 @@
                                     data-bs-target="#editarVentana{{ $ventana->id }}" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <form method="POST" action="{{ route('admin.ventanas-notas.estado', $ventana) }}" class="d-inline">
+                            <form method="POST" action="{{ route('admin.ventanas-notas.estado', $ventana) }}" class="d-inline"
+                                  data-confirm="{{ $ventana->activo ? '¿Deshabilitar la carga de notas de esta ventana?' : '¿Habilitar la carga de notas de esta ventana?' }}">
                                 @csrf
                                 <button type="submit" class="btn btn-sm {{ $ventana->activo ? 'btn-outline-warning' : 'btn-outline-success' }}"
                                     title="{{ $ventana->activo ? 'Deshabilitar' : 'Habilitar' }}">

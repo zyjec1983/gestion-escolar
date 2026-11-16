@@ -70,7 +70,7 @@
             width: 260px;
             min-width: 260px;
         }
-        @media (min-width: 992px) {
+        @media (min-width: 768px) {
             .offcanvas-lg.sidebar-static {
                 position: static !important;
                 transform: none !important;
@@ -81,7 +81,7 @@
                 overflow-y: visible;
             }
         }
-        @media (max-width: 991.98px) {
+        @media (max-width: 767.98px) {
             .sidebar-static {
                 width: auto;
                 min-width: auto;
@@ -132,12 +132,12 @@
         .app-content-column > main {
             min-width: 0;
         }
-        /* Tablas: desplazamiento vertical y horizontal con barras visibles.
+        /* Tablas: desplazamiento horizontal con barras visibles. El
+           desplazamiento vertical lo hace la ventana completa.
            Aplica a todas las tablas envueltas en .table-responsive del panel. */
         main .table-responsive {
             overflow-x: auto !important;
-            overflow-y: auto !important;
-            max-height: 70vh;
+            overflow-y: visible !important;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: thin;
             scrollbar-color: #adb5bd #f1f3f5;
@@ -158,8 +158,8 @@
         main .table-responsive::-webkit-scrollbar-thumb:hover {
             background: #6c757d;
         }
-        /* Botón para ocultar el aside en pantallas grandes o laptops pequeñas. */
-        @media (min-width: 992px) {
+        /* Botón para ocultar el aside en tablets y laptops pequeñas. */
+        @media (min-width: 768px) {
             html.sidebar-oculto #sidebarOffcanvas {
                 display: none !important;
             }
@@ -202,10 +202,10 @@
         <div class="flex-grow-1 d-flex flex-column min-vh-100 app-content-column">
             <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4">
                 <div class="container-fluid">
-                    <button class="btn btn-outline-secondary d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
+                    <button class="btn btn-outline-secondary d-md-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
                         <i class="bi bi-list"></i>
                     </button>
-                    <button class="btn btn-outline-secondary d-none d-lg-inline-flex align-items-center me-2" type="button"
+                    <button class="btn btn-outline-secondary d-none d-md-inline-flex align-items-center me-2" type="button"
                             id="toggleSidebar" title="Ocultar menú lateral" aria-label="Ocultar menú lateral"
                             aria-controls="sidebarOffcanvas" aria-expanded="true">
                         <i class="bi bi-layout-sidebar"></i>
@@ -360,6 +360,48 @@
                     timerProgressBar: true,
                 });
             }
+
+            @auth
+            @if(auth()->user()->perfilActivo() === 'ADMIN')
+            /*
+             * Avisos del rol ADMIN con SweetAlert2.
+             *
+             * Qué hace: muestra los mensajes de sesión y los errores de
+             * validación como toasts de SweetAlert2, en lugar de las alertas
+             * Bootstrap del contenido. Las confirmaciones de formularios usan
+             * SweetAlert2 mediante data-confirm.
+             */
+            const adminMensajes = [
+                { texto: @json(session('success')), icono: 'success', tiempo: 3200 },
+                { texto: @json(session('warning')), icono: 'warning', tiempo: 6000 },
+                { texto: @json(session('error') ?: ($errors->any() ? $errors->first() : null)), icono: 'error', tiempo: 8000 },
+            ];
+
+            adminMensajes.forEach(function (mensaje, indice) {
+                if (!mensaje.texto) return;
+
+                // Oculta la alerta Bootstrap duplicada del contenido.
+                document.querySelectorAll('main .alert-success, main .alert-danger, main .alert-warning')
+                    .forEach(function (bloque) {
+                        if (bloque.textContent.indexOf(mensaje.texto) !== -1) {
+                            bloque.classList.add('d-none');
+                        }
+                    });
+
+                window.setTimeout(function () {
+                    Swal.fire({
+                        icon: mensaje.icono,
+                        title: mensaje.texto,
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: mensaje.tiempo,
+                        timerProgressBar: true,
+                    });
+                }, indice * 350);
+            });
+            @endif
+            @endauth
         });
     </script>
     <script>

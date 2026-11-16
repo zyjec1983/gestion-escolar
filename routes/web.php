@@ -190,7 +190,12 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
 
     // Sitio web institucional: todos los textos, imágenes e ítems del portal.
     Route::prefix('sitio')->name('sitio.')->group(function () {
+        // Cada sección del portal es una vista independiente, sin pestañas.
         Route::get('/', [SitioController::class, 'index'])->name('index');
+        Route::get('/preregistro', [SitioController::class, 'preregistro'])->name('preregistro');
+        Route::get('/historia', [SitioController::class, 'historia'])->name('historia');
+        Route::get('/utiles', [SitioController::class, 'utiles'])->name('utiles');
+        Route::get('/descargas', [SitioController::class, 'descargas'])->name('descargas');
         Route::post('/contenido/{grupo}', [SitioController::class, 'updateContenido'])->name('contenido');
         Route::post('/historia', [SitioController::class, 'storeHito'])->name('historia.store');
         Route::put('/historia/{hito}', [SitioController::class, 'updateHito'])->name('historia.update');

@@ -38,6 +38,72 @@ class SitioController extends Controller
 {
     public function index()
     {
+        // Enlaces antiguos con ?tab= se redirigen a su vista independiente.
+        $destinos = [
+            'preregistro' => 'admin.sitio.preregistro',
+            'historia' => 'admin.sitio.historia',
+            'utiles' => 'admin.sitio.utiles',
+            'descargas' => 'admin.sitio.descargas',
+        ];
+
+        $destino = $destinos[request('tab')] ?? null;
+
+        if ($destino !== null) {
+            $parametros = request('lista') ? ['lista' => request('lista')] : [];
+
+            return redirect()->route($destino, $parametros);
+        }
+
+        return view('admin.sitio.index', $this->datosSitio());
+    }
+
+    /**
+     * Cabecera del formulario de pre-registro.
+     *
+     * Ruta: GET /admin/sitio/preregistro (admin.sitio.preregistro).
+     */
+    public function preregistro()
+    {
+        return view('admin.sitio.preregistro', $this->datosSitio());
+    }
+
+    /**
+     * Hitos de la historia institucional.
+     *
+     * Ruta: GET /admin/sitio/historia (admin.sitio.historia).
+     */
+    public function historia()
+    {
+        return view('admin.sitio.historia', $this->datosSitio());
+    }
+
+    /**
+     * Listas de útiles por nivel o curso.
+     *
+     * Ruta: GET /admin/sitio/utiles (admin.sitio.utiles).
+     */
+    public function utiles()
+    {
+        return view('admin.sitio.utiles', $this->datosSitio());
+    }
+
+    /**
+     * Centro de descargas del portal.
+     *
+     * Ruta: GET /admin/sitio/descargas (admin.sitio.descargas).
+     */
+    public function descargas()
+    {
+        return view('admin.sitio.descargas', $this->datosSitio());
+    }
+
+    /**
+     * Datos compartidos por las vistas del sitio web.
+     *
+     * @return array<string, mixed>
+     */
+    private function datosSitio(): array
+    {
         $listas = ListaUtil::with('items')
             ->orderBy('orden')
             ->orderBy('id')
@@ -50,7 +116,7 @@ class SitioController extends Controller
             $listaSeleccionada = $listas->firstWhere('id', $idLista);
         }
 
-        return view('admin.sitio.index', [
+        return [
             'grupos' => PortalContenido::GRUPOS,
             'campos' => PortalContenido::campos(),
             'hitos' => HistoriaHito::orderBy('orden')->orderBy('id')->get(),
@@ -58,7 +124,7 @@ class SitioController extends Controller
             'listaSeleccionada' => $listaSeleccionada,
             'descargas' => DescargaDocumento::orderBy('categoria')->orderBy('orden')->orderBy('id')->get()->groupBy('categoria'),
             'categorias' => DescargaDocumento::CATEGORIAS,
-        ]);
+        ];
     }
 
     /**
@@ -142,7 +208,7 @@ class SitioController extends Controller
         );
 
         return redirect()
-            ->route('admin.sitio.index', ['tab' => $grupo === 'preregistro' ? 'preregistro' : 'textos'])
+            ->route($grupo === 'preregistro' ? 'admin.sitio.preregistro' : 'admin.sitio.index')
             ->with('success', "Se guardaron {$guardados} campos de ".PortalContenido::GRUPOS[$grupo]['titulo'].'.');
     }
 
@@ -153,7 +219,7 @@ class SitioController extends Controller
         $hito = HistoriaHito::create($validated);
         HistorialCambio::registrar('Sitio web', 'crear', "Hito histórico creado: {$hito->titulo}", ['id' => $hito->id]);
 
-        return redirect()->route('admin.sitio.index', ['tab' => 'historia'])->with('success', 'Hito histórico agregado.');
+        return redirect()->route('admin.sitio.historia')->with('success', 'Hito histórico agregado.');
     }
 
     public function updateHito(Request $request, HistoriaHito $hito)
@@ -161,7 +227,7 @@ class SitioController extends Controller
         $hito->update($this->validarHito($request));
         HistorialCambio::registrar('Sitio web', 'actualizar', "Hito histórico actualizado: {$hito->titulo}", ['id' => $hito->id]);
 
-        return redirect()->route('admin.sitio.index', ['tab' => 'historia'])->with('success', 'Hito histórico actualizado.');
+        return redirect()->route('admin.sitio.historia')->with('success', 'Hito histórico actualizado.');
     }
 
     public function destroyHito(HistoriaHito $hito)
@@ -169,7 +235,7 @@ class SitioController extends Controller
         HistorialCambio::registrar('Sitio web', 'eliminar', "Hito histórico eliminado: {$hito->titulo}", ['id' => $hito->id]);
         $hito->delete();
 
-        return redirect()->route('admin.sitio.index', ['tab' => 'historia'])->with('success', 'Hito histórico eliminado.');
+        return redirect()->route('admin.sitio.historia')->with('success', 'Hito histórico eliminado.');
     }
 
     /**
@@ -205,7 +271,7 @@ class SitioController extends Controller
         );
 
         return redirect()
-            ->route('admin.sitio.index', ['tab' => 'utiles', 'lista' => $lista->id])
+            ->route('admin.sitio.utiles', ['lista' => $lista->id])
             ->with('success', 'Lista creada. Agrega los artículos y presiona Terminar.');
     }
 
@@ -284,7 +350,7 @@ class SitioController extends Controller
         );
 
         return redirect()
-            ->route('admin.sitio.index', ['tab' => 'utiles', 'lista' => $lista->id])
+            ->route('admin.sitio.utiles', ['lista' => $lista->id])
             ->with('success', $finalizada
                 ? 'Lista terminada. Ya está publicada en el portal.'
                 : 'Lista actualizada.');
@@ -307,7 +373,7 @@ class SitioController extends Controller
         );
 
         return redirect()
-            ->route('admin.sitio.index', ['tab' => 'utiles', 'lista' => $lista->id])
+            ->route('admin.sitio.utiles', ['lista' => $lista->id])
             ->with('success', 'Lista habilitada para edición.');
     }
 
@@ -333,7 +399,7 @@ class SitioController extends Controller
         );
 
         return redirect()
-            ->route('admin.sitio.index', ['tab' => 'utiles'])
+            ->route('admin.sitio.utiles')
             ->with('success', "Lista de {$nombre} eliminada.");
     }
 
@@ -348,7 +414,7 @@ class SitioController extends Controller
         $documento = DescargaDocumento::create($validated);
         HistorialCambio::registrar('Sitio web', 'crear', "Documento agregado: {$documento->titulo}", ['id' => $documento->id]);
 
-        return redirect()->route('admin.sitio.index', ['tab' => 'descargas'])->with('success', 'Documento agregado al centro de descargas.');
+        return redirect()->route('admin.sitio.descargas')->with('success', 'Documento agregado al centro de descargas.');
     }
 
     public function updateDescarga(Request $request, DescargaDocumento $documento)
@@ -365,7 +431,7 @@ class SitioController extends Controller
         $documento->update($validated);
         HistorialCambio::registrar('Sitio web', 'actualizar', "Documento actualizado: {$documento->titulo}", ['id' => $documento->id]);
 
-        return redirect()->route('admin.sitio.index', ['tab' => 'descargas'])->with('success', 'Documento actualizado.');
+        return redirect()->route('admin.sitio.descargas')->with('success', 'Documento actualizado.');
     }
 
     public function destroyDescarga(DescargaDocumento $documento)
@@ -377,7 +443,7 @@ class SitioController extends Controller
         HistorialCambio::registrar('Sitio web', 'eliminar', "Documento eliminado: {$documento->titulo}", ['id' => $documento->id]);
         $documento->delete();
 
-        return redirect()->route('admin.sitio.index', ['tab' => 'descargas'])->with('success', 'Documento eliminado.');
+        return redirect()->route('admin.sitio.descargas')->with('success', 'Documento eliminado.');
     }
 
     /** @return array<string, mixed> */

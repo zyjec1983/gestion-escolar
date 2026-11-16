@@ -14,11 +14,11 @@
 @section('sidebar')
 {{-- Aside principal: el color lo define la apariencia global (layouts/app). --}}
 <div class="d-flex flex-column p-3 text-white h-100" style="background: var(--aside-bg);">
-    <div class="d-flex justify-content-between align-items-center d-lg-none mb-3">
+    <div class="d-flex justify-content-between align-items-center d-md-none mb-3">
         <span class="fs-5 fw-bold">{{ $nombreInstitucion }}</span>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
     </div>
-    <a href="/dashboard" class="d-flex align-items-center mb-3 text-white text-decoration-none d-none d-lg-flex">
+    <a href="/dashboard" class="d-flex align-items-center mb-3 text-white text-decoration-none d-none d-md-flex">
         @if(!empty($institucion?->logo_path))
         <img src="{{ $institucion->logoUrl() }}" alt="Logo {{ $nombreInstitucion }}"
             class="bg-white rounded p-1 me-2" style="height:36px;width:36px;object-fit:contain;">
@@ -47,9 +47,10 @@
 
             Qué hace: agrupa los módulos administrables para que no existan
             pestañas repetidas ni accesos sueltos al final del menú.
-            - Portal y contenido: institución, textos, pre-registro, historia,
-              comunidad, útiles y descargas. Cada grupo con pestañas usa un
-              chevron para entrar directo a la vista correspondiente.
+            - Portal y contenido: Contenido institucional (chevron con
+              Institución, Textos e imágenes, Pre-registro e Historia), Comunidad
+              educativa y Servicios y descargas (chevron con Útiles escolares y
+              Descargas). Cada sección es una vista independiente, sin pestañas.
             - Apariencia: "Apariencia del sistema" con chevron para General,
               Carrusel del portal, Carrusel del login y Apariencia.
             - Usuarios y seguridad: cuentas, roles y contraseñas.
@@ -69,13 +70,16 @@
                    /traslados, /notas-extraordinarias y /actualizacion.
         --}}
         @php
-            // Estado de las pestañas del sitio y de configuración para que el
-            // menú lateral marque y despliegue el grupo correcto.
-            $enSitio = request()->is('admin/sitio*');
-            $tabSitio = $enSitio ? (request('tab') ?: 'textos') : null;
+            // Estado del sitio y de configuración para que el menú lateral
+            // marque y despliegue el grupo correcto.
+            $enTextos = request()->is('admin/sitio');
+            $enPreregistro = request()->is('admin/sitio/preregistro*');
+            $enHistoria = request()->is('admin/sitio/historia*');
+            $enUtiles = request()->is('admin/sitio/utiles*');
+            $enDescargas = request()->is('admin/sitio/descargas*');
             $enInstitucion = request()->is('admin/configuracion/institucion*');
-            $enContenidoInstitucional = ($enSitio && in_array($tabSitio, ['textos', 'preregistro', 'historia', 'utiles', 'descargas'], true))
-                || $enInstitucion;
+            $enContenidoInstitucional = $enTextos || $enPreregistro || $enHistoria || $enInstitucion;
+            $enServicios = $enUtiles || $enDescargas;
 
             // Cada sección de configuración es una vista independiente.
             $enConfigGeneral = request()->is('admin/configuracion');
@@ -111,33 +115,21 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('admin.sitio.index', ['tab' => 'textos']) }}"
-                           class="nav-link text-white small py-1 {{ $enSitio && $tabSitio === 'textos' ? 'active' : '' }}">
+                        <a href="{{ route('admin.sitio.index') }}"
+                           class="nav-link text-white small py-1 {{ $enTextos ? 'active' : '' }}">
                             <i class="bi bi-fonts me-2"></i> Textos e imágenes
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('admin.sitio.index', ['tab' => 'preregistro']) }}"
-                           class="nav-link text-white small py-1 {{ $enSitio && $tabSitio === 'preregistro' ? 'active' : '' }}">
+                        <a href="{{ route('admin.sitio.preregistro') }}"
+                           class="nav-link text-white small py-1 {{ $enPreregistro ? 'active' : '' }}">
                             <i class="bi bi-file-earmark-text me-2"></i> Pre-registro
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('admin.sitio.index', ['tab' => 'historia']) }}"
-                           class="nav-link text-white small py-1 {{ $enSitio && $tabSitio === 'historia' ? 'active' : '' }}">
+                        <a href="{{ route('admin.sitio.historia') }}"
+                           class="nav-link text-white small py-1 {{ $enHistoria ? 'active' : '' }}">
                             <i class="bi bi-book-half me-2"></i> Historia
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.sitio.index', ['tab' => 'utiles']) }}"
-                           class="nav-link text-white small py-1 {{ $enSitio && $tabSitio === 'utiles' ? 'active' : '' }}">
-                            <i class="bi bi-backpack2 me-2"></i> Útiles escolares
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.sitio.index', ['tab' => 'descargas']) }}"
-                           class="nav-link text-white small py-1 {{ $enSitio && $tabSitio === 'descargas' ? 'active' : '' }}">
-                            <i class="bi bi-cloud-arrow-down me-2"></i> Descargas
                         </a>
                     </li>
                 </ul>
@@ -148,6 +140,32 @@
                class="nav-link text-white {{ request()->is('admin/comunidad*') ? 'active' : '' }}">
                 <i class="bi bi-people-fill me-2"></i> Comunidad educativa
             </a>
+        </li>
+        <li class="nav-item">
+            <a role="button"
+               class="nav-link text-white d-flex justify-content-between align-items-center {{ $enServicios ? 'active' : '' }}"
+               data-bs-toggle="collapse" href="#submenuServiciosDescargas"
+               aria-expanded="{{ $enServicios ? 'true' : 'false' }}"
+               aria-controls="submenuServiciosDescargas">
+                <span><i class="bi bi-folder2-open me-2"></i> Servicios y descargas</span>
+                <i class="bi bi-chevron-down chevron-icon"></i>
+            </a>
+            <div class="collapse {{ $enServicios ? 'show' : '' }}" id="submenuServiciosDescargas">
+                <ul class="nav nav-pills flex-column ms-3 mt-1">
+                    <li class="nav-item">
+                        <a href="{{ route('admin.sitio.utiles') }}"
+                           class="nav-link text-white small py-1 {{ $enUtiles ? 'active' : '' }}">
+                            <i class="bi bi-backpack2 me-2"></i> Útiles escolares
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('admin.sitio.descargas') }}"
+                           class="nav-link text-white small py-1 {{ $enDescargas ? 'active' : '' }}">
+                            <i class="bi bi-cloud-arrow-down me-2"></i> Descargas
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
 
         <li class="nav-item mt-3">

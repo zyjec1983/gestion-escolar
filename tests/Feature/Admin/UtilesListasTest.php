@@ -62,7 +62,7 @@ class UtilesListasTest extends TestCase
                 ['cantidad' => '1', 'articulo' => 'Calculadora científica', 'materia' => 'Física'],
                 ['cantidad' => '3', 'articulo' => '', 'materia' => 'Ignorada'],
             ],
-        ])->assertRedirect(route('admin.sitio.index', ['tab' => 'utiles', 'lista' => $lista->id]));
+        ])->assertRedirect(route('admin.sitio.utiles', ['lista' => $lista->id]));
 
         $lista->refresh();
 
@@ -150,13 +150,13 @@ class UtilesListasTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('admin.sitio.utiles.listas.reabrir', $lista))
-            ->assertRedirect(route('admin.sitio.index', ['tab' => 'utiles', 'lista' => $lista->id]));
+            ->assertRedirect(route('admin.sitio.utiles', ['lista' => $lista->id]));
 
         $this->assertFalse($lista->refresh()->finalizada);
 
         $this->actingAs($admin)
             ->delete(route('admin.sitio.utiles.listas.destroy', $lista))
-            ->assertRedirect(route('admin.sitio.index', ['tab' => 'utiles']));
+            ->assertRedirect(route('admin.sitio.utiles'));
 
         $this->assertDatabaseMissing('listas_utiles', ['id' => $lista->id]);
         $this->assertDatabaseMissing('utiles_items', ['lista_id' => $lista->id]);

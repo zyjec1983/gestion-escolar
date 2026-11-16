@@ -117,7 +117,8 @@
                                 <i class="bi bi-key"></i>
                             </a>
                             @if($usuario->estaBloqueado())
-                            <form method="POST" action="{{ route('admin.usuarios.desbloquear', $usuario) }}" class="d-inline">
+                            <form method="POST" action="{{ route('admin.usuarios.desbloquear', $usuario) }}" class="d-inline"
+                                  data-confirm="¿Desbloquear la cuenta de {{ $usuario->nombreCompleto() }}?">
                                 @csrf
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Desbloquear cuenta">
                                     <i class="bi bi-unlock"></i>

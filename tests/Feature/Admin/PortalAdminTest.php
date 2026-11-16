@@ -47,7 +47,7 @@ class PortalAdminTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)
-            ->get(route('admin.sitio.index', ['tab' => 'preregistro']))
+            ->get(route('admin.sitio.preregistro'))
             ->assertOk()
             ->assertSee('Cabecera del formulario de pre-registro')
             ->assertSee('preregistro.cabecera_nombre', false);
@@ -59,7 +59,7 @@ class PortalAdminTest extends TestCase
                     'preregistro.titulo_solicitud' => 'MATRÍCULA EDITADA',
                 ],
             ])
-            ->assertRedirect(route('admin.sitio.index', ['tab' => 'preregistro']));
+            ->assertRedirect(route('admin.sitio.preregistro'));
 
         $this->assertSame('UNIDAD EDUCATIVA EDITADA', PortalContenido::valor('preregistro.cabecera_nombre'));
         $this->assertSame('MATRÍCULA EDITADA', PortalContenido::valor('preregistro.titulo_solicitud'));
@@ -130,7 +130,7 @@ class PortalAdminTest extends TestCase
             ],
         ]);
 
-        $response->assertRedirect(route('admin.sitio.index', ['tab' => 'textos']));
+        $response->assertRedirect(route('admin.sitio.index'));
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('site_contents', [
@@ -191,7 +191,7 @@ class PortalAdminTest extends TestCase
             'anio' => '1950',
             'titulo' => 'Llegada de las hermanas',
             'descripcion' => 'Inicio de la obra educativa.',
-        ])->assertRedirect(route('admin.sitio.index', ['tab' => 'historia']));
+        ])->assertRedirect(route('admin.sitio.historia'));
 
         $this->actingAs($admin)->post(route('admin.sitio.utiles.listas.store'), [
             'nombre' => 'Octavo',
@@ -205,13 +205,13 @@ class PortalAdminTest extends TestCase
             'items' => [
                 ['cantidad' => '1', 'articulo' => 'Calculadora científica', 'materia' => 'Matemáticas'],
             ],
-        ])->assertRedirect(route('admin.sitio.index', ['tab' => 'utiles', 'lista' => $lista->id]));
+        ])->assertRedirect(route('admin.sitio.utiles', ['lista' => $lista->id]));
 
         $this->actingAs($admin)->post(route('admin.sitio.descargas.store'), [
             'categoria' => 'convivencia',
             'titulo' => 'Código de convivencia',
             'archivo' => UploadedFile::fake()->create('convivencia.pdf', 200, 'application/pdf'),
-        ])->assertRedirect(route('admin.sitio.index', ['tab' => 'descargas']));
+        ])->assertRedirect(route('admin.sitio.descargas'));
 
         $this->assertDatabaseHas('historia_hitos', ['titulo' => 'Llegada de las hermanas']);
         $this->assertDatabaseHas('utiles_items', ['nombre' => 'Calculadora científica']);

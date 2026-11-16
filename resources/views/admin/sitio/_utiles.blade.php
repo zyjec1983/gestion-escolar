@@ -137,7 +137,7 @@
                         <td class="text-center">{{ $lista->items->count() }}</td>
                         <td class="text-center">{{ $lista->totalUnidades() }}</td>
                         <td class="text-end">
-                            <a href="{{ route('admin.sitio.index', ['tab' => 'utiles', 'lista' => $lista->id]) }}"
+                            <a href="{{ route('admin.sitio.utiles', ['lista' => $lista->id]) }}"
                                class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-pencil-square me-1"></i>Abrir
                             </a>
@@ -185,7 +185,7 @@
     @endphp
 
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 utiles-no-print">
-        <a href="{{ route('admin.sitio.index', ['tab' => 'utiles']) }}" class="btn btn-sm btn-outline-secondary">
+        <a href="{{ route('admin.sitio.utiles') }}" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i>Listas registradas
         </a>
         <div class="d-flex align-items-center gap-2">
@@ -365,12 +365,13 @@
                 <button type="button" id="utilesImprimir" class="btn btn-outline-secondary">
                     <i class="bi bi-printer me-1"></i>Imprimir
                 </button>
-                <a href="{{ route('admin.sitio.index', ['tab' => 'utiles']) }}" class="btn btn-outline-primary">
+                <a href="{{ route('admin.sitio.utiles') }}" class="btn btn-outline-primary">
                     <i class="bi bi-plus-circle me-1"></i>Nueva lista
                 </a>
             </div>
             <div class="d-flex flex-wrap gap-2">
-                <form method="POST" action="{{ route('admin.sitio.utiles.listas.reabrir', $listaSeleccionada) }}">
+                <form method="POST" action="{{ route('admin.sitio.utiles.listas.reabrir', $listaSeleccionada) }}"
+                      data-confirm="¿Reabrir esta lista para editar sus artículos?">
                     @csrf
                     <button type="submit" id="utilesEditarLista" class="btn btn-warning">
                         <i class="bi bi-pencil-square me-1"></i>Editar lista
