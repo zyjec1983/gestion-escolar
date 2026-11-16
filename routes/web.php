@@ -200,6 +200,9 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
         Route::put('/{curso}/malla/{cursoMateria}', [MateriaController::class, 'updateMalla'])->name('malla.update');
         Route::delete('/{curso}/malla/{cursoMateria}', [MateriaController::class, 'destroyMalla'])->name('malla.destroy');
     });
+    Route::post('/cursos', [MateriaController::class, 'storeCurso'])->name('cursos.store');
+    Route::put('/cursos/{curso}', [MateriaController::class, 'updateCurso'])->name('cursos.update');
+    Route::delete('/cursos/{curso}', [MateriaController::class, 'destroyCurso'])->name('cursos.destroy');
     Route::post('/cursos/{curso}/estado', [MateriaController::class, 'estadoCurso'])->name('cursos.estado');
 
     Route::prefix('asignaciones')->name('asignaciones.')->group(function () {

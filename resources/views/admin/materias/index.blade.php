@@ -25,15 +25,25 @@
                 Materias por año de educación. Los períodos son de 40 minutos y alimentan el distributivo docente.
             </p>
         </div>
-        <a href="{{ route('admin.asignaciones.index') }}" class="btn btn-outline-primary">
-            <i class="bi bi-person-workspace me-1"></i>Distributivo docente
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCurso">
+                <i class="bi bi-plus-lg me-1"></i>Nuevo año
+            </button>
+            <a href="{{ route('admin.asignaciones.index') }}" class="btn btn-outline-primary">
+                <i class="bi bi-person-workspace me-1"></i>Distributivo docente
+            </a>
+        </div>
     </div>
 
     @if($cursos->isEmpty())
-    <div class="alert alert-warning">
-        <i class="bi bi-exclamation-triangle me-1"></i>
-        No hay años de educación registrados. La malla se configura sobre los cursos existentes.
+    <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span>
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            No hay años de educación registrados. Agregue el primero para configurar su malla.
+        </span>
+        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalCurso">
+            <i class="bi bi-plus-lg me-1"></i>Agregar año
+        </button>
     </div>
     @else
     <div class="card shadow-sm mb-4">
@@ -68,6 +78,23 @@
                     <button type="submit" class="btn btn-sm {{ $cursoSeleccionado->activo ? 'btn-outline-danger' : 'btn-outline-success' }}">
                         <i class="bi {{ $cursoSeleccionado->activo ? 'bi-lock' : 'bi-unlock' }} me-1"></i>
                         {{ $cursoSeleccionado->activo ? 'Bloquear año' : 'Reactivar año' }}
+                    </button>
+                </form>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                    data-bs-toggle="modal" data-bs-target="#modalCurso" data-modo="editar"
+                    data-action="{{ route('admin.cursos.update', $cursoSeleccionado) }}"
+                    data-nombre="{{ $cursoSeleccionado->nombre }}"
+                    data-codigo="{{ $cursoSeleccionado->codigo }}">
+                    <i class="bi bi-pencil-square me-1"></i>Editar año
+                </button>
+
+                <form method="POST" action="{{ route('admin.cursos.destroy', $cursoSeleccionado) }}"
+                      data-confirm="¿Eliminar el año {{ $cursoSeleccionado->nombre }}? Solo se permite si no tiene matrículas, clases, asistencias ni pre-registros. Si conserva historial, use «Bloquear año».">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash me-1"></i>Eliminar año
                     </button>
                 </form>
             </div>
@@ -354,6 +381,43 @@
         </div>
     </div>
 </div>
+{{-- Creación y edición de años de educación en un solo modal reutilizable. --}}
+<div class="modal fade" id="modalCurso" tabindex="-1" aria-labelledby="modalCursoTitulo" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="formCurso" action="{{ route('admin.cursos.store') }}">
+                @csrf
+                <input type="hidden" name="_method" value="POST" id="metodoCurso">
+                <div class="modal-header">
+                    <h6 class="modal-title" id="modalCursoTitulo">Nuevo año de educación</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="curso_nombre">Nombre del año <span class="text-danger">*</span></label>
+                        <input type="text" id="curso_nombre" name="nombre" class="form-control" required
+                            placeholder="Ej. TERCERO DE BACHILLERATO - CIENCIAS">
+                        <div class="form-text">
+                            Incluya el grado (OCTAVO, NOVENO, DÉCIMO, PRIMERO, SEGUNDO o TERCERO) y, si aplica,
+                            la especialización después de un guion.
+                        </div>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label" for="curso_codigo">Código (opcional)</label>
+                        <input type="text" id="curso_codigo" name="codigo" class="form-control font-monospace"
+                            placeholder="Ej. 3B-CIE">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="cursoGuardar">
+                        <i class="bi bi-plus-lg me-1"></i>Agregar año
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -373,6 +437,42 @@
             formulario.querySelector('#editar_nombre').value = boton.dataset.nombre || '';
             formulario.querySelector('#editar_area').value = boton.dataset.area || '';
             formulario.querySelector('#editar_codigo').value = boton.dataset.codigo || '';
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var modalCurso = document.getElementById('modalCurso');
+
+        if (!modalCurso) return;
+
+        modalCurso.addEventListener('show.bs.modal', function (evento) {
+            var boton = evento.relatedTarget;
+            var formulario = document.getElementById('formCurso');
+            var metodo = document.getElementById('metodoCurso');
+            var titulo = document.getElementById('modalCursoTitulo');
+            var guardar = document.getElementById('cursoGuardar');
+            var nombre = document.getElementById('curso_nombre');
+            var codigo = document.getElementById('curso_codigo');
+
+            if (!formulario) return;
+
+            var editar = boton && boton.dataset.modo === 'editar';
+
+            formulario.reset();
+
+            if (editar) {
+                formulario.action = boton.dataset.action;
+                metodo.value = 'PUT';
+                titulo.textContent = 'Editar año de educación';
+                guardar.innerHTML = '<i class="bi bi-save me-1"></i>Guardar cambios';
+                nombre.value = boton.dataset.nombre || '';
+                codigo.value = boton.dataset.codigo || '';
+            } else {
+                formulario.action = '{{ route('admin.cursos.store') }}';
+                metodo.value = 'POST';
+                titulo.textContent = 'Nuevo año de educación';
+                guardar.innerHTML = '<i class="bi bi-plus-lg me-1"></i>Agregar año';
+            }
         });
     });
 </script>

@@ -7,7 +7,9 @@ use App\Models\Curso;
 use App\Models\CursoMateria;
 use App\Models\Institucion;
 use App\Models\Materia;
+use App\Models\Matricula;
 use App\Models\Paralelo;
+use App\Models\PreRegistro;
 use App\Models\User;
 use Tests\TestCase;
 
@@ -240,5 +242,121 @@ class MateriasAdminTest extends TestCase
         $this->actingAs($docente)
             ->get(route('admin.materias.index'))
             ->assertForbidden();
+    }
+
+    /** @test */
+    public function el_admin_agrega_un_ano_de_educacion()
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->post(route('admin.cursos.store'), [
+                'nombre' => 'TERCERO DE BACHILLERATO - CIENCIAS',
+                'codigo' => '3B-CIE',
+            ])
+            ->assertSessionHas('success');
+
+        $curso = Curso::where('nombre', 'TERCERO DE BACHILLERATO - CIENCIAS')->firstOrFail();
+
+        $this->assertTrue($curso->activo);
+        $this->assertSame('3B-CIE', $curso->codigo);
+        $this->assertSame('TERCERO', $curso->grado());
+        $this->assertSame('Ciencias', $curso->especializacion());
+    }
+
+    /** @test */
+    public function no_se_agrega_un_ano_sin_un_grado_conocido()
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->post(route('admin.cursos.store'), ['nombre' => 'CURSO DE REFUERZO'])
+            ->assertSessionHasErrors('nombre');
+
+        $this->assertDatabaseMissing('cursos', ['nombre' => 'CURSO DE REFUERZO']);
+    }
+
+    /** @test */
+    public function el_admin_actualiza_el_nombre_de_un_ano()
+    {
+        $admin = $this->admin();
+        $curso = Curso::factory()->create(['nombre' => 'TERCERO DE BACHILLERATO']);
+
+        $this->actingAs($admin)
+            ->put(route('admin.cursos.update', $curso), [
+                'nombre' => 'TERCERO DE BACHILLERATO - INFORMÁTICA',
+                'codigo' => '3B-INF',
+            ])
+            ->assertRedirect(route('admin.materias.index', ['curso' => $curso->id]))
+            ->assertSessionHas('success');
+
+        $curso->refresh();
+
+        $this->assertSame('TERCERO DE BACHILLERATO - INFORMÁTICA', $curso->nombre);
+        $this->assertSame('Informática', $curso->especializacion());
+    }
+
+    /** @test */
+    public function el_admin_elimina_un_ano_sin_historial()
+    {
+        $admin = $this->admin();
+        $curso = Curso::factory()->create(['nombre' => 'OCTAVO GRADO']);
+        $fila = CursoMateria::factory()->create(['curso_id' => $curso->id]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.cursos.destroy', $curso))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('cursos', ['id' => $curso->id]);
+        $this->assertDatabaseMissing('curso_materias', ['id' => $fila->id]);
+    }
+
+    /** @test */
+    public function no_se_elimina_un_ano_con_matriculas()
+    {
+        $admin = $this->admin();
+        $curso = Curso::factory()->create();
+        Matricula::factory()->create(['curso_id' => $curso->id]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.cursos.destroy', $curso))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('cursos', ['id' => $curso->id]);
+    }
+
+    /** @test */
+    public function no_se_elimina_un_ano_con_clases_docentes()
+    {
+        $admin = $this->admin();
+        $curso = Curso::factory()->create();
+        $docente = User::factory()->docente()->create();
+
+        ClaseDocente::create([
+            'user_id' => $docente->id,
+            'curso_id' => $curso->id,
+            'materia_id' => Materia::factory()->create()->id,
+            'paralelo_id' => Paralelo::factory()->create()->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.cursos.destroy', $curso))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('cursos', ['id' => $curso->id]);
+    }
+
+    /** @test */
+    public function no_se_elimina_un_ano_con_pre_registros()
+    {
+        $admin = $this->admin();
+        $curso = Curso::factory()->create();
+        PreRegistro::factory()->create(['curso_id' => $curso->id]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.cursos.destroy', $curso))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('cursos', ['id' => $curso->id]);
     }
 }

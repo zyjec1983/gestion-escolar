@@ -183,6 +183,18 @@ class Curso extends Model
         return $this->hasMany(Matricula::class);
     }
 
+    /** Asistencia diaria registrada por aula. */
+    public function asistencias()
+    {
+        return $this->hasMany(Asistencia::class);
+    }
+
+    /** Preinscripciones del portal que eligieron este año. */
+    public function preRegistros()
+    {
+        return $this->hasMany(PreRegistro::class);
+    }
+
     /** Filas de la malla curricular del año. */
     public function malla()
     {

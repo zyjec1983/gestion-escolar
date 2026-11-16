@@ -445,9 +445,10 @@ en "Control académico" y "Registros académicos".
     portal, Carrusel del login y Apariencia). Cada opción abre su propia vista,
     sin pestañas ni ?tab=.
   - Usuarios y seguridad: Usuarios y roles.
-  - Gestión académica: Malla curricular (materias por año, períodos de 40
-    minutos y bloqueo de años/materias) y Distributivo docente (asignación de
-    materias de la malla y cálculo de carga horaria).
+  - Gestión académica: Malla curricular (alta, edición y eliminación de años,
+    materias por año, períodos de 40 minutos y bloqueo de años/materias) y
+    Distributivo docente (asignación de materias de la malla y cálculo de
+    carga horaria).
   - Control académico: Matrículas e inscripciones, Fecha de Cargar notas,
     Circulares y comunicados, Moderación de observaciones y Registros
     académicos (corrección de notas, bitácora, traslados y actualización de
@@ -555,14 +556,21 @@ en "Control académico" y "Registros académicos".
          POST /admin/materias/{curso}/malla,
          PUT /admin/materias/{curso}/malla/{cursoMateria},
          DELETE /admin/materias/{curso}/malla/{cursoMateria},
+         POST /admin/cursos,
+         PUT /admin/cursos/{curso},
+         DELETE /admin/cursos/{curso},
          POST /admin/cursos/{curso}/estado
   Controlador: Admin\MateriaController
   Modelos: App\Models\Materia, App\Models\CursoMateria y App\Models\Curso
   Catálogo de materias con nombre, área, código y estado. Cada año de
   educación tiene su malla con períodos semanales de 40 minutos y el total de
-  horas reloj. Bloquear un año o una materia deja de ofertarla sin borrar
-  notas, clases ni matrículas históricas; no se crean ni editan años ni
-  paralelos desde este módulo.
+  horas reloj. Los años de educación se crean, renombran y eliminan desde el
+  botón "Nuevo año"; el nombre debe incluir un grado conocido (OCTAVO,
+  NOVENO, DÉCIMO, PRIMERO, SEGUNDO o TERCERO) y la especialización va después
+  de un guion. Solo se elimina un año sin matrículas, clases, asistencias ni
+  pre-registros; si conserva historial se bloquea. Bloquear un año o una
+  materia deja de ofertarla sin borrar notas, clases ni matrículas históricas.
+  Los paralelos no se crean ni editan desde este módulo.
 
 - Distributivo docente y carga horaria .................... (ready)
   Rutas: GET /admin/asignaciones, POST /admin/asignaciones,

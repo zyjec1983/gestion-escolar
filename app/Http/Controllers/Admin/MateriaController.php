@@ -9,6 +9,7 @@ use App\Models\CursoMateria;
 use App\Models\HistorialCambio;
 use App\Models\Materia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
@@ -148,6 +149,101 @@ class MateriaController extends Controller
         );
     }
 
+    /** Agrega un año de educación al catálogo de cursos. */
+    public function storeCurso(Request $request)
+    {
+        $validated = $request->validate([
+            'nombre' => ['required', 'string', 'max:255', Rule::unique('cursos', 'nombre'), $this->reglaGrado()],
+            'codigo' => ['nullable', 'string', 'max:50', Rule::unique('cursos', 'codigo')],
+        ], [
+            'nombre.required' => 'Escriba el nombre del año de educación.',
+            'nombre.unique' => 'Ya existe un año con ese nombre.',
+            'codigo.unique' => 'Ya existe un año con ese código.',
+        ]);
+
+        $curso = Curso::create([
+            'nombre' => $validated['nombre'],
+            'codigo' => $validated['codigo'] ?? null,
+            'activo' => true,
+        ]);
+
+        HistorialCambio::registrar('Malla curricular', 'crear', "Año creado: {$curso->nombre}", ['id' => $curso->id]);
+
+        return redirect()
+            ->route('admin.materias.index', ['curso' => $curso->id])
+            ->with('success', 'Año agregado. Ya puede configurar su malla curricular.');
+    }
+
+    /** Cambia el nombre o el código de un año de educación. */
+    public function updateCurso(Request $request, Curso $curso)
+    {
+        $validated = $request->validate([
+            'nombre' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('cursos', 'nombre')->ignore($curso->id),
+                $this->reglaGrado(),
+            ],
+            'codigo' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('cursos', 'codigo')->ignore($curso->id),
+            ],
+        ], [
+            'nombre.required' => 'Escriba el nombre del año de educación.',
+            'nombre.unique' => 'Ya existe un año con ese nombre.',
+            'codigo.unique' => 'Ya existe un año con ese código.',
+        ]);
+
+        $curso->update([
+            'nombre' => $validated['nombre'],
+            'codigo' => $validated['codigo'] ?? null,
+        ]);
+
+        HistorialCambio::registrar('Malla curricular', 'actualizar', "Año actualizado: {$curso->nombre}", ['id' => $curso->id]);
+
+        return redirect()
+            ->route('admin.materias.index', ['curso' => $curso->id])
+            ->with('success', 'Año actualizado.');
+    }
+
+    /**
+     * Elimina un año solo si no tiene historial. Si tiene matrículas, clases,
+     * asistencias o pre-registros, se debe bloquear para dejar de ofertarlo.
+     */
+    public function destroyCurso(Curso $curso)
+    {
+        $dependencias = array_filter([
+            'matrículas' => $curso->matriculas()->count(),
+            'clases docentes' => $curso->clasesDocentes()->count(),
+            'asistencias' => $curso->asistencias()->count(),
+            'pre-registros' => $curso->preRegistros()->count(),
+        ], fn (int $total) => $total > 0);
+
+        if ($dependencias !== []) {
+            $detalle = collect($dependencias)
+                ->map(fn (int $total, string $nombre) => "{$total} {$nombre}")
+                ->implode(', ');
+
+            return back()->with(
+                'error',
+                "No se puede eliminar este año porque conserva historial: {$detalle}. Use \"Bloquear año\" para dejar de ofertarlo sin perder datos."
+            );
+        }
+
+        $nombre = $curso->nombre;
+        $id = $curso->id;
+        $curso->delete();
+
+        HistorialCambio::registrar('Malla curricular', 'eliminar', "Año eliminado: {$nombre}", ['id' => $id]);
+
+        return redirect()
+            ->route('admin.materias.index')
+            ->with('success', "Año {$nombre} eliminado junto con su malla curricular.");
+    }
+
     public function storeMalla(Request $request, Curso $curso)
     {
         if (! $curso->activo) {
@@ -267,6 +363,25 @@ class MateriaController extends Controller
     private function asegurarPertenece(Curso $curso, CursoMateria $cursoMateria): void
     {
         abort_unless((int) $cursoMateria->curso_id === (int) $curso->id, 404);
+    }
+
+    /**
+     * El nombre del año debe incluir un grado conocido para que el orden
+     * escolar, la matrícula y la especialización sigan funcionando.
+     */
+    private function reglaGrado(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) {
+            $normalizado = Str::upper(Str::ascii((string) $value));
+
+            foreach (array_keys(Curso::GRADOS) as $grado) {
+                if (Str::contains($normalizado, $grado)) {
+                    return;
+                }
+            }
+
+            $fail('El nombre debe incluir el grado: OCTAVO, NOVENO, DÉCIMO, PRIMERO, SEGUNDO o TERCERO.');
+        };
     }
 
     /** Conserva el año seleccionado al volver al listado. */
