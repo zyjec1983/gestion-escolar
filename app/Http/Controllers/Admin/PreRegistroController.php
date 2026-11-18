@@ -114,6 +114,7 @@ class PreRegistroController extends Controller
             'numero_cedula' => $preRegistro->rep_numero_documento,
             'fecha_nacimiento' => $preRegistro->rep_fecha_nacimiento,
             'password' => Hash::make($password),
+            'debe_cambiar_password' => true,
             'rol' => 'REPRESENTANTE',
             'institucion_id' => 1,
         ];

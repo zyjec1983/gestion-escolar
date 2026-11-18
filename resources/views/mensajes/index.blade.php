@@ -203,6 +203,35 @@
                                 Llegará a todos los estudiantes, representantes, docentes y autoridades del centro.
                             </div>
                         </div>
+                    @elseif(in_array($compositor['rol'], ['RECTORA', 'VICERRECTORA']))
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-5">
+                                <label for="dirCurso" class="form-label">Curso</label>
+                                <select id="dirCurso" class="form-select">
+                                    <option value="">Seleccione curso...</option>
+                                    @foreach($compositor['cursos'] as $curso)
+                                        <option value="{{ $curso['id'] }}">{{ $curso['nombre'] }} ({{ $curso['alumnos']->count() }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="dirAlumno" class="form-label">Estudiante</label>
+                                <select id="dirAlumno" class="form-select" disabled>
+                                    <option value="">Seleccione estudiante...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Representante legal</label>
+                                <div class="border rounded px-2 py-1 bg-light small" style="min-height: 38px;">
+                                    <strong id="dirRepresentante" class="text-muted">—</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="alumno_id" id="dirAlumnoId" value="">
+                        <div class="alert alert-info py-2 px-3 small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Rectorado y Vicerrectorado envían mensajes únicamente al representante legal del estudiante seleccionado.
+                        </div>
                     @else
                         <div class="row g-2 mb-2">
                             <div class="col-md-6">
@@ -459,6 +488,70 @@ document.addEventListener('DOMContentLoaded', function () {
 
         radioRep.addEventListener('change', actualizarDestinatario);
         radioEst.addEventListener('change', actualizarDestinatario);
+    }
+
+    var dirCurso = document.getElementById('dirCurso');
+    if (dirCurso) {
+        var dirAlumno = document.getElementById('dirAlumno');
+        var dirRepresentante = document.getElementById('dirRepresentante');
+        var dirAlumnoId = document.getElementById('dirAlumnoId');
+
+        function cursoDirectivo() {
+            return (comp.cursos || []).find(function (c) { return String(c.id) === dirCurso.value; }) || null;
+        }
+
+        dirCurso.addEventListener('change', function () {
+            dirAlumno.innerHTML = '<option value="">Seleccione estudiante...</option>';
+            dirAlumno.value = '';
+            dirAlumno.disabled = true;
+            dirAlumnoId.value = '';
+            dirRepresentante.textContent = '—';
+            dirRepresentante.classList.add('text-muted');
+            reiniciarDestinatario();
+
+            var curso = cursoDirectivo();
+            if (!curso) return;
+
+            (curso.alumnos || []).forEach(function (alumno) {
+                var opt = document.createElement('option');
+                opt.value = alumno.id;
+                opt.textContent = alumno.label;
+                dirAlumno.appendChild(opt);
+            });
+            dirAlumno.disabled = !(curso.alumnos || []).length;
+
+            var ayuda = document.getElementById('compAyuda');
+            if (ayuda) ayuda.textContent = 'Seleccione un estudiante para ver a su representante legal.';
+        });
+
+        dirAlumno.addEventListener('change', function () {
+            var curso = cursoDirectivo();
+            var alumno = curso
+                ? (curso.alumnos || []).find(function (a) { return String(a.id) === dirAlumno.value; })
+                : null;
+
+            if (!alumno) {
+                dirAlumnoId.value = '';
+                dirRepresentante.textContent = '—';
+                dirRepresentante.classList.add('text-muted');
+                reiniciarDestinatario();
+                return;
+            }
+
+            dirAlumnoId.value = alumno.id;
+            dirRepresentante.textContent = alumno.representante_nombre || 'Sin representante registrado';
+            dirRepresentante.classList.toggle('text-muted', !alumno.representante_nombre);
+
+            document.getElementById('composerDestinatario').value = alumno.representante_id || '';
+            document.getElementById('composerContexto').value = alumno.id;
+
+            var ayuda = document.getElementById('compAyuda');
+            if (ayuda) {
+                ayuda.textContent = alumno.representante_id
+                    ? 'Se enviará a: ' + alumno.representante_nombre + ' (representante legal)'
+                    : 'Este estudiante no tiene representante registrado; no se puede enviar el mensaje.';
+            }
+        });
     }
 
     var selAlcanceIns = document.getElementById('compAlcance');

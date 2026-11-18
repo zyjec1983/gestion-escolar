@@ -1,0 +1,337 @@
+===============================================================================
+ MÓDULO RECTOR / VICERRECTOR — PLAN DE IMPLEMENTACIÓN
+ Documento de trabajo vivo. Se actualiza al cerrar cada sprint.
+ Versión del plan: 1.0
+ Fecha de creación: 18/10/2026
+ Fuente: modulo_rector_vicerector.txt (REQUERIMIENTOS FUNCIONALES v1.0 consolidada)
+===============================================================================
+
+Este plan cubre las funciones del ROL RECTOR y VICERRECTOR (Bloques A, B1, B6,
+C6 y D1 del documento de requerimientos). No repite lo ya construido en
+Inspección, Docente, Notas, Matrículas ni Mensajes (ver sprint history abajo).
+
+Cada sprint se entrega, se prueba y se cierra ANTES de pasar al siguiente.
+
+
+-------------------------------------------------------------------------------
+ 1. ESTADO ACTUAL DEL SISTEMA (auditoría 18/10/2026)
+-------------------------------------------------------------------------------
+
+ROLES CREADOS EN BD:
+  ADMIN (2), DOCENTE (2), ESTUDIANTE (320), INSPECCION (1), REPRESENTANTE (246)
+  FALTAN usuarios de prueba con rol: RECTORA, VICERRECTORA, DECE, SECRETARIA.
+
+TABLAS EXISTENTES (reutilizables):
+  periodos_lectivos (1 fila, solo nombre+fechas+activo)  -> A1 base
+  cursos (9), paralelos (4), materias (2)                 -> A2/A3 base
+  clases_docentes (4)  -> YA ES la relación N:M:N docente-materia-curso-paralelo (A6)
+  ajustes (clave/valor) -> base para toggles (C6)
+  asistencia, observaciones, citas, notas, mensajes       -> ya operativos
+
+TABLAS QUE FALTAN (a crear):
+  carga_horaria       (A5) horas semanales por materia x curso x año
+  jornada_docentes    (A7) jornada total + disponibilidad del docente
+  horarios / horario_slots (B1) asignación manual con validaciones
+  contingencias       (B6) reemplazo temporal por fecha
+  actividad_log       (D1) auditoría
+
+CONTROLADORES RELEVANTES YA EXISTENTES (revisar antes de codificar):
+  Directivo\HistorialCitaController      -> patrón de vista de autoridad
+  PlanificacionController (SECRETARIA, RECTORA, VICERRECTORA, DOCENTE)
+  Admin\MatriculaController, Admin\ConfiguracionController
+  Secretaria\ActualizacionDatosController
+
+GAPS DE DATOS (para probar de verdad se necesita sembrar):
+  Solo 2 materias, 2 docentes, 4 clases_docentes, 1 periodo.
+  -> Cada sprint que toque catálogos debe incluir seeder/demo de prueba.
+
+
+-------------------------------------------------------------------------------
+ 2. BLOQUEANTES / PENDIENTES DEL CLIENTE (§11 del doc) — cerrar antes de Sprint R7
+-------------------------------------------------------------------------------
+  [ ] Template HTML+Bootstrap+JS que el cliente va a aportar para la UI de
+      Rector/Vice. UBICACIÓN PENDIENTE (preguntar ruta exacta).
+  [ ] ¿Rector y Vice tienen permisos idénticos o el Vice tiene techo?
+  [ ] ¿La ventana de notas la activa solo Rector o también Vice?
+  [ ] ¿Coordinador ve todos los cursos o solo los asignados?
+  [ ] Base de datos: ¿MySQL o PostgreSQL? (hoy SQLite en dev)
+  [ ] ¿Se migran datos históricos de años anteriores?
+
+  NOTA: Los sprints R1–R6 NO dependen de estas respuestas. R7 (horarios) y R9
+  (auditoría/2FA) sí pueden necesitarlas.
+
+
+-------------------------------------------------------------------------------
+ 3. SPRINTS
+-------------------------------------------------------------------------------
+
+=== SPRINT R1 — Años lectivos y períodos (req. A1) ============================
+ESTADO: [ ] pendiente
+ALCANCE:
+  - CRUD de años lectivos (nombre, fecha_inicio, fecha_fin, activo). Ya existe
+    la tabla; se amplía para soportar "año lectivo" (ej. 2025-2026) y no solo
+    un registro.
+  - Definición de períodos DENTRO de un año: parciales, quimestres, cierre
+    anual. Tabla periodos (hijos del año lectivo) con tipo + rango de fechas.
+  - Una sola configuración de períodos por año lectivo.
+  - Al cerrar un período: se bloquean notas y asistencia de ese rango.
+    Solo Rector puede REABRIR, con auditoría (quién, cuándo, motivo).
+BD:
+  - Ampliar/crear: años_lectivos (id, nombre, fecha_inicio, fecha_fin, activo)
+  - periodos (id, año_lectivo_id, tipo[parcial|quimestre|anual], nombre,
+    numero, fecha_inicio, fecha_fin, cerrado_en, cerrado_por, reabierto_por,
+    reabierto_motivo)
+VALIDACIONES:
+  - No se pueden solapar períodos del mismo tipo en un año.
+  - Cerrar un período exige que no haya notas en estado "borrador" en ese rango.
+ENTREGABLE: pantalla de Rector para gestionar años y períodos + cerrar/reabrir.
+TESTS: CRUD completo, cierre bloquea notas, reapertura auditada, solape rechazado.
+
+
+=== SPRINT R2 — Catálogos académicos: Materias, Cursos y Paralelos (A2, A3) ===
+ESTADO: [ ] pendiente
+ALCANCE:
+  - CRUD Materias (nombre, código, estado). Ya existe el modelo.
+  - CRUD Cursos y Paralelos para Rector/Vice.
+  - Toggle secretaria_puede_aperturar_cursos (default off): Secretaría solo
+    apertura paralelos si Rector/Vice lo activan. Cambio auditado.
+BD:  usar tablas existentes cursos, paralelos, materias.
+VALIDACIONES:
+  - No borrar un curso/paralelo con matrículas asociadas (bloquear, no cascada).
+  - Cambio de toggle auditado.
+ENTREGABLE: 3 pantallas de catálogo + pantalla de toggles básica.
+TESTS: CRUD, bloqueo de borrado con matrículas, efecto del toggle en Secretaría.
+
+
+=== SPRINT R3 — Usuarios y docentes (req. A4) ================================
+ESTADO: [ ] pendiente
+ALCANCE:
+  - Admin/Rector/Vice crean cuentas de DOCENTES desde el panel de autoridad.
+  - Gestión de representantes: un estudiante 1+ representantes; un
+    representante 1+ estudiantes.
+  - Contraseñas con hash bcrypt/argon2 y política de longitud.
+  - (Representantes ya se crean al aprobar matrícula — revisar y reutilizar.)
+BD:  usuarios (ya existe), alumnos.representante_user_id (ya existe).
+VALIDACIONES:
+  - No eliminar un usuario con registros sensibles asociados.
+  - Rol asignable solo por ADMIN/RECTOR/VICE.
+ENTREGABLE: pantalla de gestión de docentes + asignación de representantes.
+TESTS: creación de docente, vínculo estudiante-representante, permisos por rol.
+
+
+=== SPRINT R4 — Carga horaria (req. A5) ======================================
+ESTADO: [ ] pendiente
+ALCANCE:
+  - Definir horas académicas semanales por materia x nivel/curso x año lectivo.
+    Ej: Matemáticas 8.º = 5 h/sem.
+  - Flexible por año lectivo.
+  - Esta configuración es la REGLA de validación al generar horarios (R7).
+BD:  NUEVA carga_horaria (id, año_lectivo_id, materia_id, curso_id,
+    horas_semanales, unique(materia,curso,año)).
+VALIDACIONES:
+  - horas_semanales > 0 y <= horas totales de la semana.
+  - No duplicar materia+curso en el mismo año.
+ENTREGABLE: matriz editable de carga horaria por curso.
+TESTS: CRUD, regla única, cálculo de total por curso.
+
+
+=== SPRINT R5 — Asignación docente-materia-curso (req. A6) ===================
+ESTADO: [ ] pendiente
+ALCANCE:
+  - UI de CRUD sobre la tabla EXISTENTE clases_docentes (N:M:N).
+    Un docente dicta varias materias en varios paralelos; una materia la
+    dictan varios docentes. Ej canónico: María Haro → Mat. en 8ºA, 8ºB, 9ºA,
+    1ºBach + Tutoría en 3ºBach.
+  - Sin restricción 1 docente = 1 materia.
+  - Validar contra carga horaria (R4): no exceder las horas configuradas.
+BD:  reutilizar clases_docentes (user_id, materia_id, curso_id, paralelo_id).
+VALIDACIONES:
+  - No duplicar docente+materia+curso+paralelo (ya hay unique en BD).
+  - La suma de horas asignadas al docente no excede su jornada (requiere R6;
+    por ahora solo advertir, bloqueo llega en R6/R7).
+ENTREGABLE: matriz de asignaciones por curso y por docente.
+TESTS: alta/baja de asignación, duplicado rechazado, cierre de horas vs carga.
+
+
+=== SPRINT R6 — Jornada y disponibilidad docente (req. A7) ===================
+ESTADO: [ ] pendiente
+ALCANCE:
+  - Jornada total semanal configurable por docente (ej. 40 h).
+  - Desglose: horas académicas (salen de R5) + horas de ATENCIÓN A
+    REPRESENTANTES (configuradas explícitamente, ej. miércoles 10:00-11:00) +
+    tutorías + HORAS ADMINISTRATIVAS RESIDUALES (= total − académicas −
+    atención − tutorías; se CALCULAN, no se ingresan).
+  - Las horas de atención alimentan directamente el módulo de CITAS
+    (franjas disponibles reales).
+  - Las horas administrativas y de atención son bloques NO disponibles para
+    clases.
+BD:  NUEVA jornada_docentes (id, user_id, año_lectivo_id, horas_totales,
+    horas_atencion json, horas_tutoria, horas_administrativas [calculadas]).
+VALIDACIONES (bloqueantes, error 422 con detalle):
+  - académicas + atención + tutorías NO puede exceder jornada total.
+ENTREGABLE: pantalla de jornada por docente con cálculo residual en vivo.
+TESTS: cálculo de horas administrativas, exceso de jornada -> 422, franjas de
+      atención generan disponibilidad de citas.
+
+
+=== SPRINT R7 — Horarios manuales con validaciones (req. B1) ==================
+ESTADO: [ ] pendiente  (depende de R4, R5, R6)
+ALCANCE:
+  - Generación en estado BORRADOR; PUBLICACIÓN explícita y auditada.
+  - Vistas por: docente, estudiante, curso/paralelo, materia.
+  - Primera versión: ASIGNACIÓN MANUAL ASISTIDA con validaciones obligatorias.
+    (La generación automática backtracking/ILP queda para v2 — Sprint R11.)
+VALIDACIONES BLOQUEANTES (no advertencias):
+  1. Un docente no puede tener 2 clases simultáneas.
+  2. Un paralelo no puede tener 2 materias simultáneas.
+  3. No exceder la carga semanal configurada en A5/R4.
+  4. No asignar en franja de atención a representantes (R6).
+  5. No asignar en franja de receso.
+  6. (Opcional) Conflicto de aula si se usa recurso físico.
+BD:  NUEVA horarios (id, año_lectivo_id, curso_id, paralelo_id, docente_id,
+    materia_id, dia, franja_horaria_id, estado[borrador|publicado],
+    publicado_por, publicado_en) + tabla franjas_horarias (dia, inicio, fin,
+    tipo[clase|receso|atencion|administrativa]).
+ENTREGABLE: tablero semanal de horario con validación en cada asignación.
+TESTS: los 5 bloqueos anteriores generan 422 y no guardan. Publicación auditada.
+
+
+=== SPRINT R8 — Contingencias (req. B6) ======================================
+ESTADO: [ ] pendiente  (independiente; puede hacerse en paralelo a R7)
+ALCANCE:
+  - Flujo: docente ausente -> fecha -> consultar horario del día -> seleccionar
+    clase -> listar docentes candidatos -> asignar reemplazo.
+  - Validaciones del candidato: sin clase en ese horario, disponible, sin
+    exceder carga.
+  - La contingencia NO modifica el horario base; es una excepción por fecha.
+  - Historial: docente titular, reemplazante, materia, curso/paralelo, fecha,
+    hora, usuario asignador, motivo.
+  - Casos borde: contingencia cancelada; reemplazante que también falta ->
+    vuelve a pendiente con auditoría.
+BD:  NUEVA contingencias (id, fecha, horario_slot_id, docente_titular_id,
+    docente_reemplazo_id, materia_id, curso_id, paralelo_id, motivo,
+    estado[activa|cancelada|pendiente], asignado_por, created_at).
+ENTREGABLE: pantalla de contingencias del día para Inspector/Vicerrector.
+TESTS: asignación válida, candidato ocupado rechazado, cancelación, reemplazo
+      ausente vuelve a pendiente.
+
+
+=== SPRINT R9 — Toggles de configuración + Auditoría (C6, D1) ================
+ESTADO: [ ] pendiente
+ALCANCE:
+  - Formalizar los toggles (hoy solo existe tipos_obs_edicion en ajustes):
+      secretaria_puede_aperturar_cursos   (default off)
+      secretaria_puede_editar_notas       (default off, solo tras cierre docente)
+      rector_puede_registrar_observaciones(default on)
+      dece_modo_lectura                   (default on)
+  - Solo ADMIN/RECTOR/VICE pueden cambiarlos. CADA cambio auditado
+    (quién, cuándo, valor anterior/nuevo).
+  - Auditoría general (D1): registrar usuario, acción, entidad, datos
+    antes/después, IP, timestamp. Mínimo a auditar: login, CRUD de entidades
+    sensibles, cambios de toggle, publicación de horario, aprobación de
+    matrícula, reapertura de período, asignación de contingencia.
+BD:  NUEVA actividad_log + ampliar ajustes (o tabla toggles dedicada).
+ENTREGABLE: pantalla de toggles + middleware/decorador de auditoría.
+TESTS: cambio de toggle auditado, intento de rol no autorizado -> 403,
+      trazabilidad completa de una acción sensible.
+
+
+=== SPRINT R10 — Panel de autoridad y reportes (C1, C4) ======================
+ESTADO: [ ] pendiente
+ALCANCE:
+  - Panel con CARDS por nivel (Octavo -> 3.º Bachillerato) con conteo de
+    paralelos. Al hacer clic: paralelos y dentro -> asistencia, observaciones,
+    notas, horario, docentes, citas.
+  - Reportes e impresión: actas en masa por curso (orden alfabético por
+    apellido; materia, alumno, salón, período, tutor; PDF).
+  - Reportes adicionales: asistencia consolidada, observaciones por estudiante,
+    contingencias por período. (Reutilizar dompdf ya instalado.)
+ENTREGABLE: dashboard de Rector con drill-down + generación de actas PDF.
+TESTS: conteos por nivel, generación de acta por curso, permisos de visualización.
+
+
+=== SPRINT R11 (v2, opcional) — Generación automática de horarios =============
+ESTADO: [ ] pendiente (fuera de la v1)
+  Algoritmo backtracking/ILP sobre las validaciones de R7. Meta: generar
+  borrador de horario de 1 curso en < 3 s. Requiere decisión de cliente.
+
+
+-------------------------------------------------------------------------------
+ 4. ORDEN Y DEPENDENCIAS
+-------------------------------------------------------------------------------
+  R1 (períodos)      -> sin dependencias
+  R2 (catálogos)     -> sin dependencias
+  R3 (docentes)      -> sin dependencias
+  R4 (carga horaria) -> requiere R2 (materias/cursos)
+  R5 (asignaciones)  -> requiere R2, R3, R4
+  R6 (jornada)       -> requiere R5
+  R7 (horarios)      -> requiere R4, R5, R6   [CRÍTICO]
+  R8 (contingencias) -> requiere R7 (usa el horario); puede arrancar en paralelo
+  R9 (toggles+auditoría) -> transversal; recomendado tras R2 para apoyar toggles
+  R10 (panel/reportes) -> integrador; va al final
+  R11 (auto-horario) -> v2
+
+  ORDEN RECOMENDADO DE EJECUCIÓN:
+    R1 -> R2 -> R3 -> R4 -> R5 -> R6 -> R9 -> R7 -> R8 -> R10  (R11 = v2)
+
+
+-------------------------------------------------------------------------------
+ 5. REGLAS DE NEGOCIO CLAVE (no violar — §5 del documento)
+-------------------------------------------------------------------------------
+  - Relación docente-materia-curso es N:M:N vía tabla intermedia. NUNCA
+    columnas directas. (Ya se cumple en clases_docentes.)
+  - Horas administrativas = jornada total − académicas − atención − tutorías.
+    Se CALCULAN, no se ingresan.
+  - La suma de actividades docentes no puede exceder la jornada total. BLOQUEO.
+  - Las horas de atención a representantes son la ÚNICA fuente de
+    disponibilidad del módulo de Citas.
+  - Una contingencia NO altera el horario base. Es excepción por fecha.
+  - Un horario publicado no se edita sin auditoría.
+  - Todo cambio de toggle queda auditado.
+  - Validaciones de horario son BLOQUEANTES, no advertencias.
+
+
+-------------------------------------------------------------------------------
+ 6. SECUENCIA DE PRUEBA POR SPRINT (definición de "terminado")
+-------------------------------------------------------------------------------
+  Para dar por cerrado un sprint deben cumplirse TODOS:
+    [ ] artisan test en verde (sin regresiones; el fallo preexistente
+        AulaVirtualTest es ajeno y se tolera hasta repararlo).
+    [ ] Pint limpio en archivos nuevos/modificados.
+    [ ] Al menos 1 test de regresión del happy path + 1 test de bloqueo/validación.
+    [ ] Verificación manual en el navegador con datos de prueba sembrados.
+    [ ] Commit + push con mensaje que indique el sprint (ej. "sprint(R4): ...").
+    [ ] Marcar ESTADO de este documento como [x] y actualizar el historial.
+
+
+-------------------------------------------------------------------------------
+ 7. HISTORIAL DE SPRINTS CERRADOS (módulos ya construidos ANTES de este plan)
+-------------------------------------------------------------------------------
+  [x] Asistencia por aula (docente + inspector) + estadísticas inspector.
+  [x] Observaciones con catálogo configurable + estadísticas + reportes PDF.
+  [x] Citas (docente + inspector registra resultado de sus propias citas).
+  [x] Registro de resultado de citas por inspector (paridad con docente).
+  [x] Estadísticas de observaciones con Chart.js (por tipo y por docente).
+  [x] Estadísticas de asistencia con conteos por alumno del salón.
+  [x] Fix: comparación de fechas de asistencia con whereDate (SQLite).
+  (Commits: 03a6ece, e0f242f, f4871fe en origin/main)
+
+  PENDIENTES MENORES PARALELOS (no bloquean el módulo rector):
+    - Refresco AJAX de bandeja de mensajes (Opción B).
+    - Alinear validación de notas a decimal:0,6.
+    - Abanderados: falta curso Tercero Bachillerato.
+    - Reparar test preexistente AulaVirtualTest.
+
+
+-------------------------------------------------------------------------------
+ 8. PRÓXIMO PASO INMEDIATO
+-------------------------------------------------------------------------------
+  1. Preguntar al cliente la RUTA del template HTML+Bootstrap+JS para la UI de
+     Rector/Vice y revisarlo antes de codificar R1.
+  2. Sembrar datos mínimos de prueba (1 año lectivo con períodos, 3-4 materias,
+     docentes con rol DOCENTE) para poder probar de verdad.
+  3. Iniciar SPRINT R1 (años lectivos y períodos).
+
+===============================================================================
+ FIN DEL DOCUMENTO — actualizar al cerrar cada sprint.
+===============================================================================

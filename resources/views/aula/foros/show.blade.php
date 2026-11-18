@@ -262,15 +262,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        var swalError = document.getElementById('swal-error');
-        if (swalError) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Atención',
-                text: swalError.dataset.message,
-                confirmButtonText: 'Entendido'
-            });
-        }
+        // #swal-error lo muestra el layout general con SweetAlert2.
 
         document.querySelectorAll('form.confirm-swal').forEach(function (f) {
             f.addEventListener('submit', function (e) {

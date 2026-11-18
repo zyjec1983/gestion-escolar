@@ -161,6 +161,140 @@ class MensajeTest extends TestCase
         $this->assertStringContainsString($ctx['representante']->name, $estudiante['representante_nombre']);
     }
 
+    public function test_directivo_ve_compositor_por_curso_con_representante(): void
+    {
+        $ctx = $this->crearCtx();
+        $rectora = User::factory()->rectora()->create();
+
+        $respuesta = $this->actingAs($rectora)
+            ->get(route('mensajes.index'))
+            ->assertOk()
+            ->assertSee('Curso')
+            ->assertSee('Representante legal');
+
+        $compositor = $respuesta->viewData('compositor');
+        $this->assertEquals('RECTORA', $compositor['rol']);
+        $this->assertCount(1, $compositor['cursos']);
+
+        $alumno = $compositor['cursos'][0]['alumnos'][0];
+        $this->assertEquals($ctx['alumno']->id, $alumno['id']);
+        $this->assertEquals($ctx['representante']->id, $alumno['representante_id']);
+        $this->assertStringContainsString($ctx['representante']->name, $alumno['representante_nombre']);
+    }
+
+    public function test_directivo_envia_solo_al_representante_aunque_intente_al_estudiante(): void
+    {
+        $ctx = $this->crearCtx();
+        $rectora = User::factory()->rectora()->create();
+
+        $this->actingAs($rectora)
+            ->post(route('mensajes.store'), [
+                'asunto' => 'Reunión de representantes',
+                'cuerpo_contenido' => 'Convocatoria para el viernes.',
+                // Intento malicioso: el cliente envía al estudiante, pero el
+                // servidor debe derivar el destinatario del alumno elegido.
+                'destinatario_id' => $ctx['estudiante']->id,
+                'alumno_id' => $ctx['alumno']->id,
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('mensajes', [
+            'emisor_id' => $rectora->id,
+            'destinatario_id' => $ctx['representante']->id,
+            'contexto_estudiante_id' => $ctx['alumno']->id,
+        ]);
+
+        $this->assertDatabaseMissing('mensajes', [
+            'emisor_id' => $rectora->id,
+            'destinatario_id' => $ctx['estudiante']->id,
+        ]);
+    }
+
+    public function test_vicerrectora_no_envia_sin_estudiante_seleccionado(): void
+    {
+        $ctx = $this->crearCtx();
+        $vicerrectora = User::factory()->vicerrectora()->create();
+
+        $this->actingAs($vicerrectora)
+            ->post(route('mensajes.store'), [
+                'asunto' => 'Sin estudiante',
+                'cuerpo_contenido' => 'No debe enviarse.',
+                // Aunque intente apuntar a un estudiante, falta el alumno que
+                // permite derivar al representante legal.
+                'destinatario_id' => $ctx['estudiante']->id,
+            ])
+            ->assertSessionHasErrors('alumno_id');
+
+        $this->assertDatabaseCount('mensajes', 0);
+    }
+
+    public function test_directivo_no_responde_a_un_estudiante(): void
+    {
+        $ctx = $this->crearCtx();
+        $rectora = User::factory()->rectora()->create();
+
+        $mensaje = Mensaje::create([
+            'asunto' => 'Consulta estudiantil',
+            'cuerpo_contenido' => 'Mensaje del estudiante.',
+            'carpeta' => 'no_leidos',
+            'emisor_id' => $ctx['estudiante']->id,
+            'emisor_type' => User::class,
+            'destinatario_id' => $rectora->id,
+            'contexto_estudiante_id' => $ctx['alumno']->id,
+            'leido' => false,
+            'fecha_envio' => now(),
+        ]);
+
+        $this->actingAs($rectora)
+            ->post(route('mensajes.store'), [
+                'asunto' => 'Re: Consulta estudiantil',
+                'cuerpo_contenido' => 'Respuesta no permitida.',
+                'destinatario_id' => $ctx['estudiante']->id,
+                'hilo_id' => $mensaje->id,
+            ])
+            ->assertSessionHasErrors('destinatario_id');
+
+        $this->assertDatabaseCount('mensajes', 1);
+    }
+
+    public function test_api_directivo_envia_solo_al_representante(): void
+    {
+        $ctx = $this->crearCtx();
+        $rectora = User::factory()->rectora()->create();
+
+        $this->actingAs($rectora, 'sanctum')
+            ->postJson('/api/mensajes', [
+                'asunto' => 'Circular por API',
+                'cuerpo_contenido' => 'Prueba de API.',
+                'destinatario_id' => $ctx['estudiante']->id,
+                'alumno_id' => $ctx['alumno']->id,
+            ])
+            ->assertCreated();
+
+        $this->assertDatabaseHas('mensajes', [
+            'emisor_id' => $rectora->id,
+            'destinatario_id' => $ctx['representante']->id,
+            'contexto_estudiante_id' => $ctx['alumno']->id,
+        ]);
+    }
+
+    public function test_api_directivo_no_envia_sin_estudiante(): void
+    {
+        $ctx = $this->crearCtx();
+        $vicerrectora = User::factory()->vicerrectora()->create();
+
+        $this->actingAs($vicerrectora, 'sanctum')
+            ->postJson('/api/mensajes', [
+                'asunto' => 'Sin estudiante',
+                'cuerpo_contenido' => 'No debe enviarse.',
+                'destinatario_id' => $ctx['estudiante']->id,
+            ])
+            ->assertStatus(422);
+
+        $this->assertDatabaseCount('mensajes', 0);
+    }
+
     public function test_representante_ve_compositor_por_materia_con_docente(): void
     {
         $ctx = $this->crearCtx();

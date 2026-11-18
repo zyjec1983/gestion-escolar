@@ -64,6 +64,7 @@ class User extends Authenticatable
         'name', 'apellidos', 'email', 'password',
         'rol', 'institucion_id', 'telefono', 'numero_cedula', 'fecha_nacimiento',
         'intentos_fallidos', 'bloqueado_hasta', 'bloqueos_consecutivos', 'requiere_desbloqueo',
+        'debe_cambiar_password',
         'titulo', 'horas_contrato', 'periodos_atencion_padres',
         'periodos_reunion_area', 'periodos_tutoria', 'es_tutor',
     ];
@@ -79,6 +80,7 @@ class User extends Authenticatable
             'fecha_nacimiento' => 'date',
             'bloqueado_hasta' => 'datetime',
             'requiere_desbloqueo' => 'boolean',
+            'debe_cambiar_password' => 'boolean',
             'password' => 'hashed',
             'horas_contrato' => 'integer',
             'periodos_atencion_padres' => 'integer',

@@ -147,8 +147,13 @@ class ActualizacionDatosController extends Controller
             ? (int) $validated['representante_user_id']
             : null;
 
+        $representanteId = null;
+        $passwordTemporal = null;
+
         if ($crearNuevo) {
-            $representanteId = $this->crearRepresentante($validated);
+            $nuevo = $this->crearRepresentante($validated);
+            $representanteId = $nuevo['id'];
+            $passwordTemporal = $nuevo['password'];
         } elseif ($busqueda !== '') {
             // El buscador es la fuente principal: lo escrito tiene que existir
             // en la lista y coincidir con la persona que quedo seleccionada.
@@ -211,15 +216,33 @@ class ActualizacionDatosController extends Controller
             ? 'Datos actualizados. Se creó y asignó la cuenta del nuevo representante legal.'
             : 'Datos actualizados correctamente.';
 
-        return redirect()
+        $respuesta = redirect()
             ->route('actualizacion.edit', $alumno->id)
             ->with('success', $mensaje);
+
+        if ($passwordTemporal !== null) {
+            $respuesta->with(
+                'info',
+                "Contraseña temporal del nuevo representante: {$passwordTemporal}. "
+                .'En el primer ingreso se pedirá cambiarla.'
+            );
+        }
+
+        return $respuesta;
     }
 
-    /** Da de alta la cuenta del representante nuevo y devuelve su id. */
-    protected function crearRepresentante(array $validated): int
+    /**
+     * Da de alta la cuenta del representante nuevo y devuelve su id y la clave.
+     *
+     * Qué hace: genera una contraseña temporal aleatoria (letras y números),
+     * la guarda hasheada y marca la cuenta para cambio obligatorio. La clave
+     * se muestra una sola vez a la secretaria en el mensaje flash.
+     */
+    protected function crearRepresentante(array $validated): array
     {
-        return User::create([
+        $password = Str::password(12, letters: true, numbers: true, symbols: false);
+
+        $user = User::create([
             'name' => $validated['representante_nombres'],
             'apellidos' => $validated['representante_apellidos'] ?? null,
             'email' => $validated['representante_email'],
@@ -227,8 +250,11 @@ class ActualizacionDatosController extends Controller
             'numero_cedula' => $validated['representante_cedula'] ?? null,
             'fecha_nacimiento' => $validated['representante_fecha_nacimiento'] ?? null,
             'rol' => 'REPRESENTANTE',
-            'password' => bcrypt('password'),
-        ])->id;
+            'password' => $password,
+            'debe_cambiar_password' => true,
+        ]);
+
+        return ['id' => $user->id, 'password' => $password];
     }
 
     /**

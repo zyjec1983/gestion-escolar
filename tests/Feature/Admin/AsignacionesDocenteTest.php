@@ -327,6 +327,7 @@ class AsignacionesDocenteTest extends TestCase
 
         $this->assertSame('Lcdo. en Ciencias de la Educación', $docente->titulo);
         $this->assertSame(20, $docente->horas_contrato);
+        $this->assertTrue($docente->debe_cambiar_password);
         $this->assertDatabaseHas('users', ['id' => $docente->id, 'numero_cedula' => '1718459203']);
     }
 

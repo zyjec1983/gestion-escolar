@@ -123,6 +123,26 @@ class UsuariosAdminTest extends TestCase
         ])->assertRedirect(route('admin.usuarios.index'));
 
         $this->assertTrue(Hash::check('nueva-clave-123', $objetivo->fresh()->password));
+        $this->assertTrue($objetivo->fresh()->debe_cambiar_password);
+    }
+
+    /** @test */
+    public function el_admin_puede_restablecer_la_contrasena_desde_el_formulario()
+    {
+        $admin = User::factory()->admin()->create();
+        $objetivo = User::factory()->docente()->create();
+
+        $this->actingAs($admin)
+            ->post(route('admin.usuarios.password.update', $objetivo), [
+                'password' => 'temporal123',
+                'password_confirmation' => 'temporal123',
+            ])
+            ->assertRedirect(route('admin.usuarios.index'));
+
+        $objetivo->refresh();
+
+        $this->assertTrue(Hash::check('temporal123', $objetivo->password));
+        $this->assertTrue($objetivo->debe_cambiar_password);
     }
 
     /** @test */
@@ -193,6 +213,7 @@ class UsuariosAdminTest extends TestCase
         $this->assertNotNull($user);
         $this->assertSame('REPRESENTANTE', $user->rol);
         $this->assertTrue(Hash::check('0900000001', $user->password));
+        $this->assertTrue($user->debe_cambiar_password);
         $this->assertTrue($user->rolesAdicionales()->where('rol', 'ESTUDIANTE')->exists());
         $this->assertSame($user->id, $alumno->fresh()->user_id);
     }

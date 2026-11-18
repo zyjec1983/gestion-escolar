@@ -27,6 +27,10 @@ use App\Http\Controllers\Dece\ExpedienteController as DeceExpedienteController;
 use App\Http\Controllers\Dece\NeeController as DeceNeeController;
 use App\Http\Controllers\Dece\ReporteController as DeceReporteController;
 use App\Http\Controllers\Dece\TallerController as DeceTallerController;
+use App\Http\Controllers\Directivo\EstudiantesRiesgoController;
+use App\Http\Controllers\Directivo\PanelRectorController;
+use App\Http\Controllers\Directivo\PanelVicerrectorController;
+use App\Http\Controllers\Directivo\RendimientoController;
 use App\Http\Controllers\Docente\ActaController;
 use App\Http\Controllers\Docente\AsistenciaController;
 use App\Http\Controllers\Docente\CitaController;
@@ -66,7 +70,7 @@ Route::get('/pre-registro', [PreRegistroController::class, 'create'])->name('pre
 Route::post('/pre-registro', [PreRegistroController::class, 'store'])->name('pre-registro.store');
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login']);
+Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
@@ -116,6 +120,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/perfil', [ProfileController::class, 'index'])->name('perfil.index');
     Route::post('/perfil', [ProfileController::class, 'update'])->name('perfil.update');
     Route::post('/perfil/contraseÃ±a', [ProfileController::class, 'updatePassword'])->name('perfil.password');
+
+    // Cambio obligatorio de la contraseña inicial. El middleware
+    // EnsurePasswordIsChanged solo deja pasar estas dos rutas y el logout.
+    Route::get('/perfil/cambiar-contrasena', [ProfileController::class, 'showCambioObligatorio'])
+        ->name('perfil.password.obligatorio');
+    Route::post('/perfil/cambiar-contrasena', [ProfileController::class, 'updatePassword'])
+        ->name('perfil.password.obligatorio.update');
 
     Route::get('/planificaciones', [PlanificacionController::class, 'index'])->name('planificaciones.index');
 });
@@ -261,9 +272,9 @@ Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->grou
     Route::post('/configuracion/apariencia', [ConfiguracionController::class, 'updateApariencia'])->name('configuracion.apariencia');
 });
 
-// Circulares: Administración, Rectorado y Secretaría pueden cargarlas y avisar
-// por correo y SMS al contacto registrado.
-Route::middleware(['auth', 'role:ADMIN,RECTORA,SECRETARIA'])
+// Circulares: Administración, Rectorado, Vicerrectorado y Secretaría pueden
+// cargarlas y avisar por correo y SMS al contacto registrado.
+Route::middleware(['auth', 'role:ADMIN,RECTORA,VICERRECTORA,SECRETARIA'])
     ->prefix('admin')->name('admin.')->group(function () {
         Route::get('/circulares', [CircularController::class, 'index'])->name('circulares.index');
         Route::post('/circulares', [CircularController::class, 'store'])->name('circulares.store');
@@ -350,6 +361,35 @@ Route::middleware(['auth', 'role:DOCENTE'])->prefix('docente')->name('docente.')
     Route::get('/actas', [ActaController::class, 'index'])->name('actas.index');
     Route::get('/actas/pdf', [ActaController::class, 'exportarPdf'])->name('actas.pdf');
     Route::get('/actas/excel', [ActaController::class, 'exportarExcel'])->name('actas.excel');
+});
+
+// Rectorado: panel institucional, rendimiento y estudiantes en riesgo.
+// Solo consulta y supervisión; no duplica los módulos operativos.
+Route::middleware(['auth', 'role:RECTORA'])->prefix('rector')->name('rector.')->group(function () {
+    Route::get('/', [PanelRectorController::class, 'index'])->name('panel');
+
+    Route::get('/rendimiento', [RendimientoController::class, 'index'])->name('rendimiento');
+    Route::get('/rendimiento/pdf', [RendimientoController::class, 'pdf'])->name('rendimiento.pdf');
+    Route::get('/rendimiento/excel', [RendimientoController::class, 'excel'])->name('rendimiento.excel');
+
+    Route::get('/estudiantes-riesgo', [EstudiantesRiesgoController::class, 'index'])->name('estudiantes-riesgo');
+    Route::get('/estudiantes-riesgo/pdf', [EstudiantesRiesgoController::class, 'pdf'])->name('estudiantes-riesgo.pdf');
+    Route::get('/estudiantes-riesgo/excel', [EstudiantesRiesgoController::class, 'excel'])->name('estudiantes-riesgo.excel');
+    Route::get('/estudiantes-riesgo/{alumno}', [EstudiantesRiesgoController::class, 'show'])->name('estudiantes-riesgo.show');
+});
+
+// Vicerrectorado: panel académico, rendimiento y estudiantes en riesgo.
+Route::middleware(['auth', 'role:VICERRECTORA'])->prefix('vicerrector')->name('vicerrector.')->group(function () {
+    Route::get('/', [PanelVicerrectorController::class, 'index'])->name('panel');
+
+    Route::get('/rendimiento', [RendimientoController::class, 'index'])->name('rendimiento');
+    Route::get('/rendimiento/pdf', [RendimientoController::class, 'pdf'])->name('rendimiento.pdf');
+    Route::get('/rendimiento/excel', [RendimientoController::class, 'excel'])->name('rendimiento.excel');
+
+    Route::get('/estudiantes-riesgo', [EstudiantesRiesgoController::class, 'index'])->name('estudiantes-riesgo');
+    Route::get('/estudiantes-riesgo/pdf', [EstudiantesRiesgoController::class, 'pdf'])->name('estudiantes-riesgo.pdf');
+    Route::get('/estudiantes-riesgo/excel', [EstudiantesRiesgoController::class, 'excel'])->name('estudiantes-riesgo.excel');
+    Route::get('/estudiantes-riesgo/{alumno}', [EstudiantesRiesgoController::class, 'show'])->name('estudiantes-riesgo.show');
 });
 
 // URL histórica: redirige al módulo de citas compartido con inspección.

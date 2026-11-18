@@ -37,7 +37,14 @@ usuario.
 
 Confirmaciones: todas las vistas usan SweetAlert2 en lugar de alert(), confirm()
 o prompt() nativos. Los formularios declaran data-confirm="mensaje" y
-layouts/app.blade.php muestra el diálogo antes de enviarlos.
+layouts/app.blade.php muestra el diálogo antes de enviarlos. Los mensajes flash
+(success, info, warning, error) y los errores de validación también se muestran
+como toasts de SweetAlert2 para todos los perfiles.
+
+Paginación: todos los listados usan Bootstrap 5 mediante
+Paginator::useBootstrapFive() en AppServiceProvider y la vista en español
+resources/views/vendor/pagination/bootstrap-5.blade.php ("Mostrando X a Y de Z
+resultados", "Anterior", "Siguiente", tamaño compacto y sin SVG).
 
 ===============================================================================
  1. ALUMNO (ESTUDIANTE)  ->  VERIFICADO OK
@@ -355,27 +362,54 @@ solo le muestra sus opciones.
 - Perfil ................................................. (ready)
 
 ===============================================================================
- 7. RECTORADO (RECTORA)  ->  PANEL COMPARTIDO (módulos propios sin iniciar)
+ 7. RECTORADO (RECTORA)  ->  PANEL PROPIO (fase 1 implementada)
 ===============================================================================
 
-- Panel de Rectorado / Vicerrectorado ..................... (ready)
-  Ruta: GET /dashboard
-  Controlador: DashboardController@index -> rector
-  Vista: resources/views/dashboard/rector.blade.php
-  Tablero institucional compartido con indicadores de estudiantes, docentes,
-  solicitudes pendientes y cursos abiertos, más las circulares publicadas.
+- Panel institucional de Rectorado ........................ (ready)
+  Ruta: GET /rector  (nombre: rector.panel)
+  Controlador: Directivo\PanelRectorController@index
+  Vista: resources/views/directivo/rector/panel.blade.php
+  /dashboard redirige aquí cuando el perfil activo es RECTORA.
+  Reúne KPI institucionales (matrícula, docentes, cursos, asistencia,
+  aprobación, reprobación, retiros), alertas priorizadas y circulares.
+  Los indicadores se calculan en App\Services\IndicadoresInstitucionales.
 
-- Módulos propios de Rectorado ........................... (not started)
-  No hay aprobaciones, resoluciones, supervisión académica ni reportes
-  gerenciales exclusivos del rectorado.
+- Rendimiento académico consolidado ....................... (ready)
+  Rutas: GET /rector/rendimiento
+         GET /rector/rendimiento/pdf
+         GET /rector/rendimiento/excel
+  Controlador: Directivo\RendimientoController
+  Vista: resources/views/directivo/rendimiento/index.blade.php
+  Filtros por periodo, corte, curso, paralelo y asignatura; KPI, distribución
+  por rangos y resúmenes por nivel, curso/paralelo, asignatura y estudiante.
+  Usa App\Services\RendimientoAcademico y la escala 7/10 de las actas.
 
-- Accesos compartidos en modo lectura .................... (started)
+- Estudiantes en riesgo ................................... (ready)
+  Rutas: GET /rector/estudiantes-riesgo
+         GET /rector/estudiantes-riesgo/pdf
+         GET /rector/estudiantes-riesgo/excel
+         GET /rector/estudiantes-riesgo/{alumno}
+  Controlador: Directivo\EstudiantesRiesgoController
+  Vistas: directivo/estudiantes-riesgo/{index,show,pdf}.blade.php
+  Semáforo rojo/amarillo por promedio, materias reprobadas y asistencia.
+  La ficha muestra notas, asistencia y NEE sin datos clínicos del DECE.
+  Menú: "Panel institucional" es un grupo con chevron (Dashboard, Rendimiento
+  académico y Estudiantes en riesgo) y marca solo el módulo abierto.
+
+- Mensajes a representantes legales ....................... (ready)
+  Rutas: GET/POST /mensajes
+  Controlador: MensajeController
+  El modal encadena curso → estudiante → representante legal. El servidor
+  deriva el destinatario del alumno elegido y nunca envía a estudiantes.
+
+- Accesos compartidos en modo lectura .................... (ready)
   Rutas heredadas:
   - GET /dece/expedientes, /dece/reportes
   - GET /inspeccion/citas/historial
+  - GET /inspeccion/asistencia/estadisticas
   - GET /inspeccion/observaciones y reportes
   - GET /planificaciones y /planificaciones/bitacora
-  - GET /mensajes
+  - GET /mensajes (bandeja; el compositor propio se describe arriba)
   Estos módulos fueron creados para otros roles; Rectorado solo consulta.
 
 - Circulares institucionales .............................. (ready)
@@ -383,29 +417,57 @@ solo le muestra sus opciones.
   Controlador: Admin\CircularController
   Puede publicar circulares y avisar por correo/SMS a los roles elegidos.
 
-Conclusión: Rectorado tiene panel institucional y emisión de circulares
-(ready); sus módulos gerenciales propios siguen (not started).
+Conclusión: Rectorado ya tiene panel propio, rendimiento, estudiantes en
+riesgo, circulares y mensajes a representantes (ready). La autorización
+institucional formal (aprobaciones y resoluciones) queda para una fase
+posterior.
 
 ===============================================================================
- 8. VICERRECTORADO (VICERRECTORA)  ->  PANEL COMPARTIDO (módulos propios sin iniciar)
+ 8. VICERRECTORADO (VICERRECTORA)  ->  PANEL PROPIO (fase 1 implementada)
 ===============================================================================
 
-- Panel de Rectorado / Vicerrectorado ..................... (ready)
-  Ruta: GET /dashboard
-  Controlador: DashboardController@index -> rector
-  Usa el mismo tablero institucional compartido con Rectorado.
+- Panel académico de Vicerrectorado ....................... (ready)
+  Ruta: GET /vicerrector  (nombre: vicerrector.panel)
+  Controlador: Directivo\PanelVicerrectorController@index
+  Vista: resources/views/directivo/vicerrector/panel.blade.php
+  /dashboard redirige aquí cuando el perfil activo es VICERRECTORA.
+  Reúne KPI académicos (promedio general, aprobación, calificaciones
+  pendientes, docentes con carga, NEE sin adaptación) y alertas.
+  Los indicadores se calculan en App\Services\IndicadoresAcademicos.
+  Menú: "Panel académico" es un grupo con chevron que contiene Dashboard,
+  Rendimiento académico y Estudiantes en riesgo. Solo el módulo abierto queda
+  marcado como activo; el grupo se despliega en sus subrutas.
 
-- Módulos propios de Vicerrectorado ...................... (not started)
-  No hay gestión de académico, disciplina, docentes, horarios ni reportes
-  propios del vicerrectorado.
+- Rendimiento académico consolidado ....................... (ready)
+  Rutas: GET /vicerrector/rendimiento
+         GET /vicerrector/rendimiento/pdf
+         GET /vicerrector/rendimiento/excel
+  Controlador: Directivo\RendimientoController
+  Mismo servicio y vista compartida con Rectorado (solo lectura).
 
-- Accesos compartidos en modo lectura .................... (started)
+- Estudiantes en riesgo ................................... (ready)
+  Rutas: GET /vicerrector/estudiantes-riesgo
+         GET /vicerrector/estudiantes-riesgo/pdf
+         GET /vicerrector/estudiantes-riesgo/excel
+         GET /vicerrector/estudiantes-riesgo/{alumno}
+  Controlador: Directivo\EstudiantesRiesgoController
+  Semáforo por promedio, materias reprobadas y asistencia; ficha sin datos
+  clínicos del DECE.
+
+- Mensajes a representantes legales ....................... (ready)
+  Rutas: GET/POST /mensajes
+  Controlador: MensajeController
+  El modal encadena curso → estudiante → representante legal. El servidor
+  deriva el destinatario del alumno elegido y nunca envía a estudiantes.
+
+- Accesos compartidos en modo lectura .................... (ready)
   Rutas heredadas:
   - GET /dece/expedientes, /dece/reportes
   - GET /inspeccion/citas/historial
+  - GET /inspeccion/asistencia/estadisticas
   - GET /inspeccion/observaciones y reportes
   - GET /planificaciones y /planificaciones/bitacora
-  - GET /mensajes
+  - GET /mensajes (bandeja; el compositor propio se describe arriba)
   - El compositor de mensajes del representante muestra Vicerrectorado como
     área de contacto.
 
@@ -414,8 +476,10 @@ Conclusión: Rectorado tiene panel institucional y emisión de circulares
   Controlador: Admin\CircularController
   Puede publicar circulares y avisar por correo/SMS a los roles elegidos.
 
-Conclusión: Vicerrectorado tiene panel institucional compartido y circulares
-(ready); sus módulos gerenciales propios siguen (not started).
+Conclusión: Vicerrectorado ya tiene panel propio, rendimiento, estudiantes en
+riesgo, circulares y mensajes a representantes (ready). La coordinación
+curricular, evaluaciones, recuperación, carga horaria y juntas de curso quedan
+para fases posteriores.
 
 ===============================================================================
  9. ADMINISTRADOR (ADMIN)  ->  LISTO
@@ -457,6 +521,13 @@ en "Control académico" y "Registros académicos".
   Citas y DECE no aparecen en el menú del ADMIN.
   El botón del navbar oculta/muestra el aside en pantallas grandes y guarda la
   preferencia en localStorage (sidebarOculto). En móvil el aside es offcanvas.
+  Convención de resaltado para TODOS los roles: en los grupos colapsables
+  (Contenido institucional, Servicios y descargas, Apariencia del sistema,
+  Registros académicos, Panel directivo, Matrículas y admisiones, Académico y
+  auditoría, Citas, Notas, DECE, Asistencia, Observaciones) la categoría padre
+  nunca recibe la clase `active`; solo se resalta el enlace hijo de la vista
+  actual. El padre únicamente se despliega (`collapse show`) y gira su chevron.
+  Regresión cubierta por tests/Feature/MenuLateralTest.php.
   Las tablas se envuelven en .table-responsive y solo desplazan en horizontal;
   el desplazamiento vertical lo hace la ventana.
 
@@ -550,6 +621,9 @@ en "Control académico" y "Registros académicos".
   de atención a padres, reunión de área y tutoría, siempre como horas
   académicas de 40 minutos. El botón "Guardar y pasar a asignar materias"
   continúa en el distributivo cuando la cuenta tiene perfil DOCENTE.
+  Toda contraseña asignada o restablecida desde este módulo es temporal: la
+  cuenta queda con `debe_cambiar_password = true` y el sistema obliga a
+  cambiarla en el primer ingreso.
 
 - Malla curricular por año de educación ................... (ready)
   Rutas: GET /admin/materias,
@@ -601,6 +675,8 @@ en "Control académico" y "Registros académicos".
   con perfil principal REPRESENTANTE y perfil adicional ESTUDIANTE, y se
   enlaza la ficha del alumno. Omite cédulas ya registradas. Para el resto del
   personal, el ADMIN crea la cuenta y también usa la cédula como usuario.
+  La cédula tiene índice único en la base de datos y la clave inicial es
+  temporal: el primer ingreso obliga a cambiarla.
 
 - Bloqueo por intentos fallidos ........................... (ready)
   Rutas: POST /login, POST /admin/usuarios/{user}/desbloquear
@@ -608,7 +684,9 @@ en "Control académico" y "Registros académicos".
   limpiarIntentosFallidos, desbloquear)
   Al tercer intento fallido la cuenta se bloquea 1 hora. Si se repite otro
   bloqueo, la cuenta queda bloqueada hasta que solo ADMIN la desbloquee desde
-  Usuarios y roles. El login acepta correo electrónico o cédula.
+  Usuarios y roles. El login acepta correo electrónico o cédula. Además, antes
+  de llegar al controlador, el limitador frena 5 intentos por minuto y 20 por
+  hora para la misma combinación identificador + IP, y 30 por minuto por IP.
 
 - Configuración del centro ............................... (ready)
   Rutas GET (una vista independiente por sección, sin pestañas):
@@ -716,6 +794,48 @@ en "Control académico" y "Registros académicos".
   Controlador: Auth\LoginController@login
   El identificador puede ser el correo o la cédula registrada en la cuenta.
 
+- Límite de intentos de inicio de sesión .................. (ready)
+  Ruta: POST /login (middleware throttle:login)
+  Límite: App\Providers\AppServiceProvider (RateLimiter::for('login'))
+  Clave: identificador escrito + IP. Permite 5 intentos por minuto y 20 por
+  hora; además, 30 intentos por minuto por IP para frenar el *password
+  spraying*. Al superar el límite se vuelve al formulario con un mensaje en
+  español y se registra el bloqueo en el log.
+
+- Contraseña inicial temporal ............................. (ready)
+  Columnas: users.debe_cambiar_password
+  Middleware: App\Http\Middleware\EnsurePasswordIsChanged
+  Rutas: GET|POST /perfil/cambiar-contrasena
+         (perfil.password.obligatorio y perfil.password.obligatorio.update)
+  Vista: resources/views/auth/cambiar-password.blade.php
+  Las cuentas creadas por Administración, generación masiva, aprobación de
+  pre-registro y las claves restablecidas nacen marcadas. Mientras la marca
+  siga activa, cualquier módulo redirige al cambio obligatorio; solo se puede
+  cambiar la clave o cerrar sesión. La nueva clave exige 8 caracteres, al menos
+  una letra y un número. Las cuentas de los seeders de desarrollo quedan sin la
+  marca para no romper las pruebas manuales.
+
+- Invalidación de sesiones al cambiar la contraseña ........ (ready)
+  Middleware: Illuminate\Session\Middleware\AuthenticateSession (grupo web)
+  Al cambiar la clave se llama Auth::logoutOtherDevices() y se actualiza el
+  hash de la sesión actual. Cualquier otra sesión abierta con la clave anterior
+  queda cerrada en su siguiente petición.
+
+- Auditoría de intentos de inicio de sesión ................ (ready)
+  Controlador: Auth\LoginController (método privado auditar)
+  Registra en el log el identificador, la IP, el agente del navegador y el
+  usuario cuando existe: intentos exitosos, claves incorrectas, cuentas
+  inexistentes, cuentas bloqueadas y bloqueos automáticos. Nunca guarda la
+  contraseña. Los usuarios inexistentes se comparan contra un hash generado al
+  momento para igualar el tiempo de respuesta y evitar enumerar cuentas.
+
+- Cédula única ............................................. (ready)
+  Columna: users.numero_cedula (índice único)
+  Migración: 2026_11_17_000002_add_unique_numero_cedula_to_users.php
+  La base respalda la validación que ya hacían Administración, Secretaría y
+  Pre-registro, y el login nunca resuelve dos cuentas con la misma cédula.
+  Los valores nulos siguen permitidos.
+
 - Bloqueo por intentos fallidos ........................... (ready)
   Modelo: App\Models\User
   Columnas: intentos_fallidos, bloqueado_hasta, bloqueos_consecutivos y
@@ -801,14 +921,16 @@ Docente                   (ready) verificado ok
 Inspector (INSPECCION)    (ready) verificado ok
 DECE                      (ready) listo
 Secretaría (SECRETARIA)   (ready) listo
-Rectorado (RECTORA)       (started) panel institucional compartido
-Vicerrectorado            (started) panel institucional compartido
+Rectorado (RECTORA)       (ready) panel propio, rendimiento y riesgo
+Vicerrectorado            (ready) panel propio, rendimiento y riesgo
 Administrador (ADMIN)     (ready) listo
 Portal público            (ready) listo
 
 Pendientes recomendados:
-  1. Crear los módulos propios de Rectorado.
-  2. Crear los módulos propios de Vicerrectorado.
+  1. Implementar la autorización institucional formal de Rectorado
+     (aprobaciones, resoluciones y delegaciones).
+  2. Implementar la coordinación académica de Vicerrectorado (currículo,
+     evaluaciones, recuperación, carga horaria y juntas de curso).
   3. Configurar un proveedor SMS real (webhook) para producción.
   4. Agregar pruebas específicas para actas docentes y reportes gerenciales.
   5. Implementar respaldos automáticos de la base de datos y la importación

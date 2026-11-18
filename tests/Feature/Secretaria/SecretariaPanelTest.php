@@ -48,13 +48,17 @@ class SecretariaPanelTest extends TestCase
     }
 
     /** @test */
-    public function el_rector_conserva_su_dashboard()
+    public function el_rector_es_redirigido_a_su_panel_institucional()
     {
         $this->actingAs($this->rector)
             ->get('/dashboard')
+            ->assertRedirect(route('rector.panel'));
+
+        $this->actingAs($this->rector)
+            ->get(route('rector.panel'))
             ->assertOk()
-            ->assertViewIs('dashboard.rector')
-            ->assertSee('Panel de Rectorado');
+            ->assertViewIs('directivo.rector.panel')
+            ->assertSee('Panel institucional');
     }
 
     /** @test */

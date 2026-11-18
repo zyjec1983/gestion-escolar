@@ -36,11 +36,15 @@
         $esEstudiante = $rol === 'ESTUDIANTE';
     @endphp
     <ul class="nav nav-pills flex-column mb-auto">
+        @if(!in_array($rol, ['RECTORA', 'VICERRECTORA']))
+        {{-- Las autoridades tienen su Dashboard dentro del panel de su
+             sección, para no duplicar el mismo enlace en el menú. --}}
         <li class="nav-item">
             <a href="/dashboard" class="nav-link text-white {{ request()->is('dashboard') ? 'active' : '' }}">
                 <i class="bi bi-speedometer2 me-2"></i> Dashboard
             </a>
         </li>
+        @endif
         @if($rol === 'ADMIN')
         {{--
             Menú exclusivo del rol ADMIN, ordenado por función en cinco secciones.
@@ -100,7 +104,7 @@
         </li>
         <li class="nav-item mt-1">
             <a role="button"
-               class="nav-link text-white d-flex justify-content-between align-items-center {{ $enContenidoInstitucional ? 'active' : '' }}"
+               class="nav-link text-white d-flex justify-content-between align-items-center"
                data-bs-toggle="collapse" href="#submenuContenidoInstitucional"
                aria-expanded="{{ $enContenidoInstitucional ? 'true' : 'false' }}"
                aria-controls="submenuContenidoInstitucional">
@@ -144,7 +148,7 @@
         </li>
         <li class="nav-item">
             <a role="button"
-               class="nav-link text-white d-flex justify-content-between align-items-center {{ $enServicios ? 'active' : '' }}"
+               class="nav-link text-white d-flex justify-content-between align-items-center"
                data-bs-toggle="collapse" href="#submenuServiciosDescargas"
                aria-expanded="{{ $enServicios ? 'true' : 'false' }}"
                aria-controls="submenuServiciosDescargas">
@@ -174,7 +178,7 @@
         </li>
         <li class="nav-item mt-1">
             <a role="button"
-               class="nav-link text-white d-flex justify-content-between align-items-center {{ $enAparienciaSistema ? 'active' : '' }}"
+               class="nav-link text-white d-flex justify-content-between align-items-center"
                data-bs-toggle="collapse" href="#submenuAparienciaSistema"
                aria-expanded="{{ $enAparienciaSistema ? 'true' : 'false' }}"
                aria-controls="submenuAparienciaSistema">
@@ -265,7 +269,7 @@
             </a>
         </li>
         <li class="nav-item mt-1">
-            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $registrosAcademicosActivos ? 'active' : '' }}"
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center"
                data-bs-toggle="collapse" href="#submenuAdminRegistros" aria-expanded="{{ $registrosAcademicosActivos ? 'true' : 'false' }}" aria-controls="submenuAdminRegistros">
                 <span><i class="bi bi-journal-check me-2"></i> Registros académicos</span>
                 <i class="bi bi-chevron-down chevron-icon"></i>
@@ -306,6 +310,57 @@
             </a>
         </li>
         @else
+        @if(in_array($rol, ['RECTORA', 'VICERRECTORA']))
+        @php
+            $panelRuta = $rol === 'RECTORA' ? 'rector' : 'vicerrector';
+            $panelNombre = $rol === 'RECTORA' ? 'Panel institucional' : 'Panel académico';
+            // El grupo solo despliega el submenú; nunca queda marcado como
+            // activo para no duplicar el resaltado del módulo abierto. El
+            // Dashboard hijo representa al propio panel.
+            $panelExacto = request()->is($panelRuta);
+            $panelSeccion = $panelExacto || request()->is($panelRuta . '/*');
+        @endphp
+        <li class="nav-item mt-3">
+            <span class="text-uppercase text-white-50 small fw-semibold px-2">
+                {{ $rol === 'RECTORA' ? 'Rectorado' : 'Vicerrectorado' }}
+            </span>
+        </li>
+        <li class="nav-item mt-1">
+            <a role="button"
+               class="nav-link text-white d-flex justify-content-between align-items-center"
+               data-bs-toggle="collapse" href="#submenuPanelDirectivo"
+               aria-expanded="{{ $panelSeccion ? 'true' : 'false' }}"
+               aria-controls="submenuPanelDirectivo">
+                <span>
+                    <i class="bi bi-{{ $rol === 'RECTORA' ? 'bank' : 'mortarboard' }} me-2"></i>
+                    {{ $panelNombre }}
+                </span>
+                <i class="bi bi-chevron-down chevron-icon"></i>
+            </a>
+            <div class="collapse {{ $panelSeccion ? 'show' : '' }}" id="submenuPanelDirectivo">
+                <ul class="nav nav-pills flex-column ms-3 mt-1">
+                    <li class="nav-item">
+                        <a href="{{ route($panelRuta . '.panel') }}"
+                           class="nav-link text-white small py-1 {{ $panelExacto ? 'active' : '' }}">
+                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route($panelRuta . '.rendimiento') }}"
+                           class="nav-link text-white small py-1 {{ request()->is($panelRuta . '/rendimiento*') ? 'active' : '' }}">
+                            <i class="bi bi-graph-up-arrow me-2"></i> Rendimiento académico
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route($panelRuta . '.estudiantes-riesgo') }}"
+                           class="nav-link text-white small py-1 {{ request()->is($panelRuta . '/estudiantes-riesgo*') ? 'active' : '' }}">
+                            <i class="bi bi-person-exclamation me-2"></i> Estudiantes en riesgo
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        @endif
         @if($esDocente || $esEstudiante)
         <li class="nav-item">
             <a href="/clases" class="nav-link text-white {{ request()->is('clases*') ? 'active' : '' }}">
@@ -384,7 +439,7 @@
             <span class="text-uppercase text-white-50 small fw-semibold px-2">Secretaría</span>
         </li>
         <li class="nav-item mt-1">
-            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $matriculasActivas ? 'active' : '' }}"
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center"
                data-bs-toggle="collapse" href="#submenuSecretariaMatriculas" aria-expanded="{{ $matriculasActivas ? 'true' : 'false' }}" aria-controls="submenuSecretariaMatriculas">
                 <span><i class="bi bi-clipboard-check me-2"></i> Matrículas y admisiones</span>
                 <i class="bi bi-chevron-down chevron-icon"></i>
@@ -415,7 +470,7 @@
             </div>
         </li>
         <li class="nav-item mt-1">
-            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $academicoActivo ? 'active' : '' }}"
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center"
                data-bs-toggle="collapse" href="#submenuSecretariaAcademico" aria-expanded="{{ $academicoActivo ? 'true' : 'false' }}" aria-controls="submenuSecretariaAcademico">
                 <span><i class="bi bi-journal-check me-2"></i> Académico y auditoría</span>
                 <i class="bi bi-chevron-down chevron-icon"></i>
@@ -461,7 +516,7 @@
             </div>
         </li>
         <li class="nav-item mt-1">
-            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $citasSecretariaActivas ? 'active' : '' }}"
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center"
                data-bs-toggle="collapse" href="#submenuSecretariaCitas" aria-expanded="{{ $citasSecretariaActivas ? 'true' : 'false' }}" aria-controls="submenuSecretariaCitas">
                 <span><i class="bi bi-calendar-event me-2"></i> Citas</span>
                 <i class="bi bi-chevron-down chevron-icon"></i>
@@ -487,7 +542,7 @@
             $notasActivo = request()->is('docente/notas*') || request()->is('docente/actas*');
         @endphp
         <li class="nav-item mt-2">
-            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $notasActivo ? 'active' : '' }}"
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center"
                data-bs-toggle="collapse" href="#submenuNotas" aria-expanded="{{ $notasActivo ? 'true' : 'false' }}" aria-controls="submenuNotas">
                 <span><i class="bi bi-file-earmark-text me-2"></i> Notas</span>
                 <i class="bi bi-chevron-down chevron-icon"></i>
@@ -513,7 +568,7 @@
             $citasInspeccion = request()->is('inspeccion/citas*');
         @endphp
         <li class="nav-item mt-2">
-            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $citasInspeccion ? 'active' : '' }}"
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center"
                data-bs-toggle="collapse" href="#submenuCitasInspeccion" aria-expanded="{{ $citasInspeccion ? 'true' : 'false' }}" aria-controls="submenuCitasInspeccion">
                 <span><i class="bi bi-calendar-event me-2"></i> Citas</span>
                 <i class="bi bi-chevron-down chevron-icon"></i>
@@ -542,7 +597,7 @@
             <span class="text-uppercase text-white-50 small fw-semibold px-2">Consejería estudiantil</span>
         </li>
         <li class="nav-item mt-1">
-            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $deceActivo ? 'active' : '' }}"
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center"
                data-bs-toggle="collapse" href="#submenuDece" aria-expanded="{{ $deceActivo ? 'true' : 'false' }}" aria-controls="submenuDece">
                 <span><i class="bi bi-heart-pulse me-2"></i> DECE</span>
                 <i class="bi bi-chevron-down chevron-icon"></i>
@@ -607,7 +662,7 @@
             $asistenciaActivas = request()->is('inspeccion/asistencia*');
         @endphp
         <li class="nav-item mt-2">
-            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $asistenciaActivas ? 'active' : '' }}"
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center"
                data-bs-toggle="collapse" href="#submenuAsistencia" aria-expanded="{{ $asistenciaActivas ? 'true' : 'false' }}" aria-controls="submenuAsistencia">
                 <span><i class="bi bi-calendar-check me-2"></i> Asistencia</span>
                 <i class="bi bi-chevron-down chevron-icon"></i>
@@ -633,7 +688,7 @@
             $observacionesActivas = request()->is('inspeccion/observaciones*');
         @endphp
         <li class="nav-item mt-2">
-            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center {{ $observacionesActivas ? 'active' : '' }}"
+            <a role="button" class="nav-link text-white d-flex justify-content-between align-items-center"
                data-bs-toggle="collapse" href="#submenuObservaciones" aria-expanded="{{ $observacionesActivas ? 'true' : 'false' }}" aria-controls="submenuObservaciones">
                 <span><i class="bi bi-exclamation-triangle me-2"></i> Observaciones</span>
                 <i class="bi bi-chevron-down chevron-icon"></i>
@@ -666,9 +721,9 @@
         @endif
         @if(in_array($rol, ['RECTORA', 'VICERRECTORA']))
         <li class="nav-item mt-2">
-            <a href="{{ route('admin.pre-registros.index') }}"
-               class="nav-link text-white {{ request()->is('admin/pre-registros*') ? 'active' : '' }}">
-                <i class="bi bi-clipboard-check me-2"></i> Solicitudes de matrícula
+            <a href="{{ route('inspeccion.asistencia.estadisticas') }}"
+               class="nav-link text-white {{ request()->is('inspeccion/asistencia/estadisticas*') ? 'active' : '' }}">
+                <i class="bi bi-bar-chart-line me-2"></i> Estadísticas de asistencia
             </a>
         </li>
         @endif

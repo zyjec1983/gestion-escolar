@@ -6,9 +6,14 @@ use App\Models\Institucion;
 use App\Services\Sms\LogSmsSender;
 use App\Services\Sms\SmsSender;
 use App\Services\Sms\WebhookSmsSender;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Throwable;
 
 class AppServiceProvider extends ServiceProvider
@@ -27,8 +32,43 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // El proyecto usa Bootstrap 5.3.3: la vista de paginación por defecto
+        // de Laravel es Tailwind y sus iconos SVG se veían gigantes al no
+        // existir Tailwind en el layout. La vista en español vive en
+        // resources/views/vendor/pagination/bootstrap-5.blade.php.
+        Paginator::useBootstrapFive();
+
+        static::configurarLimiteDeIntentosDeLogin();
         static::aplicarZonaHorariaDelCentro();
         static::compartirInstitucion();
+    }
+
+    /**
+     * Limita los intentos de inicio de sesión antes de llegar al controlador.
+     *
+     * Qué hace: además del bloqueo por cuenta que ya vive en `users`, frena
+     * el *password spraying* (muchas cuentas desde una misma IP) y los ataques
+     * de fuerza bruta contra un identificador concreto. La clave combina el
+     * correo/cédula escrito con la IP, y se agrega un límite global por IP.
+     *
+     * Conecta con: routes/web.php (`throttle:login`) y
+     * bootstrap/app.php (respuesta amable al superar el límite).
+     */
+    private static function configurarLimiteDeIntentosDeLogin(): void
+    {
+        RateLimiter::for('login', function (Request $request) {
+            $identificador = Str::lower(trim((string) $request->input('email')));
+            $ip = $request->ip();
+
+            // Cada ventana usa una clave distinta. Si comparten clave, cada
+            // petición suma dos intentos y el tiempo de espera del límite por
+            // hora termina aplicándose al límite por minuto.
+            return [
+                Limit::perMinute(5)->by('minuto|'.$identificador.'|'.$ip),
+                Limit::perHour(20)->by('hora|'.$identificador.'|'.$ip),
+                Limit::perMinute(30)->by('ip|'.$ip),
+            ];
+        });
     }
 
     /**

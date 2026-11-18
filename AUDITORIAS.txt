@@ -1,0 +1,484 @@
+# INSTRUCCIÓN PARA OPENCODE
+# AUDITORÍA INTEGRAL DE ARQUITECTURA, SEGURIDAD Y CONTROL DE ACCESO
+## Sistema de Gestión Educativa – Laravel 12
+
+### 1. OBJETIVO GENERAL
+
+Realizar una auditoría técnica y funcional integral de la aplicación existente, desarrollada en Laravel 12, con el propósito de identificar vulnerabilidades de seguridad, errores de arquitectura, inconsistencias en las reglas de negocio, problemas de autorización y posibles exposiciones de información confidencial.
+
+La auditoría debe evaluar el código real de la aplicación, sus modelos, controladores, rutas, middleware, políticas, migraciones, relaciones de base de datos, vistas, componentes JavaScript y mecanismos de autenticación.
+
+**IMPORTANTE: Esta primera etapa es exclusivamente de análisis.**
+
+No modificar, eliminar, reemplazar ni crear archivos durante la auditoría inicial. No ejecutar migraciones, modificar datos de la base de datos ni cambiar configuraciones.
+
+Primero se debe entregar un informe detallado de los hallazgos y un plan de corrección para su aprobación.
+
+---
+
+# PARTE 1. AUDITORÍA DE ARQUITECTURA
+
+### 1.1. Análisis de la estructura existente
+
+- Analizar la estructura general del proyecto Laravel 12.
+- Identificar los módulos implementados.
+- Revisar la organización de Models, Controllers, Middleware, Requests, Policies, Services, Views y componentes.
+- Identificar responsabilidades de cada módulo.
+- Verificar si se está respetando la arquitectura MVC.
+- Identificar controladores con demasiadas responsabilidades.
+- Detectar lógica de negocio duplicada.
+- Identificar consultas repetidas o innecesariamente complejas.
+- Revisar el uso de Eloquent ORM y Query Builder.
+- Identificar código innecesario, obsoleto o que pueda generar conflictos futuros.
+
+### 1.2. Revisión de roles y responsabilidades
+
+Identificar los roles actualmente implementados y comprobar que sus permisos correspondan a sus responsabilidades.
+
+Considerar, según los roles existentes en el proyecto:
+
+- Administrador.
+- Rector.
+- Vicerrector.
+- Secretaría.
+- Inspección.
+- Docentes.
+- Padres de familia / Representantes.
+- Estudiantes.
+
+Verificar:
+
+- Qué módulos puede consultar cada rol.
+- Qué información puede crear, modificar o eliminar.
+- Qué operaciones requieren autorización adicional.
+- Si existen permisos que se contradicen entre roles.
+- Si un usuario puede acceder a funcionalidades que no corresponden a su cargo.
+- Si los permisos están centralizados o dispersos en las vistas y controladores.
+
+No asumir que ocultar una opción del menú significa que el usuario no puede acceder a ella.
+
+### 1.3. Revisión de relaciones entre entidades
+
+Analizar especialmente las relaciones entre:
+
+- Users.
+- Students.
+- Parents / Representatives.
+- Teachers.
+- Inspection.
+- Secretary.
+- Academic records.
+- Grades.
+- Attendance.
+- Disciplinary records.
+- Courses.
+- Levels.
+- Subjects.
+- Academic years.
+
+Verificar que las relaciones de base de datos representen correctamente las reglas de negocio.
+
+Prestar especial atención a la relación entre representantes y estudiantes, incluyendo la posibilidad de que:
+
+- Un representante tenga varios estudiantes asociados.
+- Un estudiante tenga uno o varios representantes autorizados, cuando las reglas institucionales lo permitan.
+- La asociación entre un estudiante y un representante esté registrada y validada en la base de datos.
+- Se pueda identificar qué representante tiene autoridad para consultar determinada información.
+
+Detectar relaciones incompletas, inconsistentes o duplicadas.
+
+### 1.4. Revisión de reglas de negocio
+
+Identificar:
+
+- Reglas de negocio que ya están implementadas.
+- Reglas que faltan.
+- Validaciones que se realizan únicamente en el frontend.
+- Operaciones que pueden generar inconsistencias.
+- Funcionalidades duplicadas entre módulos.
+- Procesos que deberían ejecutarse mediante transacciones.
+- Operaciones que requieren trazabilidad.
+
+No modificar las reglas existentes sin documentar primero el problema y su impacto.
+
+---
+
+# PARTE 2. AUDITORÍA DE SEGURIDAD – LARAVEL 12
+
+Revisar cada uno de los siguientes puntos en el código real.
+
+## 2.1. Protección de entradas y salidas
+
+**CSRF (Cross-Site Request Forgery)**
+
+- Verificar la protección CSRF en todos los formularios que ejecuten operaciones de escritura.
+- Revisar formularios POST, PUT, PATCH y DELETE.
+- Verificar las solicitudes AJAX y Fetch.
+- Comprobar que no existan exclusiones CSRF innecesarias.
+- Revisar que las operaciones que modifican información no se ejecuten mediante solicitudes GET.
+
+**XSS (Cross-Site Scripting)**
+
+- Verificar que las salidas de datos estén correctamente escapadas.
+- Revisar el uso de Blade y sus mecanismos de escape.
+- Identificar el uso de `{!! !!}` y determinar si existe sanitización adecuada.
+- Revisar datos proporcionados por estudiantes, representantes, docentes y administradores.
+- Analizar el uso de JavaScript para insertar contenido dinámico en el DOM.
+- Revisar el uso de `innerHTML` y alternativas más seguras como `textContent`.
+- Verificar que SweetAlert2 no introduzca contenido HTML no confiable.
+
+**Validación del lado del servidor**
+
+- Revisar que los formularios tengan validación en el servidor.
+- Identificar el uso de Form Requests.
+- Verificar reglas de validación apropiadas para cada campo.
+- Comprobar validaciones de tipos, longitudes, formatos, valores permitidos y relaciones existentes.
+- Verificar que la validación no dependa exclusivamente de JavaScript.
+- Revisar mensajes de error y respuestas de validación.
+
+**SQL Injection**
+
+- Revisar consultas Eloquent y Query Builder.
+- Verificar el uso de consultas parametrizadas.
+- Identificar consultas SQL construidas mediante concatenación de cadenas.
+- Revisar especialmente las cláusulas WHERE, ORDER BY, LIKE y consultas dinámicas.
+- Comprobar que los datos recibidos del usuario nunca se incorporen directamente a una consulta SQL.
+
+**Carga de archivos**
+
+- Revisar todos los módulos que permiten subir documentos, fotografías o archivos.
+- Validar MIME type y contenido real del archivo.
+- Establecer límites de tamaño.
+- No confiar únicamente en la extensión del archivo.
+- Generar nombres de archivo seguros.
+- Evitar ejecución de archivos subidos.
+- Revisar almacenamiento público y privado.
+- Verificar autorización antes de visualizar o descargar documentos.
+- Evitar que un usuario pueda descargar archivos pertenecientes a otro usuario.
+
+---
+
+# PARTE 3. AUTENTICACIÓN Y AUTORIZACIÓN
+
+### 3.1. Contraseñas
+
+- Verificar que las contraseñas se almacenen mediante los mecanismos seguros de Laravel, como Hash.
+- Comprobar que nunca se almacenen contraseñas en texto plano.
+- Revisar los procedimientos de cambio y recuperación de contraseña.
+- Verificar que los datos sensibles no aparezcan en logs o respuestas.
+
+### 3.2. Control de acceso basado en roles (RBAC)
+
+- Revisar la implementación de roles y permisos.
+- Verificar el middleware utilizado para proteger rutas.
+- Revisar Policies y Gates.
+- Comprobar que los permisos se apliquen en el servidor.
+- Evitar que la autorización dependa exclusivamente de condiciones en Blade.
+- Comprobar que un usuario no pueda modificar su propio rol mediante peticiones manipuladas.
+- Verificar que las operaciones administrativas estén restringidas a los roles autorizados.
+
+Aplicar el principio de mínimo privilegio: cada usuario debe tener únicamente los permisos necesarios para realizar sus funciones.
+
+### 3.3. Policies y Gates
+
+Comprobar si las operaciones sobre recursos individuales utilizan Policies o mecanismos equivalentes de autorización.
+
+Revisar especialmente:
+
+- Consultar información de estudiantes.
+- Consultar calificaciones.
+- Consultar asistencia.
+- Consultar expedientes.
+- Consultar información de representantes.
+- Modificar registros académicos.
+- Consultar documentos privados.
+- Descargar archivos.
+
+No basta con comprobar que el usuario esté autenticado. También debe comprobarse que tenga autorización sobre el recurso específico.
+
+---
+
+# PARTE 4. PROTECCIÓN ESPECIAL DE REPRESENTANTES Y ESTUDIANTES
+
+## 4.1. Aislamiento de información entre representantes
+
+Esta es una de las reglas de seguridad más importantes del sistema.
+
+Un representante únicamente puede consultar información de los estudiantes que estén formalmente asociados a su cuenta y para los cuales tenga autorización registrada.
+
+**Ejemplo obligatorio de prueba:**
+
+- El representante A tiene asociado al estudiante 100.
+- El representante B tiene asociado al estudiante 200.
+- El representante A puede consultar al estudiante 100.
+- El representante A NO puede consultar al estudiante 200.
+
+El sistema debe impedir el acceso incluso si el representante A:
+
+- Cambia manualmente el ID del estudiante en la URL.
+- Modifica un parámetro enviado mediante GET o POST.
+- Manipula una solicitud AJAX o Fetch.
+- Modifica un identificador en el formulario.
+- Intenta acceder a una ruta que obtuvo de otro usuario.
+- Reutiliza una petición anterior.
+- Intenta descargar directamente un documento de otro estudiante.
+- Intenta consultar información mediante endpoints internos o API.
+
+La autorización debe comprobarse en el servidor utilizando la relación real entre el usuario autenticado, el representante y el estudiante.
+
+No confiar en identificadores enviados por el navegador.
+
+No utilizar como única protección el hecho de que el estudiante aparezca o no en una lista desplegable.
+
+## 4.2. Consultas y relaciones seguras
+
+Revisar que las consultas de los representantes estén limitadas a sus estudiantes autorizados.
+
+Ejemplo conceptual:
+
+El sistema no debe buscar un estudiante únicamente por su ID global y devolverlo al representante.
+
+Debe comprobar primero que ese estudiante pertenece al conjunto de estudiantes autorizados para el representante autenticado.
+
+Revisar este comportamiento en:
+
+- Dashboard del representante.
+- Perfil del estudiante.
+- Calificaciones.
+- Asistencia.
+- Observaciones.
+- Información disciplinaria.
+- Comunicados.
+- Documentos.
+- Historial académico.
+- Reportes.
+- Descargas.
+- Cualquier otro módulo que presente información del estudiante.
+
+Aplicar una política de denegación por defecto: si no existe una asociación válida o no puede comprobarse la autorización, denegar el acceso.
+
+La respuesta debe evitar revelar información del estudiante no autorizado. Evaluar respuestas 403 o 404 según el diseño de seguridad y privacidad de la aplicación.
+
+## 4.3. Protección de rutas y direcciones URL
+
+Revisar cuidadosamente todas las rutas de la aplicación.
+
+Objetivos:
+
+- No exponer rutas físicas del servidor.
+- No revelar directorios internos del proyecto.
+- No exponer credenciales, tokens o información confidencial.
+- No incluir información personal sensible en parámetros URL.
+- Evitar que identificadores secuenciales permitan enumerar registros.
+- Revisar rutas públicas y privadas.
+- Verificar que cada ruta protegida tenga autenticación y autorización adecuadas.
+- Comprobar que los endpoints AJAX también estén protegidos.
+
+Evaluar el uso de UUID o identificadores públicos no secuenciales cuando aporte una reducción de exposición de identificadores internos.
+
+IMPORTANTE: utilizar UUID no reemplaza la autorización. Aunque un identificador sea difícil de adivinar, el servidor debe verificar siempre que el usuario tenga permiso para acceder al recurso.
+
+No considerar que una ruta es segura simplemente porque no aparece en el menú.
+
+Tampoco intentar ocultar las rutas como sustituto de la seguridad: las URL utilizadas por el navegador pueden ser observadas por el usuario. La protección real debe estar en el servidor.
+
+---
+
+# PARTE 5. PROTECCIÓN DE BASE DE DATOS Y OPERACIONES
+
+### 5.1. Mass Assignment
+
+- Revisar los modelos y sus propiedades fillable y guarded.
+- Comprobar que no se puedan modificar campos protegidos mediante formularios manipulados.
+- Proteger especialmente campos como role, user_id, student_id, representative_id, status y permisos.
+- Verificar que los controladores no acepten indiscriminadamente todos los datos recibidos mediante request()->all().
+
+### 5.2. Transacciones
+
+Identificar operaciones críticas que deban ejecutarse mediante transacciones de base de datos.
+
+Por ejemplo:
+
+- Registro de estudiantes y asociación con representantes.
+- Creación de cuentas de usuario.
+- Asignación de docentes.
+- Registro de calificaciones.
+- Procesos de matrícula.
+- Cambios de estado académico.
+- Operaciones que modifican varias tablas relacionadas.
+
+Comprobar que, ante un error, las operaciones incompletas no dejen información inconsistente.
+
+### 5.3. Auditoría de operaciones
+
+Verificar si existe un mecanismo de trazabilidad para operaciones sensibles.
+
+Identificar la posibilidad de registrar:
+
+- Usuario responsable de la operación.
+- Fecha y hora.
+- Acción realizada.
+- Registro afectado.
+- Valores anteriores y nuevos, cuando corresponda.
+- Resultado de la operación.
+
+Prestar especial atención a:
+
+- Cambios de roles y permisos.
+- Modificaciones de información estudiantil.
+- Cambios de calificaciones.
+- Cambios de asistencia.
+- Modificaciones de representantes asociados.
+- Cambios en expedientes.
+- Eliminación de registros.
+- Operaciones administrativas.
+
+Los registros de auditoría no deben permitir que usuarios ordinarios los modifiquen o eliminen.
+
+Evitar almacenar contraseñas, tokens y otros secretos en los logs.
+
+---
+
+# PARTE 6. CONFIGURACIÓN Y SEGURIDAD DE PRODUCCIÓN
+
+Comprobar:
+
+- Uso obligatorio de HTTPS en producción.
+- APP_DEBUG=false en producción.
+- APP_ENV correctamente configurado.
+- Protección de archivos .env.
+- Configuración segura de cookies.
+- Cookies de sesión con Secure, HttpOnly y SameSite apropiados.
+- Configuración de sesiones.
+- Regeneración de sesión después de autenticación.
+- Invalidación de sesiones al cerrar sesión.
+- Rate limiting en login, recuperación de contraseña y operaciones sensibles.
+- Protección contra intentos repetidos de autenticación.
+- Configuración de CORS cuando existan integraciones que lo requieran.
+- Protección de archivos y directorios internos.
+- Ausencia de credenciales en el repositorio.
+- Dependencias actualizadas y revisión de vulnerabilidades mediante Composer.
+- Existencia de procedimientos de respaldo de la base de datos.
+- Posibilidad de restaurar los respaldos.
+
+No asumir que una configuración está correctamente implementada solo porque Laravel ofrece una opción predeterminada.
+
+Verificar los archivos y valores efectivos utilizados por el proyecto.
+
+---
+
+# PARTE 7. PRUEBAS DE SEGURIDAD Y CASOS DE USO
+
+Diseñar casos de prueba para comprobar que las protecciones realmente funcionan.
+
+Como mínimo, incluir:
+
+1. Un usuario no autenticado intenta acceder al dashboard privado.
+2. Un estudiante intenta acceder al módulo de administración.
+3. Un docente intenta acceder a funciones exclusivas de Secretaría.
+4. Un representante intenta consultar a un estudiante que no tiene asociado.
+5. Un representante modifica el ID de un estudiante en una solicitud.
+6. Un representante intenta descargar un documento de otro estudiante.
+7. Un usuario intenta cambiar su rol manipulando una petición.
+8. Un usuario intenta enviar campos adicionales no permitidos.
+9. Un formulario intenta ejecutar una operación sin token CSRF válido.
+10. Un usuario introduce contenido HTML o JavaScript malicioso.
+11. Un usuario intenta manipular parámetros utilizados en consultas SQL.
+12. Un usuario intenta subir archivos ejecutables o con extensiones falsas.
+13. Un usuario intenta acceder a una ruta administrativa directamente.
+14. Un usuario intenta consultar información mediante una petición AJAX sin autorización.
+15. Un usuario intenta acceder a un registro eliminado, desactivado o que ya no le corresponde.
+
+Siempre que sea posible, convertir los casos de prueba en pruebas automatizadas de Laravel utilizando PHPUnit o Pest, según la infraestructura existente.
+
+No ejecutar pruebas destructivas sobre datos reales.
+
+---
+
+# PARTE 8. METODOLOGÍA DE TRABAJO Y ENTREGA DEL INFORME
+
+Realizar el trabajo en las siguientes etapas:
+
+### Etapa 1. Inspección
+
+Analizar el proyecto completo y localizar los archivos relevantes.
+
+Identificar módulos, modelos, relaciones, rutas, controladores, middleware, Policies, validaciones y mecanismos de autenticación.
+
+No modificar ningún archivo.
+
+### Etapa 2. Diagnóstico
+
+Por cada punto de la auditoría, clasificar el resultado como:
+
+- CUMPLE: existe una implementación adecuada y se ha verificado.
+- CUMPLE PARCIALMENTE: existe una implementación, pero presenta limitaciones.
+- NO CUMPLE: no existe la protección requerida o es insuficiente.
+- NO VERIFICADO: no hay evidencia suficiente para emitir una conclusión.
+
+No marcar como cumplido un requisito solamente porque Laravel dispone de esa funcionalidad.
+
+### Etapa 3. Clasificación de riesgos
+
+Clasificar cada hallazgo:
+
+- CRÍTICO: permite comprometer datos sensibles, cuentas o funciones administrativas.
+- ALTO: permite acceso no autorizado o modificación importante de información.
+- MEDIO: presenta una debilidad que requiere corrección.
+- BAJO: mejora de calidad, mantenimiento o protección adicional.
+
+### Etapa 4. Informe técnico
+
+Por cada hallazgo indicar:
+
+1. Identificador del hallazgo.
+2. Área afectada.
+3. Nivel de riesgo.
+4. Archivo involucrado.
+5. Método, clase, ruta o componente afectado.
+6. Descripción del problema.
+7. Escenario de explotación o fallo.
+8. Consecuencia para el sistema.
+9. Corrección recomendada.
+10. Prueba que permitirá verificar la corrección.
+
+Incluir ejemplos concretos del código existente cuando sea necesario.
+
+No inventar vulnerabilidades ni afirmar que una protección está ausente sin revisar el código correspondiente.
+
+### Etapa 5. Plan de corrección
+
+Organizar las correcciones por prioridad, empezando por los riesgos críticos y altos.
+
+Identificar dependencias entre correcciones y posibles efectos sobre módulos que ya funcionan.
+
+No proponer reescribir toda la aplicación si el problema puede resolverse mediante una modificación localizada.
+
+### Etapa 6. Aprobación
+
+**DETENERSE Y ESPERAR MI AUTORIZACIÓN.**
+
+No comenzar a modificar el código hasta que yo revise y apruebe el informe y el plan de corrección.
+
+Una vez aprobado, implementar las correcciones progresivamente, sin eliminar funcionalidades existentes y verificando que los módulos anteriores continúen funcionando.
+
+---
+
+# RESULTADO ESPERADO
+
+Entregar un documento de auditoría con:
+
+1. Resumen general del estado de la aplicación.
+2. Arquitectura y módulos identificados.
+3. Roles y permisos existentes.
+4. Relaciones entre las entidades principales.
+5. Lista completa de controles de seguridad evaluados.
+6. Resultados de cada punto de la checklist.
+7. Vulnerabilidades y riesgos encontrados.
+8. Casos de prueba recomendados.
+9. Correcciones prioritarias.
+10. Plan de implementación por etapas.
+
+La prioridad absoluta es garantizar la confidencialidad de la información de los estudiantes, impedir accesos entre representantes no autorizados y asegurar que cada usuario únicamente pueda realizar las operaciones correspondientes a su rol y a sus permisos.
+
+**REGLA FINAL: primero comprender y auditar el sistema existente; después informar; finalmente, y solo con mi autorización, modificar el código.**

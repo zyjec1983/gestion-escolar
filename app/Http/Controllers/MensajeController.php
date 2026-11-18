@@ -8,6 +8,7 @@ use App\Models\ClaseDocente;
 use App\Models\Curso;
 use App\Models\Mensaje;
 use App\Models\Paralelo;
+use App\Models\PeriodoLectivo;
 use App\Models\User;
 use App\Services\Notificaciones\NotificadorCircular;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -145,13 +146,16 @@ class MensajeController extends Controller
     public function store(Request $request)
     {
         $puedeDifundir = in_array($request->user()->rol, ['INSPECCION', 'SECRETARIA'], true);
+        // Rectorado y Vicerrectorado solo escriben a representantes legales; el
+        // destinatario se deriva del estudiante elegido, nunca del cliente.
+        $esDirectivo = in_array($request->user()->rol, ['RECTORA', 'VICERRECTORA'], true);
         $esRespuesta = $request->filled('hilo_id');
         $alcance = $request->input('alcance');
 
         $validated = $request->validate([
             'asunto' => 'required|string|max:255',
             'cuerpo_contenido' => 'nullable|string',
-            'destinatario_id' => $puedeDifundir ? 'nullable|exists:users,id' : 'required|exists:users,id',
+            'destinatario_id' => ($puedeDifundir || $esDirectivo) ? 'nullable|exists:users,id' : 'required|exists:users,id',
             'contexto_estudiante_id' => 'nullable|exists:alumnos,id',
             'hilo_id' => 'nullable|exists:mensajes,id',
             'adjunto' => 'nullable|file|max:5120',
@@ -159,13 +163,17 @@ class MensajeController extends Controller
             'es_circular' => 'nullable|boolean',
             // Inspección y Secretaría difunden por alcance, salvo que respondan.
             'alcance' => $puedeDifundir && ! $esRespuesta ? 'required|in:estudiante,nivel,curso,comunidad' : 'nullable|in:estudiante,nivel,curso,comunidad',
-            'alumno_id' => Rule::requiredIf($alcance === 'estudiante').'|nullable|exists:alumnos,id',
+            'alumno_id' => Rule::requiredIf($alcance === 'estudiante' || ($esDirectivo && ! $esRespuesta)).'|nullable|exists:alumnos,id',
             'nivel_educativo' => Rule::requiredIf($alcance === 'nivel').'|nullable|in:basica,bachillerato',
             'curso_id' => Rule::requiredIf($alcance === 'curso').'|nullable|exists:cursos,id',
         ]);
 
         if ($puedeDifundir && ! empty($validated['alcance'])) {
             return $this->enviarDifusion($request, $validated);
+        }
+
+        if ($esDirectivo) {
+            return $this->enviarDirectivo($request, $validated);
         }
 
         if (! empty($validated['hilo_id'])) {
@@ -223,6 +231,100 @@ class MensajeController extends Controller
         $retorno = $request->input('retorno', route('mensajes.index'));
 
         return redirect($retorno)->with('exito', 'Mensaje enviado correctamente.');
+    }
+
+    /**
+     * Envío de Rectorado y Vicerrectorado. El mensaje llega únicamente al
+     * representante legal del estudiante seleccionado; se ignora cualquier
+     * destinatario enviado por el cliente y se rechaza a los estudiantes.
+     *
+     * Conecta con: Alumno, User, Mensaje y NotificadorCircular.
+     * Ruta: POST /mensajes (mensajes.store) para RECTORA y VICERRECTORA.
+     */
+    private function enviarDirectivo(Request $request, array $validated)
+    {
+        $emisor = $request->user();
+
+        if (! empty($validated['hilo_id'])) {
+            $hiloOrigen = Mensaje::find($validated['hilo_id']);
+
+            if (! $hiloOrigen || ! $this->participaEn($emisor, $hiloOrigen)) {
+                abort(403, 'Hilo de conversación inválido.');
+            }
+
+            $destinatario = User::find($validated['destinatario_id'] ?? null);
+
+            if (! $destinatario || ! in_array($destinatario->id, [$hiloOrigen->emisor_id, $hiloOrigen->destinatario_id], true)) {
+                return back()->withErrors(['destinatario_id' => 'La respuesta no corresponde a este hilo.'])->withInput();
+            }
+
+            if ($destinatario->rol === 'ESTUDIANTE') {
+                return back()->withErrors([
+                    'destinatario_id' => 'Rectorado y Vicerrectorado solo pueden escribir a representantes legales.',
+                ])->withInput();
+            }
+        } else {
+            $alumno = Alumno::with('representante')->find($validated['alumno_id'] ?? null);
+
+            if (! $alumno) {
+                return back()->withErrors(['alumno_id' => 'Seleccione un estudiante.'])->withInput();
+            }
+
+            $destinatario = $alumno->representante;
+
+            if (! $destinatario) {
+                return back()->withErrors([
+                    'alumno_id' => 'El estudiante seleccionado no tiene representante registrado.',
+                ])->withInput();
+            }
+
+            if ($destinatario->rol === 'ESTUDIANTE') {
+                return back()->withErrors([
+                    'alumno_id' => 'El contacto registrado del estudiante no es un representante legal.',
+                ])->withInput();
+            }
+
+            // El servidor decide el destinatario y el contexto; no se confía
+            // en el destinatario_id que llegue desde el formulario.
+            $validated['destinatario_id'] = $destinatario->id;
+            $validated['contexto_estudiante_id'] = $alumno->id;
+        }
+
+        $esCircular = (bool) ($validated['es_circular'] ?? false);
+
+        $mensaje = Mensaje::create([
+            'asunto' => $validated['asunto'],
+            'cuerpo_contenido' => $validated['cuerpo_contenido'] ?? null,
+            'carpeta' => 'enviados',
+            'emisor_id' => $emisor->id,
+            'emisor_type' => User::class,
+            'destinatario_id' => $destinatario->id,
+            'hilo_id' => $validated['hilo_id'] ?? null,
+            'contexto_estudiante_id' => $validated['contexto_estudiante_id'] ?? null,
+            'leido' => false,
+            'es_circular' => $esCircular,
+            'fecha_envio' => now(),
+        ]);
+
+        if ($request->hasFile('adjunto')) {
+            $archivo = $request->file('adjunto');
+            $ruta = $archivo->store('mensajes/'.$emisor->id, 'public');
+
+            ArchivoAdjunto::create([
+                'attachable_type' => Mensaje::class,
+                'attachable_id' => $mensaje->id,
+                'nombre' => $archivo->getClientOriginalName(),
+                'url' => Storage::url($ruta),
+            ]);
+        }
+
+        if ($esCircular) {
+            $this->notificadorCircular->enviar($destinatario, $mensaje);
+        }
+
+        $retorno = $request->input('retorno', route('mensajes.index'));
+
+        return redirect($retorno)->with('exito', 'Mensaje enviado al representante legal.');
     }
 
     /**
@@ -409,6 +511,52 @@ class MensajeController extends Controller
         })->values();
     }
 
+    /**
+     * Cursos con sus estudiantes y el representante legal de cada uno. Lo usan
+     * Rectorado y Vicerrectorado para encadenar curso → estudiante → representante.
+     */
+    private function cursosParaDirectivos(): Collection
+    {
+        $periodo = PeriodoLectivo::where('activo', true)->first();
+
+        return Curso::orderBy('nombre')->get(['id', 'nombre'])
+            ->map(function (Curso $curso) use ($periodo) {
+                $alumnos = Alumno::with([
+                    'representante',
+                    'matriculas' => fn ($q) => $q
+                        ->where('curso_id', $curso->id)
+                        ->when($periodo, fn ($sub) => $sub->where('periodo_id', $periodo->id))
+                        ->with('paralelo'),
+                ])
+                    ->whereHas('matriculas', fn ($q) => $q
+                        ->where('curso_id', $curso->id)
+                        ->when($periodo, fn ($sub) => $sub->where('periodo_id', $periodo->id)))
+                    ->orderBy('apellidos')
+                    ->orderBy('nombres')
+                    ->get();
+
+                return [
+                    'id' => $curso->id,
+                    'nombre' => $curso->nombre,
+                    'alumnos' => $alumnos->map(function (Alumno $alumno) {
+                        $paralelo = $alumno->matriculas->first()?->paralelo?->nombre;
+
+                        return [
+                            'id' => $alumno->id,
+                            'label' => trim($alumno->apellidos.' '.$alumno->nombres)
+                                .($paralelo ? ' ('.$paralelo.')' : ''),
+                            'representante_id' => $alumno->representante_user_id,
+                            'representante_nombre' => $alumno->representante
+                                ? trim($alumno->representante->name.' '.$alumno->representante->apellidos)
+                                : null,
+                        ];
+                    })->values(),
+                ];
+            })
+            ->filter(fn (array $curso) => $curso['alumnos']->isNotEmpty())
+            ->values();
+    }
+
     private function esEmisor(User $user, Mensaje $mensaje): bool
     {
         return $mensaje->emisor_id === $user->id && $mensaje->emisor_type === User::class;
@@ -512,6 +660,12 @@ class MensajeController extends Controller
 
         if (in_array($user->rol, ['INSPECCION', 'SECRETARIA'], true)) {
             return collect(['rol' => $user->rol, 'cursos' => $this->cursosParaDifusion()]);
+        }
+
+        // Rectorado y Vicerrectorado: solo representantes legales, agrupados
+        // por curso para el modal de redacción.
+        if (in_array($user->rol, ['RECTORA', 'VICERRECTORA'], true)) {
+            return collect(['rol' => $user->rol, 'cursos' => $this->cursosParaDirectivos()]);
         }
 
         // Representantes y estudiantes: un curso por cada hijo/matrícula, con

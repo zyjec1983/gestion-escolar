@@ -206,6 +206,7 @@ class PreRegistroAdminTest extends TestCase
         $this->assertNotNull($user);
         $this->assertSame('1985-03-10', $user->fecha_nacimiento->format('Y-m-d'));
         $this->assertSame($pre->rep_numero_documento, $user->numero_cedula);
+        $this->assertTrue($user->debe_cambiar_password);
 
         $this->assertDatabaseHas('alumnos', [
             'nombres' => 'Juanito',

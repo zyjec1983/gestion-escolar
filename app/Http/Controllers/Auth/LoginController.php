@@ -9,6 +9,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * Inicio y cierre de sesión, más la selección del perfil activo.
@@ -67,17 +69,46 @@ class LoginController extends Controller
 
         $user = User::where($campo, $identificador)->first();
 
-        if ($user && $user->estaBloqueado()) {
+        if (! $user) {
+            // Se calcula un hash con el mismo costo configurado para que el
+            // tiempo de respuesta se parezca al de una cuenta existente. Sin
+            // esto se podría deducir qué correos están registrados midiendo
+            // cuánto tarda el servidor.
+            Hash::make(Str::random(32));
+
+            $this->auditar('warning', 'Intento de inicio de sesión con una cuenta inexistente.', $request);
+
+            return back()->withErrors([
+                'email' => 'Las credenciales no coinciden con nuestros registros.',
+            ])->onlyInput('email');
+        }
+
+        if ($user->estaBloqueado()) {
+            $this->auditar('warning', 'Intento de inicio de sesión en una cuenta bloqueada.', $request, $user);
+
             return back()->withErrors([
                 'email' => $user->mensajeBloqueo(),
             ])->onlyInput('email');
         }
 
-        if ($user && Hash::check($credentials['password'], $user->password)) {
+        if (Hash::check($credentials['password'], $user->password)) {
+            // Si el costo del algoritmo cambió, se actualiza el hash sin
+            // obligar a la persona a cambiar de contraseña.
+            if (Hash::needsRehash($user->password)) {
+                $user->forceFill(['password' => $credentials['password']])->save();
+            }
+
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
 
             $user->limpiarIntentosFallidos();
+            $this->auditar('info', 'Inicio de sesión exitoso.', $request, $user);
+
+            // Las cuentas con clave temporal solo pueden ir a cambiarla.
+            if ($user->debe_cambiar_password) {
+                return redirect()->route('perfil.password.obligatorio');
+            }
+
             $perfiles = $user->perfiles();
 
             // Multirol: primero se elige el perfil y luego se redirige.
@@ -92,19 +123,36 @@ class LoginController extends Controller
 
         // Solo se cuentan los intentos de cuentas existentes: así no se puede
         // descubrir ni bloquear cuentas ajenas escribiendo correos al azar.
-        if ($user) {
-            $user->registrarIntentoFallido();
+        $user->registrarIntentoFallido();
 
-            if ($user->estaBloqueado()) {
-                return back()->withErrors([
-                    'email' => $user->mensajeBloqueo(),
-                ])->onlyInput('email');
-            }
+        $this->auditar('warning', 'Intento de inicio de sesión fallido.', $request, $user);
+
+        if ($user->estaBloqueado()) {
+            $this->auditar('warning', 'Cuenta bloqueada tras varios intentos fallidos.', $request, $user);
+
+            return back()->withErrors([
+                'email' => $user->mensajeBloqueo(),
+            ])->onlyInput('email');
         }
 
         return back()->withErrors([
             'email' => 'Las credenciales no coinciden con nuestros registros.',
         ])->onlyInput('email');
+    }
+
+    /**
+     * Deja un rastro de auditoría sin guardar nunca la contraseña.
+     *
+     * Conecta con: storage/logs/laravel.log (canal `stack`/`single`).
+     */
+    private function auditar(string $nivel, string $mensaje, Request $request, ?User $user = null): void
+    {
+        Log::log($nivel, $mensaje, [
+            'user_id' => $user?->id,
+            'identificador' => mb_substr(trim((string) $request->input('email')), 0, 255),
+            'ip' => $request->ip(),
+            'user_agent' => mb_substr((string) $request->userAgent(), 0, 500),
+        ]);
     }
 
     /**

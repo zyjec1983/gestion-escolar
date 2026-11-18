@@ -361,27 +361,46 @@
                 });
             }
 
-            @auth
-            @if(auth()->user()->perfilActivo() === 'ADMIN')
-            /*
-             * Avisos del rol ADMIN con SweetAlert2.
-             *
-             * Qué hace: muestra los mensajes de sesión y los errores de
-             * validación como toasts de SweetAlert2, en lugar de las alertas
-             * Bootstrap del contenido. Las confirmaciones de formularios usan
-             * SweetAlert2 mediante data-confirm.
-             */
-            const adminMensajes = [
-                { texto: @json(session('success')), icono: 'success', tiempo: 3200 },
-                { texto: @json(session('warning')), icono: 'warning', tiempo: 6000 },
-                { texto: @json(session('error') ?: ($errors->any() ? $errors->first() : null)), icono: 'error', tiempo: 8000 },
-            ];
+            const avisoError = document.getElementById('swal-error');
+            if (avisoError && avisoError.dataset.message) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Atención',
+                    text: avisoError.dataset.message,
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#2b579a',
+                });
+            }
 
-            adminMensajes.forEach(function (mensaje, indice) {
+            @auth
+            /*
+             * Avisos generales con SweetAlert2.
+             *
+             * Qué hace: muestra los mensajes flash y los errores de validación
+             * como toasts para todos los perfiles y oculta la alerta Bootstrap
+             * equivalente del contenido. Si la vista ya tiene su propio aviso
+             * SweetAlert (por ejemplo #swal-success-notas), no lo duplica.
+             * Conecta con: layouts/app.blade.php y SweetAlert2.
+             */
+            @php
+                $avisosSesion = array_values(array_filter([
+                    session('success') ? ['texto' => session('success'), 'icono' => 'success', 'tiempo' => 3200] : null,
+                    session('info') ? ['texto' => session('info'), 'icono' => 'info', 'tiempo' => 5000] : null,
+                    session('warning') ? ['texto' => session('warning'), 'icono' => 'warning', 'tiempo' => 6000] : null,
+                    session('error') ? ['texto' => session('error'), 'icono' => 'error', 'tiempo' => 8000] : null,
+                    $errors->any() ? ['texto' => $errors->first(), 'icono' => 'error', 'tiempo' => 8000] : null,
+                ]));
+            @endphp
+            const avisosSesion = @json($avisosSesion);
+
+            avisosSesion.forEach(function (mensaje, indice) {
                 if (!mensaje.texto) return;
 
-                // Oculta la alerta Bootstrap duplicada del contenido.
-                document.querySelectorAll('main .alert-success, main .alert-danger, main .alert-warning')
+                // La vista ya muestra este aviso con su propio SweetAlert.
+                const avisoPropio = document.querySelector('[id*="swal"][id*="' + mensaje.icono + '"]');
+                if (avisoPropio && avisoPropio.dataset.message) return;
+
+                document.querySelectorAll('main .alert-success, main .alert-danger, main .alert-warning, main .alert-info')
                     .forEach(function (bloque) {
                         if (bloque.textContent.indexOf(mensaje.texto) !== -1) {
                             bloque.classList.add('d-none');
@@ -400,7 +419,6 @@
                     });
                 }, indice * 350);
             });
-            @endif
             @endauth
         });
     </script>

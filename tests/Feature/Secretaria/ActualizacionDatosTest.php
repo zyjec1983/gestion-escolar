@@ -6,6 +6,7 @@ use App\Models\Alumno;
 use App\Models\RepresentanteCambio;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class ActualizacionDatosTest extends TestCase
@@ -353,6 +354,8 @@ class ActualizacionDatosTest extends TestCase
         $this->assertNotNull($nuevo);
         $this->assertSame('REPRESENTANTE', $nuevo->rol);
         $this->assertSame('NUNES', $nuevo->apellidos);
+        $this->assertTrue($nuevo->debe_cambiar_password);
+        $this->assertFalse(Hash::check('password', $nuevo->password));
         $this->assertSame($nuevo->id, $this->alumno->fresh()->representante_user_id);
         $this->assertSame($nuevo->id, RepresentanteCambio::first()->representante_nuevo_id);
     }

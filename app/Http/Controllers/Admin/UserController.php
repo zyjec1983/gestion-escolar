@@ -114,6 +114,7 @@ class UserController extends Controller
                                 'fecha_nacimiento' => $alumno->fecha_nacimiento,
                                 'rol' => 'REPRESENTANTE',
                                 'password' => $cedula,
+                                'debe_cambiar_password' => true,
                             ]);
 
                             $user->rolesAdicionales()->create(['rol' => 'ESTUDIANTE']);
@@ -141,7 +142,8 @@ class UserController extends Controller
         return back()->with(
             'success',
             "Se generaron {$creadas} cuenta(s). Omitidas: {$omitidas}. Errores: {$errores}. "
-            .'El usuario y la contraseña inicial son la cédula del estudiante.'
+            .'El usuario y la contraseña inicial son la cédula del estudiante; '
+            .'en el primer ingreso se pedirá cambiarla.'
         );
     }
 
@@ -217,6 +219,7 @@ class UserController extends Controller
             'numero_cedula' => $validated['numero_cedula'] ?? null,
             'rol' => $validated['rol'],
             'password' => $validated['password'],
+            'debe_cambiar_password' => true,
         ]);
 
         $adicionales = collect($validated['roles_adicionales'] ?? [])
@@ -243,7 +246,7 @@ class UserController extends Controller
             if (in_array('DOCENTE', $user->perfiles(), true)) {
                 return redirect()
                     ->route('admin.asignaciones.index', ['docente' => $user->id])
-                    ->with('success', 'Cuenta creada. Ahora asigne las materias del docente.');
+                    ->with('success', 'Cuenta creada. Ahora asigne las materias del docente. En el primer ingreso se pedirá cambiar la contraseña.');
             }
 
             return redirect()
@@ -252,7 +255,7 @@ class UserController extends Controller
         }
 
         return redirect()->route('admin.usuarios.index')
-            ->with('success', 'Cuenta creada correctamente. Comparta las credenciales con la persona.');
+            ->with('success', 'Cuenta creada correctamente. Comparta las credenciales; en el primer ingreso se pedirá cambiar la contraseña.');
     }
 
     /** Formulario para restablecer la contraseña de una cuenta olvidada. */
@@ -275,7 +278,10 @@ class UserController extends Controller
             'password.confirmed' => 'La confirmación de la contraseña no coincide.',
         ]);
 
-        $user->update(['password' => $validated['password']]);
+        $user->update([
+            'password' => $validated['password'],
+            'debe_cambiar_password' => true,
+        ]);
 
         HistorialCambio::registrar(
             'Usuarios',
@@ -285,7 +291,7 @@ class UserController extends Controller
         );
 
         return redirect()->route('admin.usuarios.index')
-            ->with('success', 'Contraseña restablecida. Comparta la nueva clave con la persona.');
+            ->with('success', 'Contraseña restablecida. Es temporal: en el próximo ingreso se pedirá cambiarla.');
     }
 
     /**
@@ -395,8 +401,11 @@ class UserController extends Controller
             'rol' => $validated['rol'],
         ]);
 
-        if (! empty($validated['password'])) {
+        $passwordCambiada = ! empty($validated['password']);
+
+        if ($passwordCambiada) {
             $user->password = $validated['password'];
+            $user->debe_cambiar_password = true;
         }
 
         $user->save();
@@ -417,6 +426,11 @@ class UserController extends Controller
 
         return redirect()
             ->route('admin.usuarios.index')
-            ->with('success', 'Usuario actualizado. Los perfiles se aplican en el próximo inicio de sesión o cambio de perfil.');
+            ->with(
+                'success',
+                $passwordCambiada
+                    ? 'Usuario actualizado. La contraseña es temporal: se pedirá cambiarla en el próximo ingreso.'
+                    : 'Usuario actualizado. Los perfiles se aplican en el próximo inicio de sesión o cambio de perfil.'
+            );
     }
 }

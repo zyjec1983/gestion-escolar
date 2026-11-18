@@ -25,11 +25,11 @@ class DashboardController extends Controller
         $user = $request->user();
 
         return match ($user->perfilActivo()) {
-            // El ADMIN tiene un panel propio centrado en la gestión del sitio,
-            // usuarios y auditoría. Rectorado y Vicerrectorado conservan el
-            // panel institucional.
+            // Cada autoridad tiene su panel propio: Rectorado dirige la
+            // institución y Vicerrectorado coordina la academia.
             'ADMIN' => $this->admin($request),
-            'RECTORA', 'VICERRECTORA' => $this->rector($request),
+            'RECTORA' => redirect()->route('rector.panel'),
+            'VICERRECTORA' => redirect()->route('vicerrector.panel'),
             'SECRETARIA' => $this->secretaria($request),
             'REPRESENTANTE' => $this->representante($request),
             'ESTUDIANTE' => $this->estudiante($request),
@@ -52,6 +52,11 @@ class DashboardController extends Controller
     private function admin(Request $request)
     {
         $data = (new DashboardResource($request->user()))->resolve($request);
+
+        // DashboardResource entrega `institucion` como arreglo para la API.
+        // En las vistas se quita para no tapar el modelo $institucion que
+        // comparte AppServiceProvider con el layout (nombre, subtítulo y logo).
+        unset($data['institucion']);
 
         $periodoActivo = PeriodoLectivo::where('activo', true)->first();
 
@@ -81,41 +86,6 @@ class DashboardController extends Controller
     }
 
     /**
-     * Panel de Rectorado / Vicerrectorado / Administracion.
-     * Tarjetas de resumen institucional + circulares publicadas.
-     */
-    private function rector(Request $request)
-    {
-        $user = $request->user();
-        $data = (new DashboardResource($user))->resolve($request);
-
-        $periodoActivo = PeriodoLectivo::where('activo', true)->first();
-
-        $data['kpis'] = [
-            'estudiantes' => $periodoActivo
-                ? Matricula::where('periodo_id', $periodoActivo->id)->count()
-                : Alumno::count(),
-            'docentes' => User::docentes()->count(),
-            'pendientes' => PreRegistro::pendiente()->count(),
-            'cursos' => Curso::count(),
-        ];
-
-        $data['pendientes_recientes'] = PreRegistro::pendiente()
-            ->latest('created_at')
-            ->take(6)
-            ->get();
-
-        // Cada rol ve su propio nombre de panel; el contenido es institucional.
-        $data['panel_titulo'] = match ($user->perfilActivo()) {
-            'VICERRECTORA' => 'Panel de Vicerrectorado',
-            'ADMIN' => 'Panel institucional',
-            default => 'Panel de Rectorado',
-        };
-
-        return view('dashboard.rector', $data);
-    }
-
-    /**
      * Panel operativo de Secretaria: admisiones, fichas por regularizar, citas
      * y observaciones en modo lectura. Es distinto del panel de Rectorado.
      */
@@ -123,6 +93,7 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $data = (new DashboardResource($user))->resolve($request);
+        unset($data['institucion']);
 
         $periodoActivo = PeriodoLectivo::where('activo', true)->first();
 
@@ -172,6 +143,7 @@ class DashboardController extends Controller
     private function general(Request $request)
     {
         $data = (new DashboardResource($request->user()))->resolve($request);
+        unset($data['institucion']);
 
         return view('dashboard.index', $data);
     }
@@ -189,6 +161,7 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $data = (new DashboardResource($user))->resolve($request);
+        unset($data['institucion']);
 
         // Mensajes sin leer cuyo remitente es un representante.
         $data['mensajes_representantes'] = $user->mensajesRecibidos()

@@ -1,0 +1,1128 @@
+================================================================================
+ SISTEMA DE GESTIÓN ESCOLAR
+ REQUERIMIENTOS Y SPRINTS: RECTORADO Y VICERRECTORADO
+ Archivo de consulta obligatoria antes de iniciar cada fase
+ Última actualización: 2026-11-16
+ Estado: fase 1 (sprints 0 a 3) implementada y con la suite completa en verde.
+================================================================================
+
+0. CÓMO USAR ESTE ARCHIVO
+--------------------------------------------------------------------------------
+- Antes de iniciar un sprint, leer la sección 13 correspondiente.
+- Marcar cada tarea con uno de estos estados:
+    [Sin iniciar]
+    [Iniciada]
+    [Terminada]
+    [Terminada con pruebas unitarias correctas]
+- Una tarea solo pasa a "Terminada con pruebas unitarias correctas" cuando sus
+  pruebas dirigidas están en verde y la suite completa sigue en verde.
+- Actualizar la sección 16 (bitácora) al cerrar cada sprint.
+- No se hace push sin autorización expresa del usuario.
+
+1. OBJETIVO
+--------------------------------------------------------------------------------
+Definir y construir los módulos propios de Rectorado y Vicerrectorado para que
+cada rol cumpla una función institucional clara:
+
+- RECTORA: dirección, supervisión general, autorización y rendición de cuentas.
+- VICERRECTORA: coordinación académica, supervisión curricular y seguimiento
+  del rendimiento, la asistencia y el cumplimiento docente.
+
+La meta no es duplicar los módulos de ADMIN, Secretaría, Inspección o DECE.
+La meta es dar a Rectorado y Vicerrectorado vistas de consulta, supervisión,
+consolidación y autorización sobre la información que esos módulos ya generan.
+
+2. ALCANCE Y LÍMITES
+--------------------------------------------------------------------------------
+INCLUYE:
+- Paneles de control diferenciados para Rectorado y Vicerrectorado.
+- Menús laterales propios, ordenados por función.
+- Vistas de solo lectura sobre rendimiento, asistencia, planificación,
+  calificaciones, matrícula, casos e incidencias.
+- Informes consolidados en pantalla, PDF y Excel.
+- Flujos de revisión, aprobación y autorización con bitácora.
+- Calendario académico, juntas de curso y recuperación pedagógica.
+- Indicadores de calidad, matrícula, deserción y cumplimiento normativo.
+- Pruebas dirigidas por sprint y suite completa en verde.
+
+FASE 1 APROBADA (2026-11-16):
+- Se implementan los sprints 0, 1, 2 y 3.
+- Sprints 4 a 9 quedan documentados como fases posteriores.
+- No se implementan en la fase 1: asistencia docente, horarios de clases,
+  informes/aprobaciones, calendario, juntas, recuperación, calidad,
+  matrícula/deserción y normativa.
+
+NO INCLUYE (salvo decisión expresa):
+- Reemplazar la operación diaria de Secretaría (matrículas, traslados,
+  corrección de notas).
+- Reemplazar la operación de Inspección (tomar asistencia, observaciones).
+- Reemplazar la operación clínica del DECE.
+- Administración de usuarios y configuración del sistema (sigue siendo ADMIN).
+- Duplicar pantallas ya existentes: se enlazan o se reutilizan.
+
+3. ESTADO ACTUAL (AUDITORÍA 2026-11-16)
+--------------------------------------------------------------------------------
+Lo que ya existe:
+- Panel compartido `dashboard.rector` para RECTORA y VICERRECTORA.
+  Solo muestra 4 indicadores: estudiantes, docentes, solicitudes pendientes y
+  cursos abiertos; últimas solicitudes y circulares.
+- Circulares institucionales: RECTORA y VICERRECTORA pueden publicar y avisar
+  por correo/SMS.
+- Accesos de solo lectura ya abiertos:
+    * DECE: expedientes y reportes (sin relatorías clínicas).
+    * Citas: agendar, historial y registro.
+    * Observaciones: enviar, reporte por alumno y estadísticas.
+    * Planificaciones: listado, impresión y bitácora.
+    * Mensajes.
+- Multirol operativo: una cuenta puede ser VICERRECTORA + DOCENTE, o
+  INSPECCION + DOCENTE, y cambiar de perfil activo.
+- Distributivo docente y carga horaria con contrato numérico y tutor.
+- Pruebas existentes relacionadas: MultirolTest, PlanificacionTest,
+  InspectorObservacionTest, RectorCitaTest, SecretariaPanelTest,
+  CircularNotificacionTest.
+
+Brechas detectadas:
+- El panel de Rectorado enlaza a `admin.pre-registros.index` y a
+  `admin.configuracion.index`, rutas que NO permiten RECTORA/VICERRECTORA.
+  Es un enlace roto por permisos.
+- El menú de Rectorado/Vicerrectorado es una mezcla de accesos sueltos; no
+  tiene secciones propias ni distingue funciones entre ambos roles.
+- No existe rendimiento académico consolidado por nivel, curso, paralelo o
+  asignatura.
+- No existe seguimiento institucional de estudiantes en riesgo.
+- No existe supervisión docente consolidada (carga, planificación,
+  calificaciones pendientes, informes).
+- No existe flujo de informes institucionales ni de aprobaciones.
+- No existe calendario académico ni juntas de curso.
+- No existe recuperación pedagógica.
+- No existe estadística de matrícula y deserción.
+- No existe indicador de calidad ni checklist normativo.
+- No existe asistencia docente registrada; solo asistencia de estudiantes.
+- No existe módulo de horarios de clases.
+- No hay pruebas dedicadas a los paneles de Rectorado y Vicerrectorado.
+
+4. PRINCIPIOS DE DISEÑO
+--------------------------------------------------------------------------------
+1. Separar responsabilidades:
+   - RECTORA: institución, autorizaciones, informes, calidad, normativa.
+   - VICERRECTORA: academia, currículo, docentes, evaluaciones, estudiantes.
+2. No duplicar módulos operativos. Las vistas directivas consolidan y enlazan.
+3. Solo lectura por defecto. Las escrituras se limitan a:
+   - Circulares.
+   - Revisión/aprobación de informes.
+   - Autorizaciones institucionales.
+   - Juntas de curso y recuperación pedagógica (Vicerrectorado).
+   - Calendario académico (según delegación).
+4. Multirol: todo se resuelve con `perfilActivo()`. Si una vicerrectora cambia
+   a su perfil DOCENTE, ve el menú y los permisos de docencia, no los de
+   vicerrectorado.
+5. Privacidad: Rectorado y Vicerrectorado ven datos agregados. Las relatorías
+   clínicas y la información sensible del DECE siguen siendo solo del DECE.
+   Vicerrectorado puede ver adaptaciones/NEE y compromisos académicos, no
+   historias clínicas.
+6. Auditoría: toda aprobación, autorización o cambio de estado deja registro
+   en `historial_cambios` o en la tabla de aprobaciones.
+7. Interfaz: Bootstrap 5.3.3, textos en español, tablas con desplazamiento
+   horizontal y desplazamiento vertical de la ventana.
+8. Verificaciones y avisos con SweetAlert2, como el resto del rol ADMIN.
+9. Cada sprint cierra con pruebas dirigidas y suite completa en verde.
+
+5. FUNCIONES DEL RECTOR
+--------------------------------------------------------------------------------
+Función principal: dirección y supervisión general de la institución.
+
+| # | Función solicitada                                      | Módulo propuesto                     |
+|---|---------------------------------------------------------|--------------------------------------|
+| 1 | Panel de control institucional                          | Panel institucional                  |
+| 2 | Supervisión general del rendimiento académico            | Rendimiento por nivel y curso        |
+| 3 | Seguimiento de estudiantes con dificultades académicas   | Estudiantes en riesgo                |
+| 4 | Supervisión del desempeño del personal docente y admin.  | Supervisión docente y administrativa |
+| 5 | Revisión y aprobación de informes institucionales        | Informes y aprobaciones              |
+| 6 | Supervisión de asistencia de estudiantes y docentes      | Asistencia institucional             |
+| 7 | Seguimiento de casos disciplinarios                      | Casos e incidencias                  |
+| 8 | Autorización de decisiones institucionales               | Aprobaciones y autorizaciones        |
+| 9 | Supervisión del cumplimiento de la planificación         | Planificación institucional          |
+|10 | Consulta de estadísticas de matrícula y deserción        | Matrícula y deserción                |
+|11 | Seguimiento de indicadores de calidad educativa          | Indicadores de calidad               |
+|12 | Supervisión de cumplimiento de normativas del Ministerio | Cumplimiento normativo               |
+|13 | Revisión de novedades e incidentes institucionales       | Casos e incidencias / bitácora       |
+
+6. FUNCIONES DEL VICERRECTOR
+--------------------------------------------------------------------------------
+Función principal: coordinación, supervisión y seguimiento académico.
+
+| # | Función solicitada                                      | Módulo propuesto                     |
+|---|---------------------------------------------------------|--------------------------------------|
+| 1 | Panel de control académico                              | Panel académico                      |
+| 2 | Supervisión de la planificación curricular               | Planificación curricular             |
+| 3 | Seguimiento de estudiantes con dificultades académicas   | Estudiantes en riesgo                |
+| 4 | Supervisión del cumplimiento de planificaciones docentes | Planificación y bitácora             |
+| 5 | Seguimiento de calificaciones pendientes                 | Evaluaciones y calificaciones        |
+| 6 | Rendimiento por curso, paralelo y asignatura             | Rendimiento académico                |
+| 7 | Supervisión de evaluaciones y actividades académicas     | Evaluaciones y actividades           |
+| 8 | Seguimiento de estudiantes con bajo rendimiento          | Estudiantes en riesgo                |
+| 9 | Coordinación de recuperación pedagógica                  | Recuperación pedagógica              |
+|10 | Supervisión de la distribución de carga horaria docente  | Carga horaria y distributivo         |
+|11 | Seguimiento del cumplimiento de horarios de clases       | Horarios académicos (por definir)    |
+|12 | Revisión de informes de los docentes                     | Informes docentes                    |
+|13 | Seguimiento de adaptaciones y NEE (acceso restringido)   | NEE y adaptaciones                   |
+|14 | Coordinación de juntas de curso                          | Juntas de curso                      |
+|15 | Seguimiento de compromisos de juntas                     | Juntas de curso                      |
+|16 | Supervisión del cumplimiento del calendario académico    | Calendario académico                 |
+
+7. FUNCIONES COMPARTIDAS
+--------------------------------------------------------------------------------
+| Funcionalidad                                  | Rector | Vicerrector |
+|------------------------------------------------|--------|-------------|
+| Consultar estadísticas institucionales          | Sí     | Sí          |
+| Consultar rendimiento académico                 | Sí     | Sí          |
+| Consultar asistencia                            | Sí     | Sí          |
+| Revisar informes                                | Sí     | Sí          |
+| Consultar información docente                   | Sí     | Sí          |
+| Revisar casos de estudiantes                    | Sí     | Sí          |
+| Consultar calendario académico                  | Sí     | Sí          |
+| Autorizar decisiones institucionales            | Sí     | Según delegación |
+| Supervisar planificación curricular             | Sí     | Sí          |
+| Administrar usuarios                            | No     | No          |
+
+Regla: ambos consultan, pero solo Rectorado autoriza decisiones institucionales.
+Vicerrectorado puede autorizar decisiones académicas por delegación expresa.
+
+8. MENÚ LATERAL PROPUESTO
+--------------------------------------------------------------------------------
+8.1 RECTORADO
+1. Panel institucional.
+2. Gestión y supervisión académica.
+   - Rendimiento por nivel y curso.
+   - Asistencia institucional.
+   - Planificación institucional.
+3. Seguimiento estudiantil.
+   - Estudiantes en riesgo.
+   - Matrícula y deserción.
+4. Supervisión docente.
+   - Carga horaria y distributivo.
+   - Cumplimiento de planificación.
+   - Entrega de calificaciones.
+5. Informes institucionales.
+   - Informes y aprobaciones.
+   - Indicadores de calidad.
+6. Casos e incidencias.
+   - Casos disciplinarios.
+   - Novedades e incidentes.
+7. Aprobaciones y autorizaciones.
+   - Decisiones institucionales.
+   - Actas y resoluciones.
+8. Cumplimiento normativo.
+9. Calendario académico.
+10. Circulares y comunicados.
+11. Mensajes.
+12. Perfil.
+
+8.2 VICERRECTORADO
+1. Panel académico.
+2. Planificación curricular.
+   - Planificaciones docentes.
+   - Bitácora de planificaciones.
+   - Juntas de curso.
+3. Seguimiento académico estudiantil.
+   - Estudiantes en riesgo.
+   - Bajo rendimiento.
+   - NEE y adaptaciones (restringido).
+4. Supervisión docente.
+   - Carga horaria y distributivo.
+   - Cumplimiento de planificación.
+   - Informes docentes.
+5. Gestión de evaluaciones.
+   - Calificaciones pendientes.
+   - Ventanas de notas (solo lectura).
+   - Actividades evaluativas.
+6. Recuperación pedagógica.
+7. Juntas de curso.
+   - Actas y compromisos.
+   - Seguimiento de compromisos.
+8. Informes académicos.
+   - Rendimiento por curso, paralelo y asignatura.
+   - Asistencia.
+   - Exportar PDF/Excel.
+9. Calendario académico.
+10. Circulares y comunicados.
+11. Mensajes.
+12. Perfil.
+
+8.3 ELEMENTOS COMPARTIDOS
+- Dashboard: cada rol tiene su panel propio.
+- Mensajes: módulo existente.
+- Perfil y cambio de perfil: módulo existente.
+- Circulares: módulo existente, con permisos de RECTORA/VICERRECTORA.
+- Citas: módulo existente de Inspección, en modo consulta.
+- DECE: módulo existente, en modo consulta y sin relatorías.
+
+9. DEFINICIÓN DE APARTADOS
+--------------------------------------------------------------------------------
+9.1 PANEL INSTITUCIONAL (RECTOR)
+- Cabecera: nombre del rector, periodo lectivo, fecha y acceso a circulares.
+- Tarjetas KPI:
+  * Matrícula total del periodo activo.
+  * Matrícula definitiva vs. provisional.
+  * Docentes activos y docentes con carga completa.
+  * Cursos y paralelos abiertos.
+  * Solicitudes de matrícula pendientes.
+  * Asistencia promedio institucional del mes.
+  * Promedio general institucional.
+  * Casos DECE abiertos.
+  * Planificaciones docentes al día.
+  * Ventanas de notas activas.
+- Alertas:
+  * Solicitudes pendientes por más de X días.
+  * Fichas de estudiantes por regularizar.
+  * Docentes con carga que excede su contrato.
+  * Planificaciones sin revisar o atrasadas.
+  * Calificaciones pendientes por docente o materia.
+  * Casos DECE abiertos o acuerdos vencidos.
+  * Citas pendientes de registrar.
+  * Incidentes de la semana.
+- Accesos rápidos: rendimiento, asistencia, informes, aprobaciones.
+- Circulares recientes.
+- Actividad reciente (historial de cambios).
+
+9.2 PANEL ACADÉMICO (VICERRECTOR)
+- Cabecera: nombre del vicerrector, periodo lectivo, fecha.
+- Tarjetas KPI:
+  * Docentes activos y carga asignada.
+  * Clases y paralelos con docencia.
+  * Planificaciones entregadas / pendientes / atrasadas.
+  * Calificaciones pendientes por parcial.
+  * Asistencia promedio del mes.
+  * Promedio general por nivel.
+  * Estudiantes en riesgo académico.
+  * NEE registradas.
+  * Juntas de curso programadas.
+  * Recuperaciones activas.
+- Alertas académicas:
+  * Docentes con planificación atrasada.
+  * Clases sin calificaciones del parcial.
+  * Estudiantes con 3 o más materias reprobadas.
+  * Estudiantes con asistencia menor al 85 %.
+  * NEE sin adaptación registrada.
+  * Compromisos de juntas vencidos.
+  * Ventanas de notas próximas a cerrar.
+- Accesos rápidos: rendimiento, planificación, calificaciones, recuperación.
+- Circulares recientes.
+
+9.3 RENDIMIENTO ACADÉMICO
+- Filtros: periodo, nivel, curso, paralelo, asignatura, quimestre, parcial.
+- Vistas:
+  * Promedio por nivel.
+  * Promedio por curso.
+  * Promedio por paralelo.
+  * Promedio por asignatura.
+  * Distribución de notas (insuficiente, regular, bueno, muy bueno, excelente).
+  * Aprobados y reprobados.
+  * Comparativo entre parciales o quimestres.
+- Tabla detallada por estudiante con promedio, materias reprobadas y estado.
+- Exportación PDF y Excel.
+- Enlaces al detalle de la clase y a las actas existentes.
+
+9.4 ESTUDIANTES EN RIESGO
+- Regla base (sujeta a validación):
+  * Promedio general menor a 7/10, o
+  * Tres o más materias con promedio menor a 7, o
+  * Asistencia menor al 85 %, o
+  * NEE sin adaptación registrada, o
+  * Compromiso académico incumplido.
+- Lista con semáforo (rojo, amarillo, verde).
+- Ficha del estudiante con:
+  * Promedios por materia.
+  * Asistencia.
+  * Observaciones.
+  * Casos DECE agregados (sin relatorías).
+  * Compromisos y recuperaciones.
+- Acciones: derivar a Vicerrectorado, solicitar junta, crear plan de recuperación.
+- Restricción: no mostrar información clínica.
+
+9.5 SUPERVISIÓN DOCENTE
+- Carga horaria:
+  * Contrato en horas reloj.
+  * Horas de plantel, autónomas y tutor.
+  * Períodos de clase, atención, reunión y tutoría.
+  * Semáforo de ocupación y exceso.
+- Planificación:
+  * Planificaciones por docente, materia y paralelo.
+  * Estado: al día, atrasada, sin entregar.
+  * Bitácora de cambios e intervenciones.
+- Calificaciones:
+  * Clases con notas completas, parciales o pendientes.
+  * Parciales y quimestres.
+  * Alertas de cierre de ventana.
+- Informes docentes:
+  * Informe de avance por materia.
+  * Novedades y observaciones.
+- Enlaces a planificaciones, actas y distributivo.
+
+9.6 PLANIFICACIÓN CURRICULAR
+- Consulta de planificaciones por nivel, curso, materia y docente.
+- Estado de entrega y cumplimiento.
+- Bitácora de planificaciones (solo lectura para Rectorado; Vicerrectorado
+  puede autorizar intervenciones según el flujo existente).
+- Planificación institucional (PEI): por definir si se implementa como módulo
+  nuevo o como carga de documentos.
+- Alertas de atraso y de planificaciones sin aprobar.
+
+9.7 EVALUACIONES Y CALIFICACIONES
+- Calificaciones pendientes por clase, materia, paralelo y docente.
+- Ventanas de notas activas y próximas.
+- Actividades evaluativas: agendas, insumos, foros y proyectos.
+- Estado de actas parciales y quimestrales.
+- Enlaces a los módulos existentes de notas y actas.
+- Exportación de reporte de pendientes.
+
+9.8 ASISTENCIA INSTITUCIONAL
+- Asistencia promedio por nivel, curso, paralelo y mes.
+- Presentes, ausentes, atrasos y justificaciones.
+- Estudiantes con inasistencia crítica.
+- Asistencia docente: por definir. Opciones:
+  * Módulo nuevo de registro de asistencia docente.
+  * Derivarla del registro de clases o agendas.
+  * Omitirla en la primera fase.
+- Enlaces a las estadísticas existentes de Inspección.
+
+9.9 CASOS E INCIDENCIAS
+- Observaciones disciplinarias agregadas por tipo, curso y mes.
+- Casos DECE agregados: atenciones abiertas, acuerdos, derivaciones, NEE.
+- Citas y seguimientos.
+- Incidentes institucionales: registro manual con fecha, descripción,
+  responsables y estado.
+- Restricción: sin relatorías clínicas ni detalles sensibles.
+- Exportación de reporte de casos.
+
+9.10 INFORMES INSTITUCIONALES Y ACADÉMICOS
+- Tipos:
+  * Informe institucional de gestión.
+  * Informe académico por periodo.
+  * Informe de rendimiento.
+  * Informe de asistencia.
+  * Informe de casos e incidencias.
+  * Informe de cumplimiento normativo.
+- Flujo:
+  * Borrador.
+  * En revisión.
+  * Aprobado por Rectorado.
+  * Rechazado con observaciones.
+  * Archivado.
+- Cada informe guarda: tipo, periodo, alcance, autor, revisor, aprobador,
+  fecha, archivo PDF y observaciones.
+- Exportación PDF.
+- Bitácora de cambios de estado.
+
+9.11 APROBACIONES Y AUTORIZACIONES
+- Bandeja de solicitudes de aprobación.
+- Tipos:
+  * Autorización de actividades institucionales.
+  * Autorización de gastos o salidas (si aplica).
+  * Aprobación de informes.
+  * Autorización de intervención en planificaciones.
+  * Decisiones académicas delegadas al Vicerrectorado.
+- Estados: pendiente, aprobada, rechazada, devuelta.
+- Motivo obligatorio al rechazar o devolver.
+- Registro de quién decide, cuándo y por qué.
+- SweetAlert2 para confirmar.
+
+9.12 INDICADORES DE CALIDAD
+- Matrícula y retención.
+- Asistencia.
+- Rendimiento y aprobación.
+- Reprobación y riesgo.
+- Cumplimiento de planificación.
+- Cobertura de NEE.
+- Casos DECE y acuerdos cumplidos.
+- Participación de representantes.
+- Cumplimiento del calendario.
+- Cada indicador con fórmula, fuente, periodo y meta.
+- Vista comparativa por periodo.
+
+9.13 MATRÍCULA Y DESERCIÓN
+- Matrícula por nivel, curso, paralelo y estado.
+- Nuevos ingresos, traslados y retiros.
+- Deserción: por definir. Propuesta:
+  * Retiros registrados en `expedientes_traslado`.
+  * Estudiantes que no renovaron matrícula en el siguiente periodo.
+  * Estado "retirado" explícito en matrícula (nuevo).
+- Tasa de retención y tasa de deserción.
+- Exportación PDF/Excel.
+
+9.14 CALENDARIO ACADÉMICO
+- Eventos: inicio/fin de periodo, parciales, quimestres, ventanas de notas,
+  evaluaciones, juntas, recuperaciones, actos institucionales.
+- Vista mensual y lista.
+- Filtros por tipo y alcance.
+- Quién puede crear/editar: ADMIN, RECTORA y VICERRECTORA según delegación.
+- Recordatorios y alertas.
+
+9.15 JUNTAS DE CURSO
+- Crear junta por curso, paralelo y periodo.
+- Participantes: docentes, tutor, representante, Vicerrectorado.
+- Acta con temas, acuerdos y compromisos.
+- Compromisos por estudiante con responsable, fecha y estado.
+- Seguimiento de cumplimiento.
+- Exportación de acta PDF.
+- Solo Vicerrectorado y Rectorado en consulta.
+
+9.16 RECUPERACIÓN PEDAGÓGICA
+- Detección de estudiantes con bajo rendimiento o materias reprobadas.
+- Plan de recuperación por estudiante y materia.
+- Actividades, fechas, docentes responsables y resultados.
+- Estados: planificado, en curso, cumplido, incumplido.
+- Seguimiento y reporte.
+- Solo Vicerrectorado; Rectorado consulta agregados.
+
+9.17 CIRCULARES Y COMUNICADOS
+- Reutilizar el módulo existente.
+- RECTORA y VICERRECTORA pueden publicar y avisar.
+- Agregar pruebas de acceso y de envío.
+- Mostrar circulares recientes en ambos paneles.
+
+9.18 MENSAJES A REPRESENTANTES
+[Terminada con pruebas unitarias correctas] 9.18.1 El compositor de RECTORA y
+              VICERRECTORA encadena curso → estudiante → representante legal.
+[Terminada con pruebas unitarias correctas] 9.18.2 El servidor deriva el
+              destinatario del estudiante elegido e ignora el destinatario_id
+              del cliente; nunca envía a una cuenta con rol ESTUDIANTE.
+[Terminada con pruebas unitarias correctas] 9.18.3 El nombre del representante
+              se muestra en el modal al escoger al estudiante.
+[Terminada con pruebas unitarias correctas] 9.18.4 Pruebas en
+              tests/Feature/MensajeTest.php: compositor directivo, envío
+              forzado al estudiante, respuesta bloqueada a estudiantes y API.
+[Terminada] 9.18.5 Datos de prueba: NotasPruebaSeeder llena los seis
+              parciales de todos los estudiantes con una distribución de 10
+              (excelente) a insuficiente.
+
+10. INDICADORES Y REGLAS DE CÁLCULO
+--------------------------------------------------------------------------------
+10.1 MATRÍCULA
+- Matrícula total: matrículas del periodo activo.
+- Definitiva: `matriculas.estado = 'definitiva'`.
+- Provisional: `matriculas.estado = 'provisional'`.
+- Por nivel/curso/paralelo: agrupar por `curso_id` y `paralelo_id`.
+
+10.2 ASISTENCIA
+- Estados registrados: `presente`, `ausente`, `atraso`, `justificada`.
+- Asistencia efectiva: presente + justificada + atraso.
+- Porcentaje: asistencia efectiva / total de registros * 100.
+- Reutilizar la lógica de InspectorAsistenciaEstadisticasController.
+
+10.3 RENDIMIENTO
+- Usar las notas y promedios existentes de `notas` y la lógica de actas.
+- Promedio por materia: promedio de las notas finales del parcial/quimestre.
+- Promedio general: promedio de las materias.
+- Aprobado: promedio >= 7/10 (escala institucional).
+- Reprobado: promedio < 7/10.
+- Distribución: insuficiente (<7), regular (7-7,99), bueno (8-8,99),
+  muy bueno (9-9,49), excelente (9,5-10).
+- Validar la escala con el usuario antes de implementar.
+
+10.4 CARGA DOCENTE
+- Reutilizar `App\Services\CargaHorariaDocente`.
+- Contrato en horas reloj.
+- Plantel: 75 % del contrato.
+- Autónomas: 25 % del contrato.
+- Períodos de 40 minutos.
+- Exceso: horas de plantel > máximo de plantel.
+
+10.5 PLANIFICACIÓN
+- Planificación al día: existe unidad con fechas vigentes y estado completo.
+- Atrasada: fecha de fin vencida sin entrega.
+- Sin entregar: no existe planificación para la clase y periodo.
+- Reutilizar `unidades` y `planificacion_auditorias`.
+
+10.6 CALIFICACIONES PENDIENTES
+- Clase sin notas del parcial actual.
+- Clase con notas incompletas (faltan insumos o examen).
+- Reutilizar `notas`, `ventanas_notas` y `permisos_notas`.
+
+10.7 CASOS DECE
+- Atenciones abiertas: `dece_atenciones.estado = 'abierta'`.
+- Acuerdos vencidos: `dece_acuerdos.estado = 'vencido'`.
+- Derivaciones pendientes: `dece_derivaciones.estado` pendiente.
+- NEE activas: `dece_nee.activo = true`.
+- Sin relatorías clínicas para Rectorado/Vicerrectorado.
+
+10.8 DESERCIÓN
+- Propuesta inicial: retiros registrados en `expedientes_traslado`.
+- Tasa de deserción: retiros / matrícula total * 100.
+- Tasa de retención: 100 - tasa de deserción.
+- Validar si se agrega estado `retirado` a matrícula.
+
+11. PERMISOS Y SEGURIDAD
+--------------------------------------------------------------------------------
+11.1 MATRIZ DE ACCESO
+| Módulo                          | RECTORA | VICERRECTORA | ADMIN | Otros |
+|---------------------------------|---------|--------------|-------|-------|
+| Panel institucional             | Ver     | No           | No    | No    |
+| Panel académico                 | Ver     | Ver          | No    | No    |
+| Rendimiento académico           | Ver     | Ver          | No    | No    |
+| Estudiantes en riesgo           | Ver     | Ver          | No    | No    |
+| Supervisión docente             | Ver     | Ver          | No    | No    |
+| Planificación curricular        | Ver     | Ver + intervenir | No | No  |
+| Evaluaciones y calificaciones   | Ver     | Ver          | No    | No    |
+| Asistencia institucional        | Ver     | Ver          | No    | Inspección ve su módulo |
+| Casos e incidencias             | Ver     | Ver          | No    | DECE ve su módulo |
+| Informes institucionales        | Crear/aprobar | Crear/revisar | No | No |
+| Aprobaciones y autorizaciones   | Decidir | Según delegación | No | No |
+| Indicadores de calidad          | Ver     | Ver          | No    | No    |
+| Matrícula y deserción           | Ver     | Ver          | No    | Secretaría opera |
+| Calendario académico            | Ver/crear | Ver/crear   | Ver   | No    |
+| Juntas de curso                 | Ver     | Crear/gestionar | No | No    |
+| Recuperación pedagógica         | Ver     | Crear/gestionar | No | No    |
+| Circulares                      | Crear   | Crear        | Crear | No    |
+| Mensajes                        | Enviar a representantes | Enviar a representantes | Ver | Ver |
+| Usuarios y configuración        | No      | No           | Sí    | No    |
+
+11.2 REGLAS
+- Usar `perfilActivo()` y el middleware `role`.
+- Crear middleware/policies específicas para módulos directivos.
+- RECTORA no administra usuarios ni configuración.
+- VICERRECTORA no administra usuarios ni configuración.
+- Ninguno de los dos ve relatorías clínicas del DECE.
+- Rectorado y Vicerrectorado solo envían mensajes a representantes legales: el
+  destinatario se deriva del estudiante seleccionado y nunca se acepta una
+  cuenta de estudiante como destino.
+- Si una cuenta es VICERRECTORA + DOCENTE, al cambiar a DOCENTE pierde los
+  permisos directivos y ve el menú docente.
+- Toda acción de escritura directiva se audita.
+- Confirmaciones con SweetAlert2.
+
+12. REQUISITOS TÉCNICOS
+--------------------------------------------------------------------------------
+12.1 RUTAS PROPUESTAS
+- `/rector` → panel institucional.
+- `/rector/rendimiento` → rendimiento por nivel/curso.
+- `/rector/asistencia` → asistencia institucional.
+- `/rector/estudiantes-riesgo` → estudiantes en riesgo.
+- `/rector/matricula` → matrícula y deserción.
+- `/rector/docentes` → supervisión docente.
+- `/rector/informes` → informes institucionales.
+- `/rector/aprobaciones` → aprobaciones y autorizaciones.
+- `/rector/indicadores` → indicadores de calidad.
+- `/rector/normativa` → cumplimiento normativo.
+- `/rector/casos` → casos e incidencias.
+- `/rector/calendario` → calendario académico.
+- `/vicerrector` → panel académico.
+- `/vicerrector/rendimiento` → rendimiento por curso/paralelo/asignatura.
+- `/vicerrector/estudiantes-riesgo` → estudiantes en riesgo.
+- `/vicerrector/planificacion` → planificación curricular.
+- `/vicerrector/docentes` → supervisión docente.
+- `/vicerrector/evaluaciones` → evaluaciones y calificaciones.
+- `/vicerrector/recuperacion` → recuperación pedagógica.
+- `/vicerrector/juntas` → juntas de curso.
+- `/vicerrector/informes` → informes académicos.
+- `/vicerrector/calendario` → calendario académico.
+- `/vicerrector/nee` → NEE y adaptaciones (restringido).
+- Rutas compartidas de solo lectura pueden vivir en `/directivo/...` y ser
+  reutilizadas por ambos roles.
+
+FASE 1 (solo estas rutas se implementan ahora):
+- `/rector` y `/vicerrector` (paneles).
+- `/rector/rendimiento` y `/vicerrector/rendimiento`.
+- `/rector/estudiantes-riesgo` y `/vicerrector/estudiantes-riesgo`.
+Las demás rutas de esta lista quedan para fases posteriores.
+
+12.2 CONTROLADORES PROPUESTOS
+- `App\Http\Controllers\Directivo\PanelRectorController`
+- `App\Http\Controllers\Directivo\PanelVicerrectorController`
+- `App\Http\Controllers\Directivo\RendimientoController`
+- `App\Http\Controllers\Directivo\EstudiantesRiesgoController`
+- `App\Http\Controllers\Directivo\SupervisionDocenteController`
+- `App\Http\Controllers\Directivo\PlanificacionDirectivaController`
+- `App\Http\Controllers\Directivo\EvaluacionesController`
+- `App\Http\Controllers\Directivo\AsistenciaDirectivaController`
+- `App\Http\Controllers\Directivo\CasosController`
+- `App\Http\Controllers\Directivo\InformesController`
+- `App\Http\Controllers\Directivo\AprobacionesController`
+- `App\Http\Controllers\Directivo\IndicadoresController`
+- `App\Http\Controllers\Directivo\MatriculaDesercionController`
+- `App\Http\Controllers\Directivo\CalendarioController`
+- `App\Http\Controllers\Directivo\JuntasCursoController`
+- `App\Http\Controllers\Directivo\RecuperacionController`
+- `App\Http\Controllers\Directivo\NormativaController`
+
+12.3 SERVICIOS PROPUESTOS
+- `App\Services\IndicadoresInstitucionales`
+- `App\Services\RendimientoAcademico`
+- `App\Services\SupervisionDocente`
+- `App\Services\AsistenciaInstitucional`
+- `App\Services\CasosIncidencias`
+- `App\Services\MatriculaDesercion`
+- `App\Services\CalidadEducativa`
+- Reutilizar `App\Services\CargaHorariaDocente`.
+
+12.4 VISTAS PROPUESTAS
+- `resources/views/directivo/rector/panel.blade.php`
+- `resources/views/directivo/vicerrector/panel.blade.php`
+- `resources/views/directivo/rendimiento/index.blade.php`
+- `resources/views/directivo/estudiantes-riesgo/index.blade.php`
+- `resources/views/directivo/docentes/index.blade.php`
+- `resources/views/directivo/planificacion/index.blade.php`
+- `resources/views/directivo/evaluaciones/index.blade.php`
+- `resources/views/directivo/asistencia/index.blade.php`
+- `resources/views/directivo/casos/index.blade.php`
+- `resources/views/directivo/informes/index.blade.php`
+- `resources/views/directivo/aprobaciones/index.blade.php`
+- `resources/views/directivo/indicadores/index.blade.php`
+- `resources/views/directivo/matricula/index.blade.php`
+- `resources/views/directivo/calendario/index.blade.php`
+- `resources/views/directivo/juntas/index.blade.php`
+- `resources/views/directivo/recuperacion/index.blade.php`
+- `resources/views/directivo/normativa/index.blade.php`
+- Parciales reutilizables para tarjetas KPI, alertas, tablas y filtros.
+
+12.5 NUEVAS TABLAS PROPUESTAS (sujetas a aprobación)
+- `asistencia_docente` (si se implementa asistencia docente).
+- `horario_bloques` / `horarios` (si se implementa horario de clases).
+- `informes_directivos` (tipo, periodo, alcance, estado, autor, revisor,
+  aprobador, archivo, observaciones).
+- `aprobaciones_directivas` (tipo, referencia, estado, solicitante, decisor,
+  motivo, fechas).
+- `calendario_eventos` (título, tipo, inicio, fin, alcance, descripción).
+- `juntas_curso` (curso, paralelo, periodo, fecha, estado, acta).
+- `junta_compromisos` (junta, alumno, responsable, compromiso, fecha, estado).
+- `recuperacion_planes` (alumno, materia, periodo, diagnóstico, plan, estado).
+- `recuperacion_actividades` (plan, descripción, fecha, resultado, estado).
+- `normativa_items` (código, descripción, obligatorio, evidencia, estado).
+- `pei_documentos` (si se implementa planificación institucional).
+
+12.6 REUTILIZACIÓN
+- `CargaHorariaDocente` para carga docente.
+- `InspectorAsistenciaEstadisticasController` para asistencia.
+- `ObservacionEstadisticasController` para observaciones.
+- `DeceReporteController` para agregados DECE.
+- `PlanificacionController@bitacora` para auditoría de planificaciones.
+- `ActaController` y PhpSpreadsheet para Excel.
+- `barryvdh/laravel-dompdf` para PDF.
+- `HistorialCambio` para auditoría.
+- SweetAlert2 para confirmaciones.
+
+13. SPRINTS
+--------------------------------------------------------------------------------
+Nota: los sprints son incrementales. No se inicia un sprint sin cerrar el
+anterior o sin autorización expresa. Cada sprint termina con pruebas dirigidas
+y suite completa en verde.
+
+FASE 1 APROBADA: sprints 0, 1, 2 y 3.
+FASE 2 (posterior): sprints 4, 5, 6 y 7.
+FASE 3 (posterior): sprints 8 y 9.
+Los sprints fuera de la fase 1 quedan marcados como [Fuera de fase 1].
+
+================================================================================
+SPRINT 0 — BASE, PERMISOS Y CORRECCIONES
+Duración estimada: 2-3 días
+Dependencias: ninguna
+Objetivo: dejar el terreno listo, sin enlaces rotos y con permisos claros.
+================================================================================
+[Terminada] 0.1 Auditar rutas, menús, controladores y pruebas actuales.
+[Terminada con pruebas unitarias correctas] 0.2 Corregir los enlaces rotos del panel de Rectorado:
+              - `admin.pre-registros.index` no permite RECTORA/VICERRECTORA.
+              - `admin.configuracion.index` es solo ADMIN.
+              Decisión: reemplazar por vistas directivas de consulta o retirar.
+              Resultado: retirados del menú; se agregó el acceso a estadísticas
+              de asistencia de Inspección, permitido para ambos roles.
+[Terminada con pruebas unitarias correctas] 0.3 Definir la matriz de permisos y crear policies/middleware
+              para RECTORA y VICERRECTORA.
+              Resultado: RoleMiddleware con perfilActivo() y grupos de ruta
+              `role:RECTORA` y `role:VICERRECTORA`; sin policies adicionales.
+[Terminada con pruebas unitarias correctas] 0.4 Crear la estructura base de rutas y controladores
+              `/rector` y `/vicerrector`.
+              Resultado: PanelRectorController, PanelVicerrectorController,
+              RendimientoController, EstudiantesRiesgoController y el trait
+              UsaPanelesDirectivos.
+[Terminada con pruebas unitarias correctas] 0.5 Crear el layout/parciales del panel directivo y el menú
+              lateral con secciones propias.
+              Resultado: directivo/partials/{panel-contenido,kpis,alertas,
+              circulares} y secciones Rectorado/Vicerrectorado en el menú.
+[Terminada con pruebas unitarias correctas] 0.6 Agregar pruebas de acceso, menú y enlaces:
+              - RECTORA entra a su panel.
+              - VICERRECTORA entra a su panel.
+              - Docente no entra a rutas directivas.
+              - Multirol VICERRECTORA + DOCENTE cambia de menú al cambiar
+                de perfil.
+              Resultado: tests/Feature/Directivo/PanelDirectivoTest.php.
+[Terminada] 0.7 Actualizar `ESTADO_ROLES_MODULOS.txt`.
+              Resultado: secciones 7, 8 y resumen general actualizados.
+
+Criterios de aceptación:
+- No hay enlaces rotos en los paneles.
+- Cada rol ve su menú.
+- Pruebas dirigidas en verde.
+
+Estado del sprint: TERMINADO. Suite completa: 504 pruebas en verde.
+
+================================================================================
+SPRINT 1 — PANEL INSTITUCIONAL DEL RECTOR
+Duración estimada: 3-4 días
+Dependencias: Sprint 0
+Objetivo: panel de dirección con indicadores, alertas y accesos.
+================================================================================
+[Terminada con pruebas unitarias correctas] 1.1 Crear `IndicadoresInstitucionales` con los KPI del panel.
+[Terminada con pruebas unitarias correctas] 1.2 Crear la vista `directivo/rector/panel.blade.php`.
+[Terminada con pruebas unitarias correctas] 1.3 Mostrar tarjetas KPI:
+              matrícula, definitiva/provisional, docentes, cursos/paralelos,
+              solicitudes, asistencia, promedio, casos DECE, planificaciones,
+              ventanas de notas.
+[Terminada con pruebas unitarias correctas] 1.4 Mostrar alertas institucionales.
+[Terminada con pruebas unitarias correctas] 1.5 Mostrar accesos rápidos, circulares y actividad reciente.
+              Resultado: accesos rápidos y circulares; la "actividad reciente"
+              se cubre con las alertas de los últimos 7 días.
+[Terminada] 1.6 Gráficos simples con Bootstrap/CSS (o Chart.js si se aprueba).
+              Resultado: tarjetas, barras y badges Bootstrap; sin Chart.js.
+[Terminada con pruebas unitarias correctas] 1.7 Pruebas del panel y de los indicadores.
+[Terminada] 1.8 Actualizar documentación.
+
+Criterios de aceptación:
+- El panel carga sin errores.
+- Los KPI respetan el periodo activo.
+- Las alertas enlazan a vistas permitidas.
+- Pruebas dirigidas en verde.
+
+Estado del sprint: TERMINADO. Suite completa: 504 pruebas en verde.
+
+================================================================================
+SPRINT 2 — PANEL ACADÉMICO DEL VICERRECTOR
+Duración estimada: 3-4 días
+Dependencias: Sprint 0
+Objetivo: panel de coordinación académica con indicadores y alertas.
+================================================================================
+[Terminada con pruebas unitarias correctas] 2.1 Crear los KPI académicos.
+[Terminada con pruebas unitarias correctas] 2.2 Crear la vista `directivo/vicerrector/panel.blade.php`.
+[Iniciada] 2.3 Mostrar tarjetas KPI:
+              docentes, clases, planificaciones, calificaciones pendientes,
+              asistencia, promedio, estudiantes en riesgo, NEE, juntas,
+              recuperaciones.
+              Resultado: docentes, clases, planificaciones, calificaciones
+              pendientes, asistencia, promedio, riesgo y NEE listos. Juntas y
+              recuperaciones dependen del Sprint 7 (fuera de fase 1).
+[Terminada con pruebas unitarias correctas] 2.4 Mostrar alertas académicas.
+[Terminada con pruebas unitarias correctas] 2.5 Mostrar accesos rápidos y circulares.
+[Terminada con pruebas unitarias correctas] 2.6 Pruebas del panel y de los indicadores.
+[Terminada] 2.7 Actualizar documentación.
+
+Criterios de aceptación:
+- Panel distinto al del Rector.
+- Indicadores académicos correctos.
+- Pruebas dirigidas en verde.
+
+Estado del sprint: TERMINADO en fase 1; juntas y recuperaciones quedan para el
+Sprint 7. Suite completa: 504 pruebas en verde.
+
+================================================================================
+SPRINT 3 — RENDIMIENTO ACADÉMICO Y ESTUDIANTES EN RIESGO
+Duración estimada: 5-6 días
+Dependencias: Sprints 1 y 2
+Objetivo: consolidar notas y detectar estudiantes que necesitan apoyo.
+================================================================================
+[Terminada con pruebas unitarias correctas] 3.1 Crear `RendimientoAcademico`:
+              promedios por nivel, curso, paralelo, asignatura y periodo.
+[Terminada con pruebas unitarias correctas] 3.2 Crear la vista de rendimiento con filtros.
+[Terminada con pruebas unitarias correctas] 3.3 Mostrar distribución de notas, aprobados y reprobados.
+[Terminada con pruebas unitarias correctas] 3.4 Crear la vista de estudiantes en riesgo con semáforo.
+[Terminada con pruebas unitarias correctas] 3.5 Crear la ficha académica del estudiante en riesgo.
+[Terminada con pruebas unitarias correctas] 3.6 Exportar PDF y Excel.
+[Terminada con pruebas unitarias correctas] 3.7 Pruebas de cálculo, filtros y exportación.
+[Terminada] 3.8 Actualizar documentación.
+
+Criterios de aceptación:
+- Los promedios coinciden con las actas existentes.
+- Los filtros no mezclan periodos.
+- La ficha no muestra datos clínicos.
+- Pruebas dirigidas en verde.
+
+Estado del sprint: TERMINADO. Suite completa: 504 pruebas en verde.
+
+================================================================================
+SPRINT 4 — SUPERVISIÓN DOCENTE Y PLANIFICACIÓN
+Duración estimada: 5-6 días
+Dependencias: Sprints 1 y 2
+Objetivo: supervisar carga, planificación, calificaciones e informes docentes.
+================================================================================
+[Sin iniciar] 4.1 Crear `SupervisionDocente`.
+[Sin iniciar] 4.2 Vista de carga horaria y distributivo (solo lectura).
+[Sin iniciar] 4.3 Vista de cumplimiento de planificación.
+[Sin iniciar] 4.4 Vista de calificaciones pendientes por docente/clase.
+[Sin iniciar] 4.5 Vista de informes docentes.
+[Sin iniciar] 4.6 Enlazar a planificaciones, actas y bitácora.
+[Sin iniciar] 4.7 Pruebas de carga, planificación y pendientes.
+[Sin iniciar] 4.8 Actualizar documentación.
+
+Criterios de aceptación:
+- La carga usa `CargaHorariaDocente`.
+- Las planificaciones respetan el periodo.
+- No se permite editar desde la vista directiva.
+- Pruebas dirigidas en verde.
+
+================================================================================
+SPRINT 5 — ASISTENCIA, CASOS E INCIDENCIAS
+Duración estimada: 4-5 días
+Dependencias: Sprints 1 y 2
+Objetivo: consolidar asistencia y casos, con privacidad.
+================================================================================
+[Sin iniciar] 5.1 Vista de asistencia institucional.
+[Sin iniciar] 5.2 Definir e implementar asistencia docente (o decidir omitirla).
+[Sin iniciar] 5.3 Vista de casos e incidencias:
+              observaciones, DECE agregado, citas e incidentes.
+[Sin iniciar] 5.4 Restringir relatorías y datos clínicos.
+[Sin iniciar] 5.5 Exportar reporte de casos.
+[Sin iniciar] 5.6 Pruebas de agregados y privacidad.
+[Sin iniciar] 5.7 Actualizar documentación.
+
+Criterios de aceptación:
+- Rectorado y Vicerrectorado no ven relatorías.
+- Los agregados coinciden con Inspección y DECE.
+- Pruebas dirigidas en verde.
+
+================================================================================
+SPRINT 6 — INFORMES, APROBACIONES Y CALENDARIO
+Duración estimada: 5-6 días
+Dependencias: Sprints 3, 4 y 5
+Objetivo: institucionalizar informes, autorizaciones y calendario.
+================================================================================
+[Sin iniciar] 6.1 Crear tablas y modelos de informes y aprobaciones.
+[Sin iniciar] 6.2 Crear el flujo borrador → revisión → aprobado/rechazado.
+[Sin iniciar] 6.3 Crear la bandeja de aprobaciones y autorizaciones.
+[Sin iniciar] 6.4 Crear el calendario académico.
+[Sin iniciar] 6.5 Exportar informes en PDF.
+[Sin iniciar] 6.6 Auditar cada cambio de estado.
+[Sin iniciar] 6.7 Pruebas de flujo, permisos y auditoría.
+[Sin iniciar] 6.8 Actualizar documentación.
+
+Criterios de aceptación:
+- Solo Rectorado aprueba informes institucionales.
+- Vicerrectorado revisa informes académicos.
+- Toda decisión queda auditada.
+- Pruebas dirigidas en verde.
+
+================================================================================
+SPRINT 7 — JUNTAS DE CURSO Y RECUPERACIÓN PEDAGÓGICA
+Duración estimada: 5-6 días
+Dependencias: Sprint 3 y 6
+Objetivo: gestionar juntas, compromisos y recuperación.
+================================================================================
+[Sin iniciar] 7.1 Crear tablas y modelos de juntas de curso.
+[Sin iniciar] 7.2 Crear acta de junta y compromisos.
+[Sin iniciar] 7.3 Seguimiento de compromisos.
+[Sin iniciar] 7.4 Crear tablas y modelos de recuperación pedagógica.
+[Sin iniciar] 7.5 Crear plan y actividades de recuperación.
+[Sin iniciar] 7.6 Seguimiento de resultados.
+[Sin iniciar] 7.7 Exportar acta y plan en PDF.
+[Sin iniciar] 7.8 Pruebas de juntas, compromisos y recuperación.
+[Sin iniciar] 7.9 Actualizar documentación.
+
+Criterios de aceptación:
+- Vicerrectorado gestiona; Rectorado consulta.
+- Los compromisos vencidos generan alerta.
+- Pruebas dirigidas en verde.
+
+================================================================================
+SPRINT 8 — INDICADORES DE CALIDAD, MATRÍCULA Y NORMATIVA
+Duración estimada: 4-5 días
+Dependencias: Sprints 3, 4 y 5
+Objetivo: cerrar la visión institucional y de cumplimiento.
+================================================================================
+[Sin iniciar] 8.1 Crear `CalidadEducativa` con indicadores y metas.
+[Sin iniciar] 8.2 Crear `MatriculaDesercion` con tasas y comparativos.
+[Sin iniciar] 8.3 Crear checklist de cumplimiento normativo.
+[Sin iniciar] 8.4 Exportar reportes PDF/Excel.
+[Sin iniciar] 8.5 Pruebas de cálculo y filtros.
+[Sin iniciar] 8.6 Actualizar documentación.
+
+Criterios de aceptación:
+- Cada indicador muestra fórmula, fuente y periodo.
+- La deserción se calcula con una regla validada.
+- Pruebas dirigidas en verde.
+
+================================================================================
+SPRINT 9 — CIERRE, CALIDAD VISUAL Y PRUEBAS COMPLETAS
+Duración estimada: 3-4 días
+Dependencias: todos los sprints
+Objetivo: dejar el módulo listo para uso real.
+================================================================================
+[Terminada] 9.1 Revisión visual de todos los paneles y menús. Verificado en
+            navegador: /rector, /rector/rendimiento, /rector/estudiantes-riesgo,
+            /vicerrector, /vicerrector/rendimiento y
+            /vicerrector/estudiantes-riesgo. "Panel académico/institucional" es
+            un grupo con chevron, se despliega en sus subrutas y no duplica el
+            resaltado: solo el módulo abierto queda activo. Se estandarizó el
+            mismo comportamiento en TODOS los grupos colapsables del aside
+            (Contenido institucional, Servicios y descargas, Apariencia del
+            sistema, Registros académicos, Panel directivo, Matrículas y
+            admisiones, Académico y auditoría, Citas, Notas, DECE, Asistencia y
+            Observaciones): el padre ya no lleva `active`; solo se resalta el
+            enlace hijo seleccionado. Regresión en
+            tests/Feature/MenuLateralTest.php (30 vistas de 6 perfiles).
+[Terminada] 9.2 Tablas con scroll horizontal y ventana con scroll vertical.
+[Terminada] 9.3 SweetAlert2 en confirmaciones y avisos. Los mensajes flash y
+            los errores de validación se muestran como toasts para todos los
+            perfiles; ya no se duplican con las alertas Bootstrap.
+[Terminada] 9.4 Revisión de textos en español. Paginación traducida y pequeña
+            (Bootstrap 5, sin SVG): "Mostrando 1 a 15 de 40 resultados",
+            "Anterior" y "Siguiente". Verificada en
+            /dece/expedientes?buscar=&curso_id=3.
+[Terminada] 9.5 Actualizar `ESTADO_ROLES_MODULOS.txt` y este archivo.
+[Terminada] 9.6 Ejecutar suite completa: 522 pruebas, 2659 aserciones.
+[En progreso] 9.7 QA manual con cuentas RECTORA, VICERRECTORA y multirol.
+              Verificado por DOM en navegador con RECTORA y VICERRECTORA;
+              falta la revisión visual final del usuario con su propia sesión.
+[Pendiente] 9.8 Commit y push con autorización del usuario.
+[Terminada] 9.9 Endurecimiento del inicio de sesión (auditoría de seguridad):
+            límite de 5 intentos por minuto y 20 por hora por identificador +
+            IP, más 30 por minuto por IP; contraseña inicial temporal con
+            cambio obligatorio (`debe_cambiar_password`); índice único en
+            `users.numero_cedula`; invalidación de las demás sesiones con
+            `AuthenticateSession` y `Auth::logoutOtherDevices()`; auditoría de
+            intentos en el log sin guardar la contraseña; tiempo de respuesta
+            equiparado para cuentas inexistentes; guía de producción en
+            `.env.example`. Pruebas: LoginHardeningTest (6) y ampliaciones en
+            UsuariosAdminTest, AsignacionesDocenteTest, PreRegistroAdminTest y
+            ActualizacionDatosTest.
+
+Criterios de aceptación:
+- Suite completa en verde.
+- Sin enlaces rotos.
+- Sin datos sensibles expuestos.
+- Documentación actualizada.
+- Autorización de push.
+
+14. CRITERIOS DE ACEPTACIÓN GENERALES
+--------------------------------------------------------------------------------
+- Cada rol tiene un panel y un menú distintos y coherentes.
+- Rectorado no administra usuarios ni configuración.
+- Vicerrectorado no administra usuarios ni configuración.
+- Ambos consultan información académica y de estudiantes.
+- Ninguno ve relatorías clínicas del DECE.
+- Toda acción de escritura directiva queda auditada.
+- Multirol funciona con el perfil activo.
+- Las tablas no desbordan la pantalla; el scroll horizontal es interno y el
+  vertical lo hace la ventana.
+- Los textos están en español.
+- Se usa Bootstrap 5.3.3 y SweetAlert2.
+- Cada sprint tiene pruebas dirigidas.
+- La suite completa queda en verde al cerrar cada sprint.
+- No se hace push sin autorización.
+
+15. DECISIONES CONFIRMADAS Y RIESGOS
+--------------------------------------------------------------------------------
+15.1 DECISIONES APROBADAS EL 2026-11-16
+| # | Decisión | Resultado |
+|---|----------|-----------|
+| 1 | Alcance de la fase 1 | Sprints 0 a 3. Sprints 4 a 9 quedan para fases posteriores. |
+| 2 | Paneles | Separados: `/rector` y `/vicerrector`, con servicios y vistas de solo lectura compartidas. |
+| 3 | Asistencia docente | Se omite en la fase 1. Solo se consulta asistencia de estudiantes. |
+| 4 | Horarios de clases | No se implementan en esta etapa. |
+| 5 | Deserción | Retiros de expedientes de traslado + estudiantes que no renuevan matrícula. Sin cambios de esquema. |
+| 6 | Escala de rendimiento | 7/10, igual que las actas. Aprobado >= 7; reprobado < 7. |
+| 7 | Gráficos | Barras y tarjetas con Bootstrap/CSS. Sin Chart.js. |
+| 8 | Exportación | PDF con dompdf y Excel con PhpSpreadsheet, ambos ya instalados. |
+| 9 | Autorizaciones | Rectorado autoriza lo institucional; Vicerrectorado solo lo académico y solo con delegación expresa. |
+| 10 | Privacidad | Ninguno de los dos roles accede a relatorías clínicas ni a datos sensibles del DECE. |
+
+15.2 DECISIONES QUE SE RESOLVERÁN EN FASES POSTERIORES
+15.2.1 ¿La planificación institucional (PEI) es un módulo nuevo o solo carga
+        de documentos?
+15.2.2 ¿Se requiere una tabla de "incidentes institucionales" o se reutilizan
+        observaciones y casos DECE?
+15.2.3 ¿Se implementa asistencia docente en una fase posterior? Opciones:
+        módulo nuevo o derivarla de clases/agendas.
+15.2.4 ¿Se implementa horario de clases? No existe módulo de horarios.
+15.2.5 ¿Se agrega el estado "retirado" a matrícula o basta con retiros y no
+        renovación?
+
+15.3 RIESGOS
+15.3.1 Duplicar pantallas de ADMIN, Secretaría, Inspección o DECE.
+        Mitigación: solo consulta y consolidación; se enlazan los módulos
+        existentes.
+15.3.2 Enlaces rotos por permisos, como ocurre hoy con
+        `admin.pre-registros.index` y `admin.configuracion.index`.
+        Mitigación: prueba automática que verifica cada enlace del menú.
+15.3.3 Fuga de información sensible del DECE.
+        Mitigación: servicios que solo devuelven agregados y pruebas de
+        privacidad.
+15.3.4 Cálculos de rendimiento que no coincidan con las actas.
+        Mitigación: reutilizar la lógica de actas y pruebas comparativas.
+15.3.5 Multirol mal resuelto: un perfil directivo conservando permisos al
+        cambiar a DOCENTE.
+        Mitigación: todo permiso se resuelve con `perfilActivo()` y prueba
+        específica de cambio de perfil.
+
+16. BITÁCORA DE AVANCE
+--------------------------------------------------------------------------------
+| Sprint | Fecha inicio | Fecha cierre | Estado | Pruebas | Observaciones |
+|--------|--------------|--------------|--------|---------|---------------|
+| 0      | 2026-11-16   | 2026-11-16   | Terminada | 22 dirigidas + suite 504 | Base, permisos, rutas, menú y pruebas de acceso |
+| 1      | 2026-11-16   | 2026-11-16   | Terminada | Incluidas en PanelDirectivoTest | Panel institucional con KPI, alertas y circulares |
+| 2      | 2026-11-16   | 2026-11-16   | Terminada (fase 1) | Incluidas en PanelDirectivoTest | Panel académico; juntas y recuperaciones al Sprint 7 |
+| 3      | 2026-11-16   | 2026-11-16   | Terminada | RendimientoAcademicoTest (8) | Rendimiento, riesgo, ficha y exportaciones |
+| 4      |              |              | Sin iniciar |     | Fuera de fase 1       |
+| 5      |              |              | Sin iniciar |     | Fuera de fase 1       |
+| 6      |              |              | Sin iniciar |     | Fuera de fase 1       |
+| 7      |              |              | Sin iniciar |     | Fuera de fase 1       |
+| 8      |              |              | Sin iniciar |     | Fuera de fase 1       |
+| 9      |              |              | Sin iniciar |     | Fuera de fase 1       |
+
+17. REGISTRO DE PRUEBAS
+--------------------------------------------------------------------------------
+| Sprint | Prueba dirigida                          | Resultado | Fecha |
+|--------|------------------------------------------|-----------|-------|
+| 0      | PanelDirectivoTest (acceso, menú, multirol) | 14/14 OK | 2026-11-16 |
+| 1      | PanelDirectivoTest (panel Rector)        | OK        | 2026-11-16 |
+| 2      | PanelDirectivoTest (panel Vicerrector)   | OK        | 2026-11-16 |
+| 3      | RendimientoAcademicoTest + exportaciones | 8/8 OK    | 2026-11-16 |
+| 0-3    | Suite completa `php artisan test`        | 504 OK    | 2026-11-16 |
+| 0-3    | MensajeTest (compositor y envío directivo) | 20/20 OK | 2026-11-17 |
+| 0-3    | NotasPruebaSeeder (320 estudiantes)      | 7680 notas | 2026-11-17 |
+| 0-3    | Suite completa `php artisan test`        | 510 OK    | 2026-11-17 |
+| 9      | PaginacionTest (Bootstrap 5 y español)   | 1/1 OK    | 2026-11-17 |
+| 9      | PanelDirectivoTest (menú y avisos Swal)  | 16/16 OK  | 2026-11-17 |
+| 0-3/9  | Suite completa `php artisan test`        | 513 OK    | 2026-11-17 |
+| 9      | MenuLateralTest (resaltado del aside)    | 30 vistas OK | 2026-11-17 |
+| 0-3/9  | Suite completa `php artisan test`        | 515 OK    | 2026-11-17 |
+| 9      | LoginHardeningTest (límite, clave temporal, sesiones, cédula única) | 6/6 OK | 2026-11-17 |
+| 0-3/9  | Suite completa `php artisan test`        | 522 OK, 2659 aserciones | 2026-11-17 |
+| 4      | Pendiente                                |           |       |
+| 5      | Pendiente                                |           |       |
+| 6      | Pendiente                                |           |       |
+| 7      | Pendiente                                |           |       |
+| 8      | Pendiente                                |           |       |
+| 9      | Pendiente                                |           |       |
+
+18. HISTORIAL DE CAMBIOS DE ESTE DOCUMENTO
+--------------------------------------------------------------------------------
+- 2026-11-16: Creación inicial con funciones, menús, módulos, permisos,
+  sprints 0-9 y criterios de aceptación.
+- 2026-11-16: Decisiones confirmadas con el usuario. Fase 1 limitada a los
+  sprints 0-3. Paneles separados. Se omiten asistencia docente y horarios.
+  Deserción = retiros + no renovación. Escala 7/10. Barras CSS y exportación
+  PDF/Excel. Sprints 4-9 marcados como fuera de fase 1.
+- 2026-11-17: Mensajes de Rectorado y Vicerrectorado limitados a representantes
+  legales (curso → estudiante → representante) en la web y en la API. Se agregó
+  NotasPruebaSeeder y se llenaron 7680 notas de los 320 estudiantes. Suite
+  completa: 510 pruebas.
+- 2026-11-17: Paginación unificada con Bootstrap 5 y textos en español
+  (resources/views/vendor/pagination/bootstrap-5.blade.php). El menú de
+  Rectorado/Vicerrectorado usa un grupo con chevron para el panel y ya no deja
+  "Panel académico/institucional" seleccionado en los módulos hijos. Los avisos
+  generales y errores de validación usan SweetAlert2. Suite completa: 511
+  pruebas.
+- 2026-11-17: QA en navegador con RECTORA y VICERRECTORA. El grupo del panel ya
+  no se resalta a sí mismo: solo el módulo abierto queda activo. Paginación
+  verificada en /dece/expedientes?buscar=&curso_id=3 (12,8 px, sin SVG).
+  Pruebas agregadas para el menú y los avisos flash. Suite completa: 513
+  pruebas, 2381 aserciones.
+- 2026-11-17: Endurecimiento del login tras la auditoría de seguridad. Límite
+  de intentos por identificador + IP, contraseña inicial temporal con cambio
+  obligatorio, cédula única en la base, invalidación de las demás sesiones al
+  cambiar la clave, auditoría de intentos sin registrar contraseñas y guía de
+  producción en `.env.example`. Se ajustó `tests/TestCase.php` para que cada
+  `actingAs` inicie una sesión limpia y `AuthenticateSession` no cierre la
+  sesión al cambiar de usuario dentro de una prueba. Suite completa: 522
+  pruebas, 2659 aserciones.
+
+================================================================================
+ FIN DEL DOCUMENTO
+================================================================================
